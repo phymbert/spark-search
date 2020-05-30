@@ -16,9 +16,9 @@
 
 package org.apache.spark.search.rdd;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SearchRDDPartitionTest {
 
@@ -35,14 +35,14 @@ public class SearchRDDPartitionTest {
     private Runnable cleanupIndexDirectory;
     IndexDirectoryCleanupHandler handler = (cleanupIndexDirectory -> this.cleanupIndexDirectory = cleanupIndexDirectory);
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         Path rootDir = Paths.get(IndexationOptions.defaultOptions().getRootIndexDirectory());
         if (rootDir.toFile().exists())
             Files.delete(rootDir);
     }
 
-    @After
+    @AfterEach
     public void cleanup() {
         cleanupIndexDirectory.run();
         File indexDir = new File(IndexationOptions.defaultOptions().getRootIndexDirectory());

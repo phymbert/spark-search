@@ -17,7 +17,7 @@
 package org.apache.spark.search
 
 /**
- * Search SQL package provides additional feature to spark [[DataSet]].
+ * Search SQL package provides search features to spark [[org.apache.spark.sql.Dataset]].
  *
  * @author Pierrick HYMBERT
  */

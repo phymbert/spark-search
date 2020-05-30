@@ -16,40 +16,39 @@
 
 package org.apache.spark.search.rdd;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IndexationOptionsTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testRequireIndexDirectoryNotNull() {
-        try {
-            IndexationOptions.builder().rootIndexDirectory(null);
-        } catch (IllegalArgumentException e) {
-            assertEquals("invalid indexing option argument: root index directory is null", e.getMessage());
-            throw e;
-        }
+        Exception e = assertThrows(
+                IllegalArgumentException.class,
+                () -> IndexationOptions.builder().rootIndexDirectory(null)
+        );
+        assertEquals("invalid indexing option argument: root index directory is null", e.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testRequireValidMemoryRatio() {
-        try {
-            IndexationOptions.builder().cacheMemoryExecutorRatio(1);
-        } catch (IllegalArgumentException e) {
-            assertEquals("invalid indexing option argument: invalid cache memory executor ratio", e.getMessage());
-            throw e;
-        }
+        Exception e = assertThrows(
+                IllegalArgumentException.class,
+                () -> IndexationOptions.builder().cacheMemoryExecutorRatio(1)
+        );
+        assertEquals("invalid indexing option argument: invalid cache memory executor ratio", e.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testRequireNotEmpty() {
-        try {
-            IndexationOptions.builder().notStoredFields(Collections.emptyList());
-        } catch (IllegalArgumentException e) {
-            assertEquals("invalid indexing option argument: not stored fields", e.getMessage());
-            throw e;
-        }
+        Exception e = assertThrows(
+                IllegalArgumentException.class,
+                () -> IndexationOptions.builder().notStoredFields(Collections.emptyList())
+        );
+        assertEquals("invalid indexing option argument: not stored fields", e.getMessage());
     }
 }
