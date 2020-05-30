@@ -17,37 +17,37 @@
 package org.apache.spark.search.rdd;
 
 class Address {
-        private String street;
-        private byte[] zipCode;
-        private String country;
+    private String street;
+    private byte[] zipCode;
+    private String country;
 
-        public Address(String street, byte[] zipCode, String country) {
-            this.street = street;
-            this.zipCode = zipCode;
-            this.country = country;
-        }
-
-        public String getStreet() {
-            return street;
-        }
-
-        public void setStreet(String street) {
-            this.street = street;
-        }
-
-        public byte[] getZipCode() {
-            return zipCode;
-        }
-
-        public void setZipCode(byte[] zipCode) {
-            this.zipCode = zipCode;
-        }
-
-        public String getCountry() {
-            return country;
-        }
-
-        public void setCountry(String country) {
-            this.country = country;
-        }
+    public Address(String street, byte[] zipCode, String country) {
+        this.street = street;
+        this.zipCode = zipCode;
+        this.country = country;
     }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public byte[] getZipCode() {
+        return zipCode;
+    }
+
+    public void setZipCode(byte[] zipCode) {
+        this.zipCode = zipCode;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+}

@@ -46,12 +46,12 @@ public class DocumentBeanUpdaterTest {
 
         assertEquals(5, doc.getFields().size());
         assertEquals("John", doc.get("firstName"));
-        assertNull(doc.get("lastName")); // No Getter
+        assertNull(doc.get("birthDate")); // No Getter
         assertEquals("34", doc.get("age"));
         assertFalse(doc.get("address").isEmpty());
         assertEquals("[]", doc.get("friends"));
         assertTrue(doc.getField("age").fieldType().stored());
-        assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, doc.getField("birthDate").fieldType().indexOptions());
+        assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, doc.getField("lastName").fieldType().indexOptions());
 
         // Second element
         indexingDocument.element = new Person(

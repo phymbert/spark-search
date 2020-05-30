@@ -64,10 +64,13 @@ public class DocumentBeanUpdater<T> implements DocumentUpdater<T>, Serializable 
             if (readMethod == null) {
                 continue;
             }
+            String fieldName = propertyDescriptor.getName();
+            if ("class".equals(fieldName)) {
+                continue;
+            }
             if (!readMethod.isAccessible()) {
                 readMethod.setAccessible(true);
             }
-            String fieldName = propertyDescriptor.getName();
             Field.Store storedField = Field.Store.YES;
             if (!indexingDocument.options.isStoreFields()
                     || indexingDocument.options.getNotStoredFields().contains(fieldName)) {
