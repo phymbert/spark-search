@@ -1,6 +1,6 @@
 # [Spark Search](https://github.com/phymbert/spark-search)
 
-[![CI](https://github.com/phymbert/spark-search/workflows/Build and test/branch-0.1/badge.svg)](https://github.com/phymbert/spark-search/actions)
+[![CI](https://github.com/phymbert/spark-search/workflows/build-package/branch-0.1/badge.svg)](https://github.com/phymbert/spark-search/actions)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
