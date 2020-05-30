@@ -48,6 +48,19 @@
             <artifactId>lucene-queryparser</artifactId>
             <version>${lucene.version}</version>
         </dependency>
+
+        <!--
+          This spark-tags test-dep is needed even though it isn't used in this module, otherwise testing-cmds that exclude
+          them will yield errors.
+        -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-tags_${scala.binary.version}</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <version>${spark.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
