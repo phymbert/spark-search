@@ -176,6 +176,18 @@ public final class IndexationOptions<T> implements Serializable {
         }
 
         /**
+         * Field index analyzer.
+         *
+         * @param analyzer index analyzer
+         * @return builder
+         */
+        public Builder<T> analyzer(Class<? extends Analyzer> analyzer) {
+            requireNotNull(analyzer, "analyzer");
+            options.analyzer = analyzer;
+            return this;
+        }
+
+        /**
          * True to store the field value within lucene,
          * if false fields will not be retrieved and only docid will be available.
          *
