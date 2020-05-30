@@ -15,4 +15,4 @@ jobs:
           java-version: 1.8
       - name: Build with Maven
         run: mvn -B verify
-     - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v1
