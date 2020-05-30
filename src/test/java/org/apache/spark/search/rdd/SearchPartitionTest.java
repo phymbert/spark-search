@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SearchRDDPartitionTest {
+public class SearchPartitionTest {
 
 
     private Runnable cleanupIndexDirectory;
@@ -55,7 +55,7 @@ public class SearchRDDPartitionTest {
         IndexationOptions<Person> options = IndexationOptions.<Person>builder()
                 .indexDirectoryCleanupHandler(handler)
                 .build();
-        SearchRDDPartition<Person> partition = new SearchRDDPartition<>(0, options.getRootIndexDirectory());
+        SearchPartition<Person> partition = new SearchPartition<>(0, options.getRootIndexDirectory());
         partition.index(Arrays.asList(new Person("André", null, 5, null, null, null),
                 new Person(null, "Yulia", 2, null, null, null)).iterator(), options);
 

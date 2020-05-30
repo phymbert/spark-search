@@ -34,16 +34,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A search RDD partition is associated with a lucene index directory.
  *
- * It is responsible to create the index associated with the parent partition and run the indexation phase
- * when the first time the partition will be used.
+ * It is responsible to create the associated Lucene index with the parent partition
+ * and run the indexation stage once the the partition is computed.
  * <p>
  * At the moment it cannot be moved across executors and need to be recompute everytime.
  *
  * @author Pierrick HYMBERT
  */
-class SearchRDDPartition<T> implements Partition, Serializable {
+class SearchPartition<T> implements Partition, Serializable {
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(SearchRDDPartition.class);
+    private static final Logger logger = LoggerFactory.getLogger(SearchPartition.class);
 
     final int index;
 
@@ -52,7 +52,7 @@ class SearchRDDPartition<T> implements Partition, Serializable {
      */
     final String indexDir;
 
-    SearchRDDPartition(int index, String rootDir) {
+    SearchPartition(int index, String rootDir) {
         this.index = index;
         this.indexDir = String.format("%s-index-%d-%d", rootDir, index, System.nanoTime());
     }
@@ -159,7 +159,7 @@ class SearchRDDPartition<T> implements Partition, Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SearchRDDPartition that = (SearchRDDPartition) o;
+        SearchPartition that = (SearchPartition) o;
         return index == that.index;
     }
 

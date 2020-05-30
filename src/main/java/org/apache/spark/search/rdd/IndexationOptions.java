@@ -90,7 +90,7 @@ public final class IndexationOptions<T> implements Serializable {
      * Directory is {@link org.apache.lucene.store.MMapDirectory} by default.
      */
     public static final IndexDirectoryProvider DEFAULT_DIRECTORY_PROVIDER = (indexDir) -> new MMapDirectory(indexDir, NoLockFactory.INSTANCE);
-    private IndexDirectoryProvider indexDirectoryProvider = DEFAULT_DIRECTORY_PROVIDER;
+    IndexDirectoryProvider indexDirectoryProvider = DEFAULT_DIRECTORY_PROVIDER;
 
     /**
      * Lucene indexation directory is deleted by default when the spark context is done.
