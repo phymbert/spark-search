@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/phymbert/spark-search/workflows/branch-0.1/badge.svg)](https://launch-editor.github.com/actions?workflowID=branch-0.1&event=push&nwo=hyperledger%2Fburrow)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
-[![GoDoc](https://godoc.org/github.com/burrow?status.png)](https://godoc.org/github.com/phymbert/spark-search)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
 [![codecov](https://codecov.io/gh/phymbert/spark-search/branch/branch-0.1/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
