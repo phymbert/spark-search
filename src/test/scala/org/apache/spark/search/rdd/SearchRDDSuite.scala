@@ -14,14 +14,23 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search.rdd
 
-import java.io.Serializable;
+import org.apache.spark.SparkContext
+import org.scalatest.{BeforeAndAfter, FunSuite}
 
-/**
- * Responsible to schedule the cleanup of the index directory.
- */
-@FunctionalInterface
-public interface IndexDirectoryCleanupHandler extends Serializable {
-    void apply(Runnable cleanupIndexDirectory);
+class SearchRDDSuite extends FunSuite with BeforeAndAfter with LocalSparkContext {
+
+  test("count indexed documents") {
+    sc = new SparkContext("local", "test")
+
+    val persons = sc.parallelize(Seq(
+      new Person("Jorge", "Michael", 53),
+      new Person("Bob", "Marley", 37),
+      new Person("Agnès", "Bartoll", -1)))
+
+    val searchPersonsRDD = SearchRDD[Person](persons)
+
+    assert(searchPersonsRDD.count === 3)
+  }
 }

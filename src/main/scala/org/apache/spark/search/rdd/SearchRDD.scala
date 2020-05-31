@@ -51,20 +51,23 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
-    val parentRDD = firstParent[T]
-    val parentPartition = parentRDD.partitions(searchRDDPartition.index)
+    val parentRDD = firstParent
+
+    val parentPartition = searchRDDPartition.parent
     val elements = parentRDD.iterator(parentPartition, context).asJava
       .asInstanceOf[java.util.Iterator[T]]
     searchRDDPartition.index(elements, options.getIndexationOptions)
 
-    Iterator.empty
+    Iterator.empty // No RDD expected after
   }
 
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
-    val numPartitions = firstParent[T].getNumPartitions
+    val numPartitions = firstParent.getNumPartitions
     (0 until numPartitions).map(i =>
-      new SearchPartition[T](i, options.getIndexationOptions.getRootIndexDirectory)).toArray
+      new SearchPartition[T](i,
+        options.getIndexationOptions.getRootIndexDirectory,
+        firstParent.partitions(i))).toArray
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
@@ -76,4 +79,11 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
     }
     super.getPreferredLocations(split)
   }
+}
+
+object SearchRDD {
+  def apply[T: ClassTag](rdd: RDD[T],
+                         options: SearchRDDOptions[T]
+                         = SearchRDDOptions.defaultOptions().asInstanceOf[SearchRDDOptions[T]]): SearchRDD[T]
+  = new SearchRDD(rdd, options)
 }

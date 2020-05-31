@@ -16,17 +16,26 @@
 
 package org.apache.spark.search.rdd;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-class Person {
+class Person implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String firstName;
     private String lastName;
     private int age;
-    private final Date birthDate;
-    private final Address address;
+    private Date birthDate;
+    private Address address;
     private List<Person> friends;
+
+    Person(String firstName, String lastName, int age) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+    }
 
     Person(String firstName, String lastName, int age,
            Date birthDate,

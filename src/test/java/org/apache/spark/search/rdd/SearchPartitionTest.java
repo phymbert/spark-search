@@ -55,7 +55,7 @@ public class SearchPartitionTest {
         IndexationOptions<Person> options = IndexationOptions.<Person>builder()
                 .indexDirectoryCleanupHandler(handler)
                 .build();
-        SearchPartition<Person> partition = new SearchPartition<>(0, options.getRootIndexDirectory());
+        SearchPartition<Person> partition = new SearchPartition<>(0, options.getRootIndexDirectory(), null);
         partition.index(Arrays.asList(new Person("André", null, 5, null, null, null),
                 new Person(null, "Yulia", 2, null, null, null)).iterator(), options);
 

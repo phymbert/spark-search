@@ -46,14 +46,16 @@ class SearchPartition<T> implements Partition, Serializable {
     private static final Logger logger = LoggerFactory.getLogger(SearchPartition.class);
 
     final int index;
+    final Partition parent;
 
     /**
      * Lucene index directory on the executor local file system
      */
     final String indexDir;
 
-    SearchPartition(int index, String rootDir) {
+    SearchPartition(int index, String rootDir, Partition parent) {
         this.index = index;
+        this.parent = parent;
         this.indexDir = String.format("%s-index-%d-%d", rootDir, index, System.nanoTime());
     }
 
