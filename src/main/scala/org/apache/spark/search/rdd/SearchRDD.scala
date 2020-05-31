@@ -35,6 +35,8 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
                                              val options: SearchRDDOptions[T])
   extends RDD[T](rdd.sparkContext, Seq(new OneToOneDependency(rdd))) {
 
+  var parts: Array[SearchPartition[T]]=null
+
   override def count: Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(), _.sum)
 
   private def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
@@ -62,12 +64,15 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
   }
 
   override protected def getPartitions: Array[Partition] = {
-    // One-2-One partition
-    val numPartitions = firstParent.getNumPartitions
-    (0 until numPartitions).map(i =>
-      new SearchPartition[T](i,
-        options.getIndexationOptions.getRootIndexDirectory,
-        firstParent.partitions(i))).toArray
+    if (parts == null) {
+      // One-2-One partition
+      val numPartitions = firstParent.getNumPartitions
+      parts = (0 until numPartitions).map(i =>
+        new SearchPartition[T](i,
+          options.getIndexationOptions.getRootIndexDirectory,
+          firstParent.partitions(i))).toArray
+    }
+    parts.asInstanceOf[Array[Partition]]
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {

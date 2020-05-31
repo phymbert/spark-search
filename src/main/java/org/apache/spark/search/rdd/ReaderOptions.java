@@ -17,9 +17,6 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.NoLockFactory;
 
 import java.io.Serializable;
 
@@ -40,14 +37,12 @@ public class ReaderOptions<T> implements Serializable {
     /**
      * Default search analyzer type: standard.
      */
-    public static final Class<? extends Analyzer> DEFAULT_ANALYZER = StandardAnalyzer.class;
-    private Class<? extends Analyzer> analyzer = DEFAULT_ANALYZER;
+    private Class<? extends Analyzer> analyzer = IndexationOptions.DEFAULT_ANALYZER;
 
     /**
      * Directory is {@link org.apache.lucene.store.MMapDirectory} by default.
      */
-    public static final IndexDirectoryProvider DEFAULT_DIRECTORY_PROVIDER = (indexDir) -> new MMapDirectory(indexDir, NoLockFactory.INSTANCE);
-    IndexDirectoryProvider indexDirectoryProvider = DEFAULT_DIRECTORY_PROVIDER;
+    IndexDirectoryProvider indexDirectoryProvider = IndexationOptions.DEFAULT_DIRECTORY_PROVIDER;
 
 
     // Hidden, use builder or default.
