@@ -86,7 +86,9 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   def search(query: String, topK: Int): RDD[SearchRecord[T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     mapPartitionsWithIndex((index, _) => {
-      reader(indexDirectoryByPartition, index).searchList(query, topK).asScala.iterator
+      tryAndClose(reader(indexDirectoryByPartition, index)){
+        r => r.searchList(query, topK).asScala.iterator
+      }
     }).sortBy(_.getScore, ascending = false)
   }
 
