@@ -104,7 +104,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     // One-2-One partition
     firstParent.partitions.map(p =>
       new SearchPartition[T](p.index,
-        options.getIndexationOptions.getRootIndexDirectory, p)).toArray
+        s"${options.getIndexationOptions.getRootIndexDirectory}-rdd${id}", p)).toArray
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {

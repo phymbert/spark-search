@@ -75,7 +75,7 @@ public final class IndexationOptions<T> implements Serializable {
      * Root index directory.
      */
     private String rootIndexDirectory = Optional.ofNullable(System.getProperty(CONF_SPARK_LOCAL_DIR))
-            .orElse(System.getProperty(PROPS_JAVA_IO_TMPDIR)) + File.separator + "spark-search";
+            .orElse(System.getProperty(PROPS_JAVA_IO_TMPDIR)) + File.separator + "spark-search"; // file.separator not necessary ?
     private static final String CONF_SPARK_LOCAL_DIR = "spark.local.dir";
     private static final String PROPS_JAVA_IO_TMPDIR = "java.io.tmpdir";
 

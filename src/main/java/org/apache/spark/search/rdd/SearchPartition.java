@@ -58,7 +58,7 @@ class SearchPartition<T> implements Partition, Serializable {
     SearchPartition(int index, String rootDir, Partition parent) {
         this.index = index;
         this.parent = parent;
-        this.indexDir = String.format("%s-index-%d-%d", rootDir, index, System.nanoTime());
+        this.indexDir = String.format("%s-index%d-%d", rootDir, index, System.nanoTime());
     }
 
     /**
@@ -129,7 +129,7 @@ class SearchPartition<T> implements Partition, Serializable {
                     long currentTotalTime = System.currentTimeMillis() - startTime;
                     if (currentDocCount % logIndexationProgress == 0) {
                         logger.debug("Indexing at {} docs/s, done={}",
-                                currentDocCount / currentTotalTime * 1000f, currentDocCount);
+                                (float) currentDocCount / currentTotalTime * 1000f, currentDocCount);
                     }
                 }
             });
@@ -137,8 +137,8 @@ class SearchPartition<T> implements Partition, Serializable {
             long totalDocCount = docCount.get();
             long totalTime = System.currentTimeMillis() - startTime;
             logger.info("Indexation of partition={}: {} docs/s, done={} docs in={}s directory={}",
-                    index, totalDocCount / totalTime * 1000f,
-                    totalDocCount, totalTime / 1000, indexDir);
+                    index, (float) totalDocCount / totalTime * 1000f,
+                    totalDocCount, (float) totalTime / 1000, indexDir);
         } catch (Exception e) {
             throw new SearchException("indexation failed on partition "
                     + index + " and directory " + indexDir, e);
