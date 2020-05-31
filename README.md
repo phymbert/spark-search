@@ -6,7 +6,7 @@
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
 [![codecov](https://codecov.io/gh/phymbert/spark-search/branch/branch-0.1/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
 
-Spark Search brings advanced search features to RDD and Dataframe powered by Apache Lucene.
+Spark Search brings advanced full text search features to RDD and Dataset, powered by Apache Lucene.
 
 ## Getting started
 
@@ -21,13 +21,28 @@ Spark Search brings advanced search features to RDD and Dataframe powered by Apa
 </dependency>
 ```
 
-### SearchFrame API
+### Dataset API
 
 * Scala
 ```scala
 import org.apache.spark.search.sql._
 
 ```
+
+### RDD API
+* Java
+```scala
+import org.apache.spark.search.rdd._
+
+```
+
+* Java
+```java
+import org.apache.spark.search.rdd.*;
+
+
+```
+
 
 ## Building Spark Search
 

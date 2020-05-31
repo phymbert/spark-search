@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,8 +55,7 @@ public class SearchPartitionTest {
                 .indexDirectoryCleanupHandler(handler)
                 .build();
         SearchPartition<Person> partition = new SearchPartition<>(0, options.getRootIndexDirectory(), null);
-        partition.index(Arrays.asList(new Person("André", null, 5, null, null, null),
-                new Person(null, "Yulia", 2, null, null, null)).iterator(), options);
+        partition.index(Person.PERSONS.iterator(), options);
 
         File indexDir = new File(partition.indexDir);
         File[] files = indexDir.listFiles();

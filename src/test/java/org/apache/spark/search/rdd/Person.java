@@ -17,11 +17,19 @@
 package org.apache.spark.search.rdd;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 class Person implements Serializable {
+    public static final List<Person> PERSONS = Arrays.asList(
+            new Person("André", null, 5, null, null, null),
+            new Person(null, "Yulia", 2, null, null, null),
+            new Person("Jorge", "Michael", 53),
+            new Person("Bob", "Marley", 37),
+            new Person("Agnès", "Bartoll", -1));
+
     private static final long serialVersionUID = 1L;
 
     private String firstName;

@@ -17,20 +17,19 @@
 package org.apache.spark.search.rdd
 
 import org.apache.spark.SparkContext
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.BeforeAndAfter
+import scala.collection.JavaConverters._
 
-class SearchRDDSuite extends FunSuite with BeforeAndAfter with LocalSparkContext {
+class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
 
   test("count indexed documents") {
     sc = new SparkContext("local", "test")
 
-    val persons = sc.parallelize(Seq(
-      new Person("Jorge", "Michael", 53),
-      new Person("Bob", "Marley", 37),
-      new Person("Agnès", "Bartoll", -1)))
+    val persons = sc.parallelize(Person.PERSONS.asScala)
 
-    val searchPersonsRDD = SearchRDD[Person](persons)
+    val searchPersonsRDD = new SearchRDD[Person](persons, SearchRDDOptions.defaultOptions())
 
-    assert(searchPersonsRDD.count === 3)
+    assertResult(5)(searchPersonsRDD.count)
   }
 }

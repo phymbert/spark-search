@@ -16,12 +16,11 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
+import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
-
-import collection.JavaConverters._
 
 /**
  * A search RDD indexes parent RDD partitions to lucene indexes.
@@ -31,21 +30,22 @@ import collection.JavaConverters._
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
+private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchRDDOptions[T])
-  extends RDD[T](rdd.sparkContext, Seq(new OneToOneDependency(rdd))) {
-
-  var parts: Array[SearchPartition[T]]=null
+  extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
   override def count: Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(), _.sum)
 
   private def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
                                                      reducer: (Iterator[R]) => A): A = {
 
+    val indexDirectoryByPartition = partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex
+      .map(t => (t._2, t._1.indexDir)).toMap
+
     val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
-      val searchPartition = partitions(index).asInstanceOf[SearchPartition[T]]
-      val searchPartitionReader = new SearchPartitionReader[T](index, searchPartition.indexDir, options.getReaderOptions)
+      val searchPartitionReader = new SearchPartitionReader[T](index,
+        indexDirectoryByPartition(index), options.getReaderOptions)
       searchByPartition(searchPartitionReader)
     })
     reducer(ret.toIterator)
@@ -53,10 +53,8 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
-    val parentRDD = firstParent
 
-    val parentPartition = searchRDDPartition.parent
-    val elements = parentRDD.iterator(parentPartition, context).asJava
+    val elements = firstParent.iterator(searchRDDPartition.parent, context).asJava
       .asInstanceOf[java.util.Iterator[T]]
     searchRDDPartition.index(elements, options.getIndexationOptions)
 
@@ -64,15 +62,10 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
   }
 
   override protected def getPartitions: Array[Partition] = {
-    if (parts == null) {
-      // One-2-One partition
-      val numPartitions = firstParent.getNumPartitions
-      parts = (0 until numPartitions).map(i =>
-        new SearchPartition[T](i,
-          options.getIndexationOptions.getRootIndexDirectory,
-          firstParent.partitions(i))).toArray
-    }
-    parts.asInstanceOf[Array[Partition]]
+    // One-2-One partition
+    firstParent.partitions.map(p =>
+      new SearchPartition[T](p.index,
+        options.getIndexationOptions.getRootIndexDirectory, p)).toArray
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
@@ -86,9 +79,3 @@ private[search] class SearchRDD[T: ClassTag](@transient val rdd: RDD[T],
   }
 }
 
-object SearchRDD {
-  def apply[T: ClassTag](rdd: RDD[T],
-                         options: SearchRDDOptions[T]
-                         = SearchRDDOptions.defaultOptions().asInstanceOf[SearchRDDOptions[T]]): SearchRDD[T]
-  = new SearchRDD(rdd, options)
-}
