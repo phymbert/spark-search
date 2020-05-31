@@ -21,6 +21,7 @@ import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 /**
  * A search RDD indexes parent RDD partitions to lucene indexes.
@@ -35,23 +36,37 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
   /**
-   * Count how many documents match the given query.
+   * Class of the first element indexed, will be used after
+   * in [[DocumentConverter]] to recompose the source.
    */
-  def count(query:String): Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(query), _.sum)
+  private var _clazz: Class[T] = _
 
   override def count: Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(), _.sum)
 
-  private def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
-                                                     reducer: (Iterator[R]) => A): A = {
+  /**
+   * Count how many documents match the given query.
+   */
+  def count(query: String): Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(query), _.sum)
+
+  /**
+   * Finds the top topK hits for query.
+   */
+  def search(query: String, topK: Int): List[SearchRecord[T]] =
+    runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
+      searchPartitionReader => searchPartitionReader.search(query, topK).asScala.toList,
+      _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK))
+
+  protected def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
+                                                       reducer: (Iterator[R]) => A): A = {
 
     val indexDirectoryByPartition = partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex
       .map(t => (t._2, t._1.indexDir)).toMap
 
     val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
-      val searchPartitionReader = new SearchPartitionReader[T](index,
-        indexDirectoryByPartition(index), options.getReaderOptions)
-      searchByPartition(searchPartitionReader)
+      tryAndClose(new SearchPartitionReader[T](index, indexDirectoryByPartition(index), _clazz, options.getReaderOptions)) {
+        r => searchByPartition(r)
+      }
     })
     reducer(ret.toIterator)
   }
@@ -61,7 +76,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
     val elements = firstParent.iterator(searchRDDPartition.parent, context).asJava
       .asInstanceOf[java.util.Iterator[T]]
-    searchRDDPartition.index(elements, options.getIndexationOptions)
+    _clazz = searchRDDPartition.index(elements, options.getIndexationOptions)
 
     Iterator.empty // No RDD expected after
   }
@@ -74,13 +89,24 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   }
 
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
-    // Try to balance partitions accros executors
+    // Try to balance partitions across executors
     val allIds = context.getExecutorIds()
     val ids = allIds.sliding(getNumPartitions)
     if (split.index < ids.size) {
       ids.toSeq(split.index)
     }
     super.getPreferredLocations(split)
+  }
+
+  def tryAndClose[A <: AutoCloseable, B](resource: A)(block: A => B): B = {
+    Try(block(resource)) match {
+      case Success(result) =>
+        resource.close()
+        result
+      case Failure(e) =>
+        resource.close()
+        throw e
+    }
   }
 }
 

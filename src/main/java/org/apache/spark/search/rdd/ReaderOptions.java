@@ -44,6 +44,16 @@ public class ReaderOptions<T> implements Serializable {
      */
     IndexDirectoryProvider indexDirectoryProvider = IndexationOptions.DEFAULT_DIRECTORY_PROVIDER;
 
+    /**
+     * Default document converter.
+     */
+    Class<? extends DocumentConverter<T>> documentConverter = (Class) DocumentBeanConverter.class;
+
+    /**
+     * Log query time every 10K queries.
+     */
+    public static final long DEFAULT_LOG_QUERY_TIME = 10000;
+    private long logQueryTime = DEFAULT_LOG_QUERY_TIME;
 
     // Hidden, use builder or default.
     private ReaderOptions() {
@@ -75,6 +85,14 @@ public class ReaderOptions<T> implements Serializable {
 
     IndexDirectoryProvider getIndexDirectoryProvider() {
         return indexDirectoryProvider;
+    }
+
+    long getLogQueryTime() {
+        return logQueryTime;
+    }
+
+    Class<? extends DocumentConverter<T>> getDocumentConverter() {
+        return documentConverter;
     }
 
     /**
@@ -120,6 +138,31 @@ public class ReaderOptions<T> implements Serializable {
         public Builder<T> directoryProvider(IndexDirectoryProvider indexDirectoryProvider) {
             requireNotNull(indexDirectoryProvider, "index directory provider");
             options.indexDirectoryProvider = indexDirectoryProvider;
+            return this;
+        }
+
+        /**
+         * Log the query time every X queries on the same partition operation.
+         * <p>
+         * Set 0 or negative value to disable logging.
+         *
+         * @param logQueryTime Modulo of document queries to log performance
+         * @return builder
+         */
+        public Builder<T> logQueryTime(long logQueryTime) {
+            options.logQueryTime = logQueryTime;
+            return this;
+        }
+
+        /**
+         * Convert the scored document and lucene document to target type.
+         *
+         * @param documentConverter Document converter
+         * @return builder
+         */
+        public Builder<T> documentConverter(Class<? extends DocumentConverter<T>> documentConverter) {
+            requireNotNull(documentConverter, "document converter");
+            options.documentConverter = documentConverter;
             return this;
         }
 

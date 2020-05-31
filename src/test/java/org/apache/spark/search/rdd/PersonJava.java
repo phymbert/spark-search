@@ -22,13 +22,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-class Person implements Serializable {
-    public static final List<Person> PERSONS = Arrays.asList(
-            new Person("André", null, 5, null, null, null),
-            new Person(null, "Yulia", 2, null, null, null),
-            new Person("Jorge", "Michael", 53),
-            new Person("Bob", "Marley", 37),
-            new Person("Agnès", "Bartoll", -1));
+class PersonJava implements Serializable {
+    public static final List<PersonJava> PERSONS = Arrays.asList(
+            new PersonJava("André", null, 5, null, null, null),
+            new PersonJava(null, "Yulia", 2, null, null, null),
+            new PersonJava("Jorge", "Michael", 53),
+            new PersonJava("Bob", "Marley", 37),
+            new PersonJava("Agnès", "Bartoll", -1));
 
     private static final long serialVersionUID = 1L;
 
@@ -37,18 +37,18 @@ class Person implements Serializable {
     private int age;
     private Date birthDate;
     private Address address;
-    private List<Person> friends;
+    private List<PersonJava> friends;
 
-    Person(String firstName, String lastName, int age) {
+    PersonJava(String firstName, String lastName, int age) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
     }
 
-    Person(String firstName, String lastName, int age,
-           Date birthDate,
-           Address address,
-           List<Person> friends) {
+    PersonJava(String firstName, String lastName, int age,
+               Date birthDate,
+               Address address,
+               List<PersonJava> friends) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
@@ -57,7 +57,7 @@ class Person implements Serializable {
         this.friends = friends;
     }
 
-    public Person() {
+    public PersonJava() {
         birthDate = null;
         address = null;
     }
@@ -90,11 +90,11 @@ class Person implements Serializable {
         return address;
     }
 
-    public List<Person> getFriends() {
+    public List<PersonJava> getFriends() {
         return friends;
     }
 
-    public void setFriends(List<Person> friends) {
+    public void setFriends(List<PersonJava> friends) {
         this.friends = friends;
     }
 
@@ -102,7 +102,7 @@ class Person implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Person person = (Person) o;
+        PersonJava person = (PersonJava) o;
         return age == person.age &&
                 Objects.equals(firstName, person.firstName) &&
                 Objects.equals(lastName, person.lastName) &&

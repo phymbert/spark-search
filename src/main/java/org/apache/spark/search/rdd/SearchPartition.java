@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A search RDD partition is associated with a lucene index directory.
- *
+ * <p>
  * It is responsible to create the associated Lucene index with the parent partition
  * and run the indexation stage once the the partition is computed.
  * <p>
@@ -53,6 +53,8 @@ class SearchPartition<T> implements Partition, Serializable {
      */
     final String indexDir;
 
+    transient Class<T> clazz;
+
     SearchPartition(int index, String rootDir, Partition parent) {
         this.index = index;
         this.parent = parent;
@@ -68,7 +70,7 @@ class SearchPartition<T> implements Partition, Serializable {
      * @param elements Elements to index
      * @param options  options of the indexation
      */
-    void index(Iterator<T> elements, IndexationOptions<T> options) {
+    Class<T> index(Iterator<T> elements, IndexationOptions<T> options) {
         cleanupDirectoryOnShutdown(options.getIndexDirectoryCleanupHandler());
 
         monitorIndexation(l -> {
@@ -91,6 +93,7 @@ class SearchPartition<T> implements Partition, Serializable {
                     indexingDocument.element = element;
                     options.getDocumentUpdater().update(indexingDocument);
                     indexWriter.addDocument(indexingDocument.doc);
+                    clazz = (Class<T>) element.getClass();
                 } catch (Exception e) {
                     throw new SearchException("unable to index document " + element + " got " + e, e);
                 }
@@ -100,28 +103,29 @@ class SearchPartition<T> implements Partition, Serializable {
             indexWriter.close();
 
         }, options.getLogIndexationProgress());
+        return clazz;
     }
 
     @FunctionalInterface
     private interface IndexationTask {
-        void apply(IndexationListener indexationListener) throws Exception;
+        void index(IndexationListener indexationListener) throws Exception;
     }
 
     @FunctionalInterface
     private interface IndexationListener {
-        void apply();
+        void indexed();
     }
 
     private void monitorIndexation(IndexationTask indexationTask, long logIndexationProgress) {
         try {
-            logger.info("Starting indexation of partition {} on directory {}", index, indexDir);
+            logger.info("Starting indexation of partition={} on directory={}", index, indexDir);
             long startTime = System.currentTimeMillis();
             AtomicInteger docCount = new AtomicInteger();
 
-            indexationTask.apply(() -> {
+            indexationTask.index(() -> {
+                long currentDocCount = docCount.incrementAndGet();
                 if (logIndexationProgress > 0) {
                     long currentTotalTime = System.currentTimeMillis() - startTime;
-                    long currentDocCount = docCount.incrementAndGet();
                     if (currentDocCount % logIndexationProgress == 0) {
                         logger.debug("Indexing at {}doc/s, done={}",
                                 currentDocCount / currentTotalTime * 1000f, currentDocCount);
@@ -131,9 +135,9 @@ class SearchPartition<T> implements Partition, Serializable {
 
             long totalDocCount = docCount.get();
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("Indexation of partition {} on directory {}: {}doc/s, done={}docs in={}s",
-                    index, indexDir, totalDocCount / totalTime * 1000f,
-                    totalDocCount, totalTime / 1000);
+            logger.info("Indexation of partition={}: {}doc/s, done={}docs in={}s directory={}",
+                    index, totalDocCount / totalTime * 1000f,
+                    totalDocCount, totalTime / 1000, indexDir);
         } catch (Exception e) {
             throw new SearchException("indexation failed on partition "
                     + index + " and directory " + indexDir, e);

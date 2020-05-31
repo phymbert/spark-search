@@ -14,13 +14,22 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd
+package org.apache.spark.search.rdd;
 
-object TestData {
-  case class Person(firstName: String, lastName: String, age: Int)
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.ScoreDoc;
 
-  def persons = Seq(
-    Person("Geoorge", "Michael", 53),
-    Person("Bob", "Marley", 37),
-    Person("Agnès", "Bartoll", -1))
+import java.io.Serializable;
+
+/**
+ * Convert scored and lucene documents to search record.
+ */
+public interface DocumentConverter<T> extends Serializable {
+
+    SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Document doc) throws Exception;
+
+    /**
+     * The type to convert to.
+     */
+    void setClassTag(Class<T> classTag);
 }

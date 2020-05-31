@@ -52,8 +52,7 @@ public final class IndexationOptions<T> implements Serializable {
     /**
      * Update the lucene document with the next element to be indexed using bean utils by default.
      */
-    public static final DocumentUpdater<?> DEFAULT_DOCUMENT_UPDATER = new DocumentBeanUpdater();
-    private DocumentUpdater<T> documentUpdater = (DocumentUpdater) DEFAULT_DOCUMENT_UPDATER;
+    private DocumentUpdater<T> documentUpdater = new DocumentBeanUpdater<>();
 
     /**
      * Ratio of the total executor memory used to cache document during indexation.
@@ -259,7 +258,7 @@ public final class IndexationOptions<T> implements Serializable {
          * @param logIndexationProgress Modulo of document indexed log progress
          * @return builder
          */
-        public Builder<T> logIndexationProgressEveryDoc(long logIndexationProgress) {
+        public Builder<T> logIndexationProgress(long logIndexationProgress) {
             options.logIndexationProgress = logIndexationProgress;
             return this;
         }

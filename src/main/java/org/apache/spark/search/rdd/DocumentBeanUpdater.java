@@ -17,17 +17,14 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.collections.FastHashMap;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
-import scala.Product;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -37,10 +34,9 @@ import java.util.List;
  *
  * @author Pierrick HYMBERT
  */
-public class DocumentBeanUpdater<T> implements DocumentUpdater<T>, Serializable {
+public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors implements DocumentUpdater<T> {
 
     private static final long serialVersionUID = 1L;
-    private FastHashMap productDescriptors;
 
     @Override
     public void update(IndexingDocument<T> indexingDocument) throws Exception {
@@ -64,7 +60,7 @@ public class DocumentBeanUpdater<T> implements DocumentUpdater<T>, Serializable 
         T element = indexingDocument.element;
         PropertyDescriptor[] propertyDescriptors;
         if (element instanceof scala.Product) {
-            propertyDescriptors = describeCaseClass((scala.Product) element);
+            propertyDescriptors = getProductPropertyDescriptors((scala.Product) element);
         } else {
             propertyDescriptors = PropertyUtils.getPropertyDescriptors(element);
         }
@@ -102,46 +98,10 @@ public class DocumentBeanUpdater<T> implements DocumentUpdater<T>, Serializable 
         }
     }
 
-    private PropertyDescriptor[] describeCaseClass(scala.Product element) throws IntrospectionException {
-        int fieldSize = element.productArity();
-        PropertyDescriptor[] propertyDescriptors = new PropertyDescriptor[fieldSize];
-        int fieldIndex = 0;
-        // while scala.Product.productElementNames is not shipped
-        Class<? extends Product> caseClass = element.getClass();
-        for (Method method : caseClass.getDeclaredMethods()) {
-            String methodName = method.getName();
-            if (method.getParameterCount() > 0) {
-                continue;
-            }
-            if (methodName.contains("$")) {
-                continue;
-            }
-            switch (methodName) {
-                case "toString":
-                case "hashCode":
-                case "productIterator":
-                case "productArity":
-                case "productElementNames":
-                case "productPrefix":
-                    break;
-                default: // FIXME quite dangerous and will raise IndexOutOfBounds but better than indexing not necessary fields
-                    propertyDescriptors[fieldIndex++] = new PropertyDescriptor(methodName, method, null);
-                    break;
-            }
-        }
-        if (productDescriptors == null) {
-            productDescriptors = new FastHashMap();
-            productDescriptors.setFast(true);
-        }
-        productDescriptors.put(caseClass, propertyDescriptors);
-        return propertyDescriptors;
-    }
-
-
-    private PropertyDescriptor getPropertyDescriptor(T element, String name) {
+    private PropertyDescriptor getPropertyDescriptor(T element, String name) throws IntrospectionException {
         PropertyDescriptor[] descriptors;
         if (element instanceof scala.Product) {
-            descriptors = (PropertyDescriptor[]) productDescriptors.get(element.getClass());
+            descriptors = getProductPropertyDescriptors((scala.Product) element);
         } else {
             descriptors = PropertyUtils.getPropertyDescriptors(element);
         }

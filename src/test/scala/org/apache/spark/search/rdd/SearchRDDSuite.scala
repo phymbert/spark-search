@@ -19,19 +19,27 @@ package org.apache.spark.search.rdd
 import org.apache.spark.SparkContext
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
+import TestData._
 
 class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
 
   test("count all indexed documents") {
     sc = new SparkContext("local", "test")
 
-    assertResult(3)(sc.parallelize(TestData.persons).search.count)
+    assertResult(3)(sc.parallelize(persons).searchRDD.count)
   }
 
   test("count matched indexed documents") {
     sc = new SparkContext("local", "test")
 
-    assertResult(1)(sc.parallelize(TestData.persons)
-        .search.count("firstName:bob"))
+    assertResult(1)(sc.parallelize(persons)
+        .count("firstName:bob"))
+  }
+
+  test("search hits matching query") {
+    sc = new SparkContext("local", "test")
+
+    assertResult(List(new SearchRecord[Person](1, 0,0.44583148f, 0,
+            Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob",10))
   }
 }

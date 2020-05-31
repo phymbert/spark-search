@@ -31,13 +31,13 @@ public class DocumentBeanUpdaterScalaTest {
 
     @Test
     public void shouldUpdateDocumentWithAJavaBeanToDocument() throws Exception {
-        DocumentBeanUpdater<Person> documentBeanUpdater = new DocumentBeanUpdater<>();
-        DocumentUpdater.IndexingDocument<Person> indexingDocument
+        DocumentBeanUpdater<PersonJava> documentBeanUpdater = new DocumentBeanUpdater<>();
+        DocumentUpdater.IndexingDocument<PersonJava> indexingDocument
                 = new DocumentUpdater.IndexingDocument<>(IndexationOptions.defaultOptions());
         Document doc = indexingDocument.doc;
 
         // First element
-        indexingDocument.element = new Person(
+        indexingDocument.element = new PersonJava(
                 "John", "Doe", 34, new Date(1986, 5, 30),
                 new Address("10 chemin de la fontaine", "46140".getBytes(), "FR"),
                 Collections.emptyList());
@@ -54,7 +54,7 @@ public class DocumentBeanUpdaterScalaTest {
         assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, doc.getField("lastName").fieldType().indexOptions());
 
         // Second element
-        indexingDocument.element = new Person(
+        indexingDocument.element = new PersonJava(
                 "Jack", "Daniels", 4, new Date(2015, 5, 30),
                 new Address("47 Rue de Monceau 75008 Paris", "75008".getBytes(), "FR"),
                 Collections.singletonList(indexingDocument.element));
@@ -67,14 +67,14 @@ public class DocumentBeanUpdaterScalaTest {
 
     @Test
     public void shouldNotStoreExcludedFieldDocument() throws Exception {
-        DocumentBeanUpdater<Person> documentBeanUpdater = new DocumentBeanUpdater<>();
-        DocumentUpdater.IndexingDocument<Person> indexingDocument
-                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<Person>builder()
+        DocumentBeanUpdater<PersonJava> documentBeanUpdater = new DocumentBeanUpdater<>();
+        DocumentUpdater.IndexingDocument<PersonJava> indexingDocument
+                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<PersonJava>builder()
                 .notStoredFields(Collections.singletonList("firstName"))
                 .build());
         Document doc = indexingDocument.doc;
 
-        indexingDocument.element = new Person(
+        indexingDocument.element = new PersonJava(
                 "John", "Doe", 34, new Date(1986, 5, 30),
                 new Address("10 chemin de la fontaine", "46140".getBytes(), "FR"),
                 Collections.emptyList());
@@ -85,14 +85,14 @@ public class DocumentBeanUpdaterScalaTest {
 
     @Test
     public void shouldUseCustomFieldIndexOptions() throws Exception {
-        DocumentBeanUpdater<Person> documentBeanUpdater = new DocumentBeanUpdater<>();
-        DocumentUpdater.IndexingDocument<Person> indexingDocument
-                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<Person>builder()
+        DocumentBeanUpdater<PersonJava> documentBeanUpdater = new DocumentBeanUpdater<>();
+        DocumentUpdater.IndexingDocument<PersonJava> indexingDocument
+                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<PersonJava>builder()
                 .fieldIndexOptions(IndexOptions.DOCS)
                 .build());
         Document doc = indexingDocument.doc;
 
-        indexingDocument.element = new Person();
+        indexingDocument.element = new PersonJava();
 
         documentBeanUpdater.update(indexingDocument);
         IndexableField f = doc.getField("firstName");
@@ -102,14 +102,14 @@ public class DocumentBeanUpdaterScalaTest {
 
     @Test
     public void shouldNotStoreField() throws Exception {
-        DocumentBeanUpdater<Person> documentBeanUpdater = new DocumentBeanUpdater<>();
-        DocumentUpdater.IndexingDocument<Person> indexingDocument
-                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<Person>builder()
+        DocumentBeanUpdater<PersonJava> documentBeanUpdater = new DocumentBeanUpdater<>();
+        DocumentUpdater.IndexingDocument<PersonJava> indexingDocument
+                = new DocumentUpdater.IndexingDocument<>(IndexationOptions.<PersonJava>builder()
                 .storeFields(false)
                 .build());
         Document doc = indexingDocument.doc;
 
-        indexingDocument.element = new Person();
+        indexingDocument.element = new PersonJava();
 
         documentBeanUpdater.update(indexingDocument);
         IndexableField f = doc.getField("age");

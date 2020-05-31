@@ -51,11 +51,11 @@ public class SearchPartitionTest {
 
     @Test
     public void shouldCreateALuceneIndex() {
-        IndexationOptions<Person> options = IndexationOptions.<Person>builder()
+        IndexationOptions<PersonJava> options = IndexationOptions.<PersonJava>builder()
                 .indexDirectoryCleanupHandler(handler)
                 .build();
-        SearchPartition<Person> partition = new SearchPartition<>(0, options.getRootIndexDirectory(), null);
-        partition.index(Person.PERSONS.iterator(), options);
+        SearchPartition<PersonJava> partition = new SearchPartition<>(0, options.getRootIndexDirectory(), null);
+        partition.index(PersonJava.PERSONS.iterator(), options);
 
         File indexDir = new File(partition.indexDir);
         File[] files = indexDir.listFiles();
