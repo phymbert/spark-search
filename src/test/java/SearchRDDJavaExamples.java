@@ -71,12 +71,11 @@ public class SearchRDDJavaExamples {
                 SearchRDDOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
 
         System.out.println("Reviews from Patosh: ");
-        searchRDDJava.searchList("reviewerName:Patrik~0.5", 100)
-                .stream()
+        searchRDDJava.search("reviewerName:Patrik~0.5", 100)
                 .map(SearchRecord::getSource)
                 .map(Review::getReviewerName)
                 .distinct()
-                .forEach(System.out::println);
+                .foreach(System.out::println);
 
         sc.stop();
     }

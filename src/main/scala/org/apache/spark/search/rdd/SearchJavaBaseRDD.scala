@@ -43,4 +43,10 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
    */
   override def searchList(query: String, topK: jl.Integer): JList[SearchRecord[T]] =
     searchRDD.searchList(query, topK).asJava
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)]]
+   */
+  override def search(query: String, topK: jl.Integer): JavaRDD[SearchRecord[T]] =
+    searchRDD.search(query, topK).toJavaRDD()
 }

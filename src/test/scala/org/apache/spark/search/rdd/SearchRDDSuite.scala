@@ -36,10 +36,17 @@ class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkCont
         .count("firstName:bob"))
   }
 
-  test("search hits matching query") {
+  test("search list hits matching query") {
     sc = new SparkContext("local", "test")
 
     assertResult(List(new SearchRecord[Person](1, 0,0.44583148f, 0,
-            Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob",10))
+      Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob",10))
+  }
+
+  test("search hits matching query") {
+    sc = new SparkContext("local", "test")
+
+    assertResult(Array(new SearchRecord[Person](1, 0,0.44583148f, 0,
+      Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob",10).take(10))
   }
 }

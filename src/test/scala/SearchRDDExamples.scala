@@ -60,7 +60,7 @@ object SearchRDDExamples {
 
     // Search for key words
     println(s"Full text search results:")
-    computersReviewsRDD.search("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+    computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
       .foreach(println)
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
@@ -77,7 +77,7 @@ object SearchRDDExamples {
 
     // Fuzzy matching
     println("Some typo in names:")
-    searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
+    searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.getSource.reviewerName, doc.getScore))
       .foreach(println)
 

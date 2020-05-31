@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toCollection;
 
 /**
  * Exposes search features on a search partition.
@@ -84,10 +84,12 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return monitorQuery(() -> (long) indexSearcher.count(queryParser.parse(query)), query);
     }
 
-    List<SearchRecord<T>> search(String query, int topK) {
+    List<SearchRecord<T>> searchList(String query, int topK) {
         return monitorQuery(() -> {
             TopDocs docs = indexSearcher.search(queryParser.parse(query), topK);
-            return new ArrayList<>(Arrays.stream(docs.scoreDocs).map(this::convertDoc).collect(toList()));
+            return Arrays.stream(docs.scoreDocs)
+                    .map(this::convertDoc)
+                    .collect(toCollection(ArrayList::new));
         }, query);
     }
 

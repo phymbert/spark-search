@@ -56,22 +56,38 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    */
   def searchList(query: String, topK: Int): List[SearchRecord[T]] =
     runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
-      searchPartitionReader => searchPartitionReader.search(query, topK).asScala.toList,
+      searchPartitionReader => searchPartitionReader.searchList(query, topK).asScala.toList,
       _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK))
 
   protected def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
                                                        reducer: (Iterator[R]) => A): A = {
-
-    val indexDirectoryByPartition = partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex
-      .map(t => (t._2, t._1.indexDir)).toMap
-
+    val indexDirectoryByPartition = _indexDirectoryByPartition
     val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
-      tryAndClose(new SearchPartitionReader[T](index, indexDirectoryByPartition(index), _clazz, options.getReaderOptions)) {
+      tryAndClose(reader(indexDirectoryByPartition, index)) {
         r => searchByPartition(r)
       }
     })
     reducer(ret.toIterator)
+  }
+
+  private def reader(indexDirectoryByPartition: Map[Int, String], index: Int) =
+    new SearchPartitionReader[T](index, indexDirectoryByPartition(index), _clazz, options.getReaderOptions)
+
+  private lazy val _indexDirectoryByPartition = {
+    val indexDirectoryByPartition = partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex
+      .map(t => (t._2, t._1.indexDir)).toMap
+    indexDirectoryByPartition
+  }
+
+  /**
+   * Finds the top topK hits for query per partition.
+   */
+  def search(query: String, topK: Int): RDD[SearchRecord[T]] = {
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+    mapPartitionsWithIndex((index, _) => {
+      reader(indexDirectoryByPartition, index).searchList(query, topK).asScala.iterator
+    }).sortBy(_.getScore, ascending = false)
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {

@@ -46,10 +46,24 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param topK topK to return
    * @param opts Search options
    * @return topK hits
+   *
+   * @note this method should only be used if the topK is expected to be small, as
+   *   all the data is loaded into the driver's memory.
    */
   @InterfaceStability.Unstable
-  def search(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): List[SearchRecord[T]] =
+  def searchList(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): List[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK)
+
+  /**
+   * Finds the top topK hits for query.
+   * @param query Lucene query syntax
+   * @param topK topK to return
+   * @param opts Search options
+   * @return topK hits
+   */
+  @InterfaceStability.Unstable
+  def search(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): RDD[SearchRecord[T]] =
+    searchRDD(opts).search(query, topK)
 
   /**
    * Count how many documents match the given query.
