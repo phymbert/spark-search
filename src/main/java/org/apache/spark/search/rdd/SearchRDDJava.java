@@ -45,7 +45,6 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-
     }
 
     @Override
@@ -66,5 +65,10 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     @Override
     public JavaRDD<SearchRecord<T>> search(String query, Integer topK) {
         return searchRDDJava.search(query, topK);
+    }
+
+    @Override
+    public <S> JavaRDD<Match<S, T>> matching(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, Integer topK) {
+        return searchRDDJava.matching(rdd, queryBuilder, topK);
     }
 }

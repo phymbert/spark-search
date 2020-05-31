@@ -26,7 +26,9 @@ Spark Search brings advanced full text search features to RDD and Dataset, power
 * Scala
 ```scala
 import org.apache.spark.search.sql._
-
+// Coming soon
+// Might look like
+ds.join(other, $"firstName" =~ other("firstName") && $"lastName" =~ other("lastName").boost(3) && $"age" === other("age"))
 ```
 
 ### RDD API
@@ -67,6 +69,16 @@ searchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(pri
 searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
   .map(doc => (doc.getSource.reviewerName, doc.getScore))
   .foreach(println)
+
+// RDD full text matching
+val softwareReviewsRDD = spark.read.json("...").as[Review].rdd
+val matchesRDD = searchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+val matchesReviewersRDD = searchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+matchesReviewersRDD
+  .filter(!_.getHits.isEmpty)
+  .map(m => (m.getDoc.reviewerName, m.getHits.asScala.map(h => (h.getSource.reviewerName, h.getScore))))
+  .foreach(println)
+
 ```
 _Outputs_
 ```text
@@ -90,6 +102,16 @@ Some typo in names:
 (John "John",2.1424108)
 (Joanne S. Jones,2.106685)
 ...
+
+(Patrick Holt "txdragon",ArrayBuffer((Patrick Holt "txdragon",8.627737)))
+(Marla,ArrayBuffer((Marla Robles,3.8126698)))
+(Jerry Jackson Jr.,ArrayBuffer((Jerry Jackson Jr.,7.2705545)))
+(G. Cox "Shanghaied",ArrayBuffer((G. Cox "Shanghaied",7.6521616), (G. Cox "Shanghaied",7.6521616)))
+(Wildness,ArrayBuffer((Wilde,4.3258367), (Wild Rice,3.4275503), (andrew wilds,3.4275503), (Leslie L. Fraser "wild ting",2.3578525)))
+(Lynn,ArrayBuffer((Lynn,3.7590394), (Huey Lynn,3.324419), (Lynn May,3.3234725), (Beth Lynn,3.3234725), (Lynn Marx,3.3234725), (Lynne McCauley,3.227646), (Lynn Babish,3.227646), (lynn markwell,2.978452), (Lynn Barton,2.978452), (Lynn Fleming,2.978452)))
+(Gearhead Mania,ArrayBuffer((Gearhead Mania,7.617262)))
+(Mark B,ArrayBuffer((Mark B,4.2918057), (Mark B.,4.088337), (Mark B Greene,3.583696), (Mark B Denver "Mark",3.3450594), (Mark B. Hancock "Jonmarsh",2.8886466)))
+(Ace,ArrayBuffer((Ace,4.185837), (Ace,4.185837), (Aces and 8s,3.5885944), (Marijee "AC",3.5885944), (AC "A. Chughtai",3.3180013), (ACE (DSTRYALLORNOTNG),3.3180013), (David H. Thompson "ac",2.691018)))
 ```
 
 See [Examples](src/test/scala/SearchRDDExamples.scala) for more details.

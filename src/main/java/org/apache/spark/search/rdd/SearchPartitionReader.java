@@ -126,8 +126,8 @@ class SearchPartitionReader<T> implements AutoCloseable {
                 if (totalQueryCount % logQueryTime == 0) {
                     logger.info("Queries on partition={}: {}query/s, done={}queries" +
                                     " in={}s  on directory={}",
-                            index, totalQueryCount / totalTime * 1000f,
-                            totalQueryCount, totalTime / 1000, indexDirectory);
+                            index, (float) totalQueryCount / totalTime * 1000f,
+                            totalQueryCount, (float) totalTime / 1000, indexDirectory);
                 }
             }
             return result;

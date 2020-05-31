@@ -20,6 +20,7 @@ import java.util.{List => JList}
 import java.{lang => jl}
 
 import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.rdd.RDD
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -49,4 +50,10 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
    */
   override def search(query: String, topK: jl.Integer): JavaRDD[SearchRecord[T]] =
     searchRDD.search(query, topK).toJavaRDD()
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#matching(org.apache.spark.rdd.RDD, org.apache.spark.search.rdd.QueryStringBuilder, int)]]
+   */
+  override def matching[S](rdd: JavaRDD[S], queryBuilder: QueryStringBuilder[S], topK: jl.Integer): JavaRDD[Match[S, T]] =
+    searchRDD.matching(rdd, queryBuilder,topK).toJavaRDD()
 }

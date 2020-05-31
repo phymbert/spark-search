@@ -23,6 +23,8 @@ import org.apache.spark.sql.SparkSession
 
 import scala.sys.process._
 
+import scala.collection.JavaConverters._
+
 /**
  * Spark Search RDD examples.
  */
@@ -38,17 +40,17 @@ object SearchRDDExamples {
 
     // Amazon computers reviews
     println("Downloading amazon computers reviews file...")
-    val booksReviewFile = File.createTempFile("reviews_Computers", ".json.gz")
-    booksReviewFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz") #> booksReviewFile !!
+    val computersReviewFile = File.createTempFile("reviews_Computers", ".json.gz")
+    computersReviewFile.deleteOnExit()
+    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz") #> computersReviewFile !!
 
     println("Amazon computers reviews file downloaded, loading...")
 
     // Amazon computers review
     // Number of partition is the number of Lucene index which will be created
-    val computersReviewsRDD = spark.read.json(booksReviewFile.getAbsolutePath).as[Review].rdd.cache
-    // Number of partition is the number of Lucene index which will be created across your cluster
-    .repartition(4)
+    val computersReviewsRDD = spark.read.json(computersReviewFile.getAbsolutePath).as[Review].rdd.cache
+      // Number of partition is the number of Lucene index which will be created across your cluster
+      .repartition(4)
     println(s"${computersReviewsRDD.count} amazon computers reviews loaded, indexing...")
 
     // Search RDD API
@@ -79,6 +81,22 @@ object SearchRDDExamples {
     println("Some typo in names:")
     searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.getSource.reviewerName, doc.getScore))
+      .foreach(println)
+
+    // Amazon software reviews
+    println("Downloading amazon software reviews file...")
+    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
+    softwareReviewsFile.deleteOnExit()
+    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
+    val softwareReviewsRDD = spark.read.json(softwareReviewsFile.getAbsolutePath).as[Review].rdd.cache.filter(_.reviewerName != null)
+
+    println("Downloaded amazon software reviews file, matching reviewer against computers:")
+    // Match software and computer reviewers
+    val matchesReviewersRDD = searchRDD.matching(softwareReviewsRDD,
+      (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
+    matchesReviewersRDD
+      .filter(!_.getHits.isEmpty)
+      .map(m => (m.getDoc.reviewerName, m.getHits.asScala.map(h => (h.getSource.reviewerName, h.getScore))))
       .foreach(println)
 
     spark.close()

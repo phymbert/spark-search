@@ -17,6 +17,7 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.rdd.RDD;
 
 import java.util.List;
 
@@ -41,7 +42,11 @@ public interface ISearchRDDJava<T> {
 
     /**
      * {@link org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)}
-     * @return
      */
     JavaRDD<SearchRecord<T>> search(String query, Integer topK);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#matching(RDD, QueryStringBuilder, int)}
+     */
+    <S> JavaRDD<Match<S, T>> matching(JavaRDD<S> rdd, QueryStringBuilder<S> builder, Integer topK);
 }
