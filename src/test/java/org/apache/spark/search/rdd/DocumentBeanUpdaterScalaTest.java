@@ -27,7 +27,7 @@ import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class DocumentBeanUpdaterTest {
+public class DocumentBeanUpdaterScalaTest {
 
     @Test
     public void shouldUpdateDocumentWithAJavaBeanToDocument() throws Exception {

@@ -16,22 +16,11 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.SparkContext
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
+object TestData {
+  case class Person(firstName: String, lastName: String, age: Int)
 
-class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
-
-  test("count all indexed documents") {
-    sc = new SparkContext("local", "test")
-
-    assertResult(3)(sc.parallelize(TestData.persons).search.count)
-  }
-
-  test("count matched indexed documents") {
-    sc = new SparkContext("local", "test")
-
-    assertResult(1)(sc.parallelize(TestData.persons)
-        .search.count("firstName:bob"))
-  }
+  def persons = Seq(
+    Person("Jorge", "Michael", 53),
+    Person("Bob", "Marley", 37),
+    Person("Agnès", "Bartoll", -1))
 }

@@ -16,9 +16,13 @@
 
 package org.apache.spark.search
 
+import org.apache.spark.rdd.RDD
+
+import scala.reflect.ClassTag
+
 /**
  * Spark Search RDD.
  */
 package object rdd {
-
+  implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
 }

@@ -16,22 +16,21 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.SparkContext
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 
-class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
+class DocumentBeanUpdaterSuite extends AnyFunSuite {
 
-  test("count all indexed documents") {
-    sc = new SparkContext("local", "test")
+  test("document bean updater should support case class") {
+    val documentBeanUpdater = new DocumentBeanUpdater[TestData.Person]
+    val indexingDocument = new DocumentUpdater.IndexingDocument[TestData.Person](IndexationOptions.defaultOptions
+      .asInstanceOf[IndexationOptions[TestData.Person]])
+    val doc = indexingDocument.doc
 
-    assertResult(3)(sc.parallelize(TestData.persons).search.count)
-  }
+    indexingDocument.element = TestData.Person("John", "Doe", 34)
 
-  test("count matched indexed documents") {
-    sc = new SparkContext("local", "test")
+    documentBeanUpdater.update(indexingDocument)
 
-    assertResult(1)(sc.parallelize(TestData.persons)
-        .search.count("firstName:bob"))
+    assertResult(3)(doc.getFields.size)
+    assertResult("John")(doc.get("firstName"))
   }
 }

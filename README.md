@@ -30,7 +30,7 @@ import org.apache.spark.search.sql._
 ```
 
 ### RDD API
-* Java
+* Scala
 ```scala
 import org.apache.spark.search.rdd._
 

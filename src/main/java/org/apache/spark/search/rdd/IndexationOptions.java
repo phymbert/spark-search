@@ -41,7 +41,7 @@ public final class IndexationOptions<T> implements Serializable {
      * Default index analyzer type: standard.
      */
     public static final Class<? extends Analyzer> DEFAULT_ANALYZER = StandardAnalyzer.class;
-    private Class<? extends Analyzer> analyzer = DEFAULT_ANALYZER;
+    Class<? extends Analyzer> analyzer = DEFAULT_ANALYZER;
 
     /**
      * Fields are stored by default in the lucene index.

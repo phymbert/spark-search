@@ -16,22 +16,15 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.SparkContext
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
+import org.apache.spark.rdd.RDD
 
-class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
+import scala.reflect.ClassTag
 
-  test("count all indexed documents") {
-    sc = new SparkContext("local", "test")
+/**
+ * Add search fatures to rdd.
+ */
+private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
+  def search: SearchRDD[T] = search(SearchRDDOptions.defaultOptions())
 
-    assertResult(3)(sc.parallelize(TestData.persons).search.count)
-  }
-
-  test("count matched indexed documents") {
-    sc = new SparkContext("local", "test")
-
-    assertResult(1)(sc.parallelize(TestData.persons)
-        .search.count("firstName:bob"))
-  }
+  def search(opts: SearchRDDOptions[T]) = new SearchRDD[T](rdd, opts)
 }

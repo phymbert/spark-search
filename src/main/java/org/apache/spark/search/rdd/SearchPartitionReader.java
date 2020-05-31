@@ -17,6 +17,7 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -59,5 +60,9 @@ class SearchPartitionReader<T> {
 
     Long count() throws IOException {
         return (long) indexSearcher.count(new MatchAllDocsQuery());
+    }
+
+    Long count(String query) throws IOException, ParseException {
+        return (long) indexSearcher.count(queryParser.parse(query));
     }
 }

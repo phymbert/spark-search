@@ -16,6 +16,8 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.Serializable;
 
 /**
@@ -105,6 +107,15 @@ public class SearchRDDOptions<T> implements Serializable {
             return this;
         }
 
+        /**
+         * COmmon analyzer to use both at indexation and search time.
+         */
+        public Builder<T> analyzer(Class<? extends Analyzer> analyzer) {
+            requireNotNull(analyzer, "analyzer");
+            options.indexationOptions.analyzer = analyzer;
+            options.readerOptions.analyzer = analyzer;
+            return this;
+        }
         /**
          * @return built options.
          */

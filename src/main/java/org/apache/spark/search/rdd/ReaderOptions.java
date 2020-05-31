@@ -37,7 +37,7 @@ public class ReaderOptions<T> implements Serializable {
     /**
      * Default search analyzer type: standard.
      */
-    private Class<? extends Analyzer> analyzer = IndexationOptions.DEFAULT_ANALYZER;
+    Class<? extends Analyzer> analyzer = IndexationOptions.DEFAULT_ANALYZER;
 
     /**
      * Directory is {@link org.apache.lucene.store.MMapDirectory} by default.

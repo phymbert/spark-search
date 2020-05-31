@@ -34,6 +34,11 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchRDDOptions[T])
   extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
+  /**
+   * Count how many documents match the given query.
+   */
+  def count(query:String): Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(query), _.sum)
+
   override def count: Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(), _.sum)
 
   private def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
