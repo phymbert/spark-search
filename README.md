@@ -35,23 +35,18 @@ import org.apache.spark.search.sql._
 ```scala
 import org.apache.spark.search.rdd._
 
-// Amazon review data type
 case class Review(asin: String, helpful: Array[Long], overall: Double,
-                reviewText: String, reviewTime: String, reviewerID: String,
-                reviewerName: String, summary: String, unixReviewTime: Long)
+                  reviewText: String, reviewTime: String, reviewerID: String,
+                  reviewerName: String, summary: String, unixReviewTime: Long)
 
-// Amazon computers review
-val computersReviewsRDD = spark.read.json("amazon_reviews_computers.json.gz").as[Review].rdd.cache
+val computersReviewsRDD = spark.read.json("...").as[Review].rdd
 // Number of partition is the number of Lucene index which will be created across your cluster
 .repartition(4)
-println(s"${computersReviewsRDD.count} amazon computers reviews loaded, indexing...")
 
 // Count positive review: indexation + count matched doc
-val happyReview = computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
-println(s"${happyReview} positive reviews :)")
+computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
 
 // Search for key words
-println(s"Full text search results:")
 computersReviewsRDD.search("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
   .foreach(println)
 
@@ -64,11 +59,11 @@ val searchRDD = computersReviewsRDD.searchRDD(
       .build())
     .analyzer(classOf[EnglishAnalyzer])
     .build())
-println("All reviews speaking about hardware:")
+
+// Boolean queries and boosting
 searchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
 // Fuzzy matching
-println("Some typo in names:")
 searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
   .map(doc => (doc.getSource.reviewerName, doc.getScore))
   .foreach(println)
@@ -83,7 +78,7 @@ import org.apache.spark.search.rdd.*;
 ```
 
 ** Outputs
-``
+```text
 8103 positive reviews :)
 Full text search results:
 
@@ -112,7 +107,7 @@ Some typo in names:
 (John "John",2.1424108)
 (Joanne S. Jones,2.106685)
 ...
-``
+```
 
 
 ## Building Spark Search
