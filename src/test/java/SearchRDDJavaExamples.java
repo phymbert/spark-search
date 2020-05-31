@@ -64,14 +64,14 @@ public class SearchRDDJavaExamples {
 
         // List matching docs
         System.out.println("Reviews with good recommendations: ");
-        searchRDDJava.search("reviewText:recommend~0.8", 100).forEach(System.out::println);
+        searchRDDJava.searchList("reviewText:recommend~0.8", 100).forEach(System.out::println);
 
         // Pass custom search options
         searchRDDJava = new SearchRDDJava<>(reviewRDD,
                 SearchRDDOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
 
         System.out.println("Reviews from Patosh: ");
-        searchRDDJava.search("reviewerName:Patrik~0.5", 100)
+        searchRDDJava.searchList("reviewerName:Patrik~0.5", 100)
                 .stream()
                 .map(SearchRecord::getSource)
                 .map(Review::getReviewerName)

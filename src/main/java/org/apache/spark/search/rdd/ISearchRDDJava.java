@@ -33,8 +33,8 @@ public interface ISearchRDDJava<T> {
     Long count(String query);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(java.lang.String, int)}
      * @return
      */
-    List<SearchRecord<T>> search(String query, Integer topK);
+    List<SearchRecord<T>> searchList(String query, Integer topK);
 }

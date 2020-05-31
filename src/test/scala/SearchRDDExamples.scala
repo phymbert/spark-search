@@ -73,11 +73,11 @@ object SearchRDDExamples {
         .analyzer(classOf[EnglishAnalyzer])
         .build())
     println("All reviews speaking about hardware:")
-    searchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+    searchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
     // Fuzzy matching
     println("Some typo in names:")
-    searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
+    searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.getSource.reviewerName, doc.getScore))
       .foreach(println)
 

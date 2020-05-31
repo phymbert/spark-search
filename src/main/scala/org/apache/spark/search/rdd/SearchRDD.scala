@@ -54,7 +54,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * @note this method should only be used if the topK is expected to be small, as
    *   all the data is loaded into the driver's memory.
    */
-  def search(query: String, topK: Int): List[SearchRecord[T]] =
+  def searchList(query: String, topK: Int): List[SearchRecord[T]] =
     runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
       searchPartitionReader => searchPartitionReader.search(query, topK).asScala.toList,
       _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK))

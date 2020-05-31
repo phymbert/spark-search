@@ -49,7 +49,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   @InterfaceStability.Unstable
   def search(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): List[SearchRecord[T]] =
-    searchRDD(opts).search(query, topK)
+    searchRDD(opts).searchList(query, topK)
 
   /**
    * Count how many documents match the given query.

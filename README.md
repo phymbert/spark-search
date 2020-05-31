@@ -47,7 +47,7 @@ val computersReviewsRDD = spark.read.json("...").as[Review].rdd
 computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
 
 // Search for key words
-computersReviewsRDD.search("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
   .foreach(println)
 
 // /!\ Important lucene indexation is done each time a SearchRDD is computed,
@@ -61,10 +61,10 @@ val searchRDD = computersReviewsRDD.searchRDD(
     .build())
 
 // Boolean queries and boosting
-searchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+searchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
 // Fuzzy matching
-searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
+searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
   .map(doc => (doc.getSource.reviewerName, doc.getScore))
   .foreach(println)
 ```
@@ -105,13 +105,13 @@ SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD);
 searchRDDJava.count("reviewText:good AND reviewText:quality")
 
 // List matching docs
-searchRDDJava.search("reviewText:recommend~0.8", 100).forEach(System.out::println);
+searchRDDJava.searchList("reviewText:recommend~0.8", 100).forEach(System.out::println);
 
 // Pass custom search options
 searchRDDJava = new SearchRDDJava<>(reviewRDD,
         SearchRDDOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
 
-searchRDDJava.search("reviewerName:Patrik", 100)
+searchRDDJava.searchList("reviewerName:Patrik", 100)
         .stream()
         .map(SearchRecord::getSource)
         .map(Review::getReviewerName)
@@ -141,6 +141,11 @@ See [Examples](src/test/java/SearchRDDJavaExamples.java) for more details.
 
 
 ## Building Spark Search
+```shell script
+git clone https://github.com/phymbert/spark-search.git
+cd spark-search
+mvn clean verify
+```
 
 ## Contribute
 

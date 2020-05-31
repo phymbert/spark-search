@@ -39,8 +39,8 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
     searchRDD.count(query)
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(java.lang.String, int)]]
    */
-  override def search(query: String, topK: jl.Integer): JList[SearchRecord[T]] =
-    searchRDD.search(query, topK).asJava
+  override def searchList(query: String, topK: jl.Integer): JList[SearchRecord[T]] =
+    searchRDD.searchList(query, topK).asJava
 }

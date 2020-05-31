@@ -59,7 +59,7 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     }
 
     @Override
-    public List<SearchRecord<T>> search(String query, Integer topK) {
-        return searchRDDJava.search(query, topK);
+    public List<SearchRecord<T>> searchList(String query, Integer topK) {
+        return searchRDDJava.searchList(query, topK);
     }
 }
