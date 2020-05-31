@@ -80,5 +80,7 @@ object SearchRDDExamples {
     searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.getSource.reviewerName, doc.getScore))
       .foreach(println)
+
+    spark.close()
   }
 }

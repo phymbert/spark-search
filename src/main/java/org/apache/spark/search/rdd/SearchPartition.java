@@ -94,6 +94,7 @@ class SearchPartition<T> implements Partition, Serializable {
                     options.getDocumentUpdater().update(indexingDocument);
                     indexWriter.addDocument(indexingDocument.doc);
                     clazz = (Class<T>) element.getClass();
+                    l.indexed();
                 } catch (Exception e) {
                     throw new SearchException("unable to index document " + element + " got " + e, e);
                 }
@@ -127,7 +128,7 @@ class SearchPartition<T> implements Partition, Serializable {
                 if (logIndexationProgress > 0) {
                     long currentTotalTime = System.currentTimeMillis() - startTime;
                     if (currentDocCount % logIndexationProgress == 0) {
-                        logger.debug("Indexing at {}doc/s, done={}",
+                        logger.debug("Indexing at {} docs/s, done={}",
                                 currentDocCount / currentTotalTime * 1000f, currentDocCount);
                     }
                 }
@@ -135,7 +136,7 @@ class SearchPartition<T> implements Partition, Serializable {
 
             long totalDocCount = docCount.get();
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("Indexation of partition={}: {}doc/s, done={}docs in={}s directory={}",
+            logger.info("Indexation of partition={}: {} docs/s, done={} docs in={}s directory={}",
                     index, totalDocCount / totalTime * 1000f,
                     totalDocCount, totalTime / 1000, indexDir);
         } catch (Exception e) {

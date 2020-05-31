@@ -18,15 +18,19 @@ package org.apache.spark.search.rdd;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.spark.search.SearchException;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
  * Converts java bean or scala product to a search record.
+ *
+ * FIXME: replace all this by Encoders.
  *
  * @author Pierrick HYMBERT
  */
@@ -78,15 +82,28 @@ public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors im
             for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
                 String fieldName = propertyDescriptor.getName();
                 String value = doc.get(fieldName);
+                if (StringUtils.isEmpty(value)) {
+                    continue;
+                }
                 try {
                     if (propertyDescriptor.getWriteMethod() != null) {
                         Class<?> parameterType = propertyDescriptor.getWriteMethod().getParameterTypes()[0];
-                        Object convertedValue = ConvertUtils.convert(value, parameterType);
+                        Object convertedValue;
+                        if (parameterType.isArray()) {
+                            // org.apache.commons.beanutils.ConvertUtilsBean.convert(java.lang.Object)
+                            // If the specified value is an array, the first element (converted to a String) will be returned
+                            parameterType = parameterType.getComponentType();
+                            convertedValue = Array.newInstance(parameterType, 1);
+                            Array.set(convertedValue, 0, ConvertUtils.convert(value, parameterType));
+                        } else {
+                            convertedValue = ConvertUtils.convert(value, parameterType);
+                        }
+
                         propertyDescriptor.getWriteMethod().invoke(source, convertedValue);
                     }
                 } catch (Exception e) {
-                    throw new SearchException("unable to set property "
-                            + fieldName + " on " + classTag + " from value '" + value + "'", e);
+                    throw new SearchException("unable to set property '"
+                            + fieldName + "' on " + classTag + " from value '" + value + "'", e);
                 }
             }
         }

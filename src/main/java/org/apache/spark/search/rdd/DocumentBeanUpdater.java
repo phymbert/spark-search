@@ -16,6 +16,7 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -116,7 +117,7 @@ public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors impl
         Object value = propertyDescriptor.getReadMethod().invoke(element);
 
         if (value != null) {
-            return value.toString();
+            return ConvertUtils.convert(value);
         }
         return "";
     }

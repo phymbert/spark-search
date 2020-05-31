@@ -14,16 +14,27 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search
+package org.apache.spark.search.rdd;
 
-import org.apache.spark.rdd.RDD
-
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
+import java.util.List;
 
 /**
- * Spark Search RDD.
+ * Definition of search RDD for java.
  */
-package object rdd {
-  implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
+public interface ISearchRDDJava<T> {
+    /**
+     * {@link org.apache.spark.rdd.RDD#count()}
+     */
+    long count();
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#count(java.lang.String)}
+     */
+    Long count(String query);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)}
+     * @return
+     */
+    List<SearchRecord<T>> search(String query, Integer topK);
 }
