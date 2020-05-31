@@ -33,20 +33,38 @@ class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkCont
     sc = new SparkContext("local", "test")
 
     assertResult(1)(sc.parallelize(persons)
-        .count("firstName:bob"))
+      .count("firstName:bob"))
   }
 
   test("search list hits matching query") {
     sc = new SparkContext("local", "test")
 
-    assertResult(List(new SearchRecord[Person](1, 0,0.44583148f, 0,
-      Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob",10))
+    assertResult(List(new SearchRecord[Person](1, 0, 0.44583148f, 0,
+      Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob", 10))
   }
 
   test("search hits matching query") {
     sc = new SparkContext("local", "test")
 
-    assertResult(Array(new SearchRecord[Person](1, 0,0.44583148f, 0,
-      Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob",10).take(10))
+    assertResult(Array(new SearchRecord[Person](1, 0, 0.44583148f, 0,
+      Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
+  }
+
+  test("Matching RDD") {
+    sc = new SparkContext("local", "test")
+
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bobby", "Marley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agness", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).searchRDD
+    val matchingRDD = sc.parallelize(persons)
+
+    val matches = searchRDD.matching(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
+    assertResult(3)(matches.length)
   }
 }

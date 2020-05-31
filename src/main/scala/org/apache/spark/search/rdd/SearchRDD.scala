@@ -16,6 +16,9 @@
 
 package org.apache.spark.search.rdd
 
+import java.util.Collections
+import java.util.stream.Collectors
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
@@ -52,7 +55,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * Finds the top topK hits for query.
    *
    * @note this method should only be used if the topK is expected to be small, as
-   *   all the data is loaded into the driver's memory.
+   *       all the data is loaded into the driver's memory.
    */
   def searchList(query: String, topK: Int): List[SearchRecord[T]] =
     runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
@@ -85,11 +88,38 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    */
   def search(query: String, topK: Int): RDD[SearchRecord[T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
-    mapPartitionsWithIndex((index, _) => {
-      tryAndClose(reader(indexDirectoryByPartition, index)){
+    mapPartitionsWithIndex((index, _) =>
+      tryAndClose(reader(indexDirectoryByPartition, index)) {
         r => r.searchList(query, topK).asScala.iterator
       }
-    }).sortBy(_.getScore, ascending = false)
+    ).sortBy(_.getScore, ascending = false)
+  }
+
+  /**
+   * Matches the input RDD against this one.
+   */
+  def matching[S](rdd: RDD[S], queryBuilder: QueryStringBuilder[S], topK: Int): RDD[Match[S, T]] = {
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+    val queries = rdd.zipWithIndex().map(_.swap)
+    val docsAndQueries = queries.map(d => (d, queryBuilder.build(d._2)))
+    mapPartitionsWithIndex((index, _) => Iterator(index)).cartesian(docsAndQueries)
+      .map { case (searchPartIndex, docAndQuery) =>
+        tryAndClose(reader(indexDirectoryByPartition, searchPartIndex)) {
+          r =>
+            r.searchList(docAndQuery._2, topK).asScala.iterator.foldLeft(new Match[S, T](docAndQuery._1._1, docAndQuery._1._2))({
+              case (b, t) => b.getHits.add(t); b
+            })
+        }
+      }.groupBy(_.getDocIndex)
+      .map({
+        case (_, matches) => matches.reduce((m1, m2) => {
+          m1.setHits(java.util.stream.Stream.concat(m1.getHits.stream, m2.getHits.stream)
+            .sorted((s1, s2) => -java.lang.Float.compare(s1.getScore, s2.getScore))
+            .limit(topK)
+            .collect(Collectors.toList()))
+          m1
+        })
+      })
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
