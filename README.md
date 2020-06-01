@@ -1,15 +1,23 @@
-# [Spark Search](https://github.com/phymbert/spark-search)
+## [Spark Search](https://github.com/phymbert/spark-search)
 
 [![CI](https://github.com/phymbert/spark-search/workflows/build-package/badge.svg?branch=master)](https://github.com/phymbert/spark-search/actions)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
 
-Spark Search brings advanced full text search features to RDD and Dataset, powered by Apache Lucene.
+[Spark](https://spark.apache.org/) Search brings advanced full text search features to your Dataframe, Dataset and RDD. Powered by [Apache Lucene](https://lucene.apache.org/).
+
+## Context
+Let's image you have a billion records dataset you want to query on and match against another one using full text search...
+You do not expect an external datasource or database system than Spark, and of course with the best performances.
+Spark Search fits your needs: it builds for all parent RDD partitions a one-2-one volatile Lucene index available
+ during the lifecycle of your spark session across your executors local directories and RAM.
+Strongly typed, Spark Search API plans to support Java, Scala and Python Spark SQL, Dataset and RDD SDKs.
+Have a look and feel free to contribute!
 
 ## Getting started
 
-### Add as maven dependency from github repository
+### Maven dependency
 
 ```xml
 <dependency>
@@ -17,6 +25,7 @@ Spark Search brings advanced full text search features to RDD and Dataset, power
     <artifactId>spark-search_2.12</artifactId>
     <version>0.1.0</version>
 </dependency>
+
 <repositories>
     ... maven central ...
     <repository>
@@ -31,9 +40,9 @@ Spark Search brings advanced full text search features to RDD and Dataset, power
 * Scala
 ```scala
 import org.apache.spark.search.sql._
-// Coming soon
+// Experimental
 // Might look like
-ds.join(other, $"firstName" =~ other("firstName") && $"lastName" =~ other("lastName").boost(3) && $"age" === other("age"))
+ds.join(other, ds("firstName") =~ other("firstName") && ds("lastName") =~ other("lastName").boost(3) && ds("age") === other("age")).show
 ```
 
 ### RDD API
