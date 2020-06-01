@@ -13,6 +13,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Build with Maven
+      - name: Default build for spark 2.x
         run: mvn -B verify
       - uses: codecov/codecov-action@v1
+      - name: Build for spark 3.x
+        run: mvn -B verify -Pspark3

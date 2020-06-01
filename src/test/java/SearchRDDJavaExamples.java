@@ -16,12 +16,10 @@
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.search.rdd.SearchRDDOptions;
 import org.apache.spark.search.rdd.SearchRecord;
 import org.apache.spark.sql.Encoders;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 
 import java.io.File;
@@ -47,14 +45,12 @@ public class SearchRDDJavaExamples {
             }
         }
 
-        JavaSparkContext sc = new JavaSparkContext(SparkSession.builder()
+        SparkSession spark = SparkSession.builder()
                 .master("local[*]")
-                .getOrCreate()
-                .sparkContext());
-        SQLContext sqlContext = new SQLContext(sc);
+                .getOrCreate();
 
         System.out.println("Loading reviews...");
-        JavaRDD<Review> reviewRDD = sqlContext.read().json(reviews.getAbsolutePath()).as(Encoders.bean(Review.class)).repartition(2).javaRDD().cache();
+        JavaRDD<Review> reviewRDD = spark.read().json(reviews.getAbsolutePath()).as(Encoders.bean(Review.class)).repartition(2).javaRDD().cache();
 
         //Create the SearchRDD based on the JavaRDD to enjoy search features
         SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD);
@@ -77,7 +73,7 @@ public class SearchRDDJavaExamples {
                 .distinct()
                 .foreach(System.out::println);
 
-        sc.stop();
+        spark.stop();
     }
 
     public static class Review implements Serializable {

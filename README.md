@@ -12,12 +12,11 @@ Spark Search brings advanced full text search features to RDD and Dataset, power
 
 ### Add as maven dependency
 
-* Example for Spark 2.4.5 and scala 2.12
 ```xml
 <dependency>
-    <groupId>spark-search</groupId>
+    <groupId>org.phymbert.spark</groupId>
     <artifactId>spark-search_2.12</artifactId>
-    <version>0.1-SNAPSHOT_2.4.5</version>
+    <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 

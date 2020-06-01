@@ -16,7 +16,6 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.annotation.InterfaceStability
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
@@ -24,20 +23,17 @@ import scala.reflect.ClassTag
 /**
  * Add search features to rdd.
  */
-@InterfaceStability.Unstable
 private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
 
   /**
    * @return Dependent RDD with search features
    */
-  @InterfaceStability.Stable
   def searchRDD: SearchRDD[T] = searchRDD(SearchRDDOptions.defaultOptions())
 
   /**
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  @InterfaceStability.Unstable
   def searchRDD(opts: SearchRDDOptions[T]) = new SearchRDD[T](rdd, opts)
 
   /**
@@ -50,7 +46,6 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @note this method should only be used if the topK is expected to be small, as
    *   all the data is loaded into the driver's memory.
    */
-  @InterfaceStability.Unstable
   def searchList(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): List[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK)
 
@@ -61,7 +56,6 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param opts Search options
    * @return topK hits
    */
-  @InterfaceStability.Unstable
   def search(query: String, topK: Int, opts: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions()): RDD[SearchRecord[T]] =
     searchRDD(opts).search(query, topK)
 
@@ -71,7 +65,6 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param query Lucene query syntax
    * @return Matched doc count
    */
-  @InterfaceStability.Stable
   def count(query: String): Long = count(query, defaultOpts)
 
   /**
@@ -81,7 +74,6 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param opts Search options
    * @return Matched doc count
    */
-  @InterfaceStability.Unstable
   def count(query: String, opts: SearchRDDOptions[T] = defaultOpts): Long =
     searchRDD(opts)
       .count(query)
