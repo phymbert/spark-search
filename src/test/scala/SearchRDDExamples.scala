@@ -67,7 +67,7 @@ object SearchRDDExamples {
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
     // if you do multiple operations on the same parent RDD, you might a variable in the driver:
-    val searchRDD = computersReviewsRDD.searchRDD(
+    val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
       SearchRDDOptions.builder[Review]() // See all other options SearchRDDOptions, IndexationOptions and ReaderOptions
         .readerOptions(ReaderOptions.builder()
           .defaultFieldName("reviewText")
@@ -75,11 +75,11 @@ object SearchRDDExamples {
         .analyzer(classOf[EnglishAnalyzer])
         .build())
     println("All reviews speaking about hardware:")
-    searchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+    computersReviewsSearchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
     // Fuzzy matching
     println("Some typo in names:")
-    searchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
+    computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.getSource.reviewerName, doc.getScore))
       .foreach(println)
 
@@ -92,11 +92,11 @@ object SearchRDDExamples {
 
     println("Downloaded amazon software reviews file, matching reviewer against computers:")
     // Match software and computer reviewers
-    val matchesReviewersRDD = searchRDD.matching(softwareReviewsRDD,
+    val matchesReviewersRDD = computersReviewsSearchRDD.matching(softwareReviewsRDD,
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
     matchesReviewersRDD
       .filter(!_.getHits.isEmpty)
-      .map(m => (m.getDoc.reviewerName, m.getHits.asScala.map(h => (h.getSource.reviewerName, h.getScore))))
+      .map(m => (m.doc.reviewerName, m.hits.asScala.map(h => (h.source.reviewerName, h.score))))
       .foreach(println)
 
     spark.close()

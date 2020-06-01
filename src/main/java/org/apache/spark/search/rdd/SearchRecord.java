@@ -34,33 +34,33 @@ public class SearchRecord<T> implements Serializable {
      *
      * @see org.apache.lucene.search.ScoreDoc#doc
      */
-    private final int id;
+    public final int id;
 
     /**
      * RDD Partition index.
      *
      * @see RDD#id()
      */
-    private final int partitionIndex;
+    public final int partitionIndex;
 
     /**
      * The score of this document for the query.
      *
      * @see org.apache.lucene.search.ScoreDoc#score
      */
-    private final float score;
+    public final float score;
 
     /**
      * Lucene shard index.
      *
      * @see org.apache.lucene.search.ScoreDoc#shardIndex
      */
-    private final int shardIndex;
+    public final int shardIndex;
 
     /**
      * Source document.
      */
-    private final T source;
+    public final T source;
 
     public SearchRecord(int id, int partitionIndex, float score, int shardIndex, T source) {
         this.id = id;

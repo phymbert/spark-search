@@ -33,13 +33,12 @@ public class Match<S, H> implements Serializable {
     /**
      * Original document which originated the query.
      */
-    private final S doc;
+    public final S doc;
 
     /**
      * TopK hits matching the source document for that query.
      */
-    private List<SearchRecord<H>> hits = new ArrayList<>();
-
+    public List<SearchRecord<H>> hits = new ArrayList<>();
 
     public Match(S doc, List<SearchRecord<H>> hits) {
         this.doc = doc;
