@@ -216,9 +216,10 @@
     </build>
     <profiles>
         <profile>
-            <id>spark3</id>
+            <id>scala-2.12</id>
             <properties>
-                <spark.version>3.0.0-preview2</spark.version>
+                <scala.version>2.12.11</scala.version>
+                <scala.binary.version>2.12</scala.binary.version>
             </properties>
         </profile>
         <profile>
