@@ -124,7 +124,7 @@ class SearchPartition<T> implements Partition, Serializable {
                 if (logIndexationProgress > 0) {
                     long currentTotalTime = System.currentTimeMillis() - startTime;
                     if (currentDocCount % logIndexationProgress == 0) {
-                        logger.debug("Indexing at {} docs/s, done={}",
+                        logger.info("Indexing at {} docs/s, done={}",
                                 (float) currentDocCount / currentTotalTime * 1000f, currentDocCount);
                     }
                 }
@@ -132,7 +132,7 @@ class SearchPartition<T> implements Partition, Serializable {
 
             long totalDocCount = docCount.get();
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("Indexation of partition={}: {} docs/s, done={} docs in={}s directory={}",
+            logger.info("partition={} indexed at {} docs/s, total={} docs in={}s directory={}",
                     index, (float) totalDocCount / totalTime * 1000f,
                     totalDocCount, (float) totalTime / 1000, indexDir);
         } catch (Exception e) {

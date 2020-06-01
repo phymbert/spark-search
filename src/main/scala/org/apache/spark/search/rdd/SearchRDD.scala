@@ -105,10 +105,10 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   /**
    * Matches the input RDD against this one.
    */
-  def matching[S](rdd: RDD[S], queryBuilder: QueryStringBuilder[S], topK: Int): RDD[Match[S, T]] = {
+  def matching[S](rdd: RDD[S], queryBuilder: S => String, topK: Int): RDD[Match[S, T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     val indicesAndDocs = rdd.zipWithIndex().map(_.swap)
-    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder.build(d._2)))
+    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder(d._2)))
     mapPartitionsWithIndex((partIndex, _) => Iterator(partIndex))
       .cartesian(docIndicesAndQueries)
       .groupBy(_._1) // Group all queries by each partition
@@ -151,11 +151,12 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
     val allIds = context.getExecutorIds()
-    val ids = allIds.sliding(getNumPartitions)
+    val ids = allIds.sliding(getNumPartitions).toList
     if (split.index < ids.size) {
-      ids.toSeq(split.index)
+      ids(split.index)
+    } else {
+      super.getPreferredLocations(split)
     }
-    super.getPreferredLocations(split)
   }
 
   def tryAndClose[A <: AutoCloseable, B](resource: A)(block: A => B): B = {
