@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         scala: [ '2.11', '2.12' ]
-        spark: [ '2.4.5', '3.0.0-preview2' ]
+        spark: [ '2.4.1', '2.4.5' ] # FIXME need to check 3.x also
     name: Build Spark with Scala ${{ matrix.scala }} / Spark ${{ matrix.spark }}
 
     steps:
