@@ -183,8 +183,8 @@ cd spark-search
 mvn clean verify
 ```
 
-## Contribute
+## Known alternatives
 
-## Roadmap
-
-
+* [Spark LuceneRDD](https://github.com/zouzias/spark-lucenerdd)
+* [Elasticsearch Hadoop](https://github.com/elastic/elasticsearch-hadoop)
+* [Spark ML TF-IDF](https://github.com/apache/spark/blob/master/examples/src/main/scala/org/apache/spark/examples/mllib/TFIDFExample.scala)
