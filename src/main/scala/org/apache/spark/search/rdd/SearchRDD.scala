@@ -151,11 +151,12 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   override protected def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
     val allIds = context.getExecutorIds()
-    val ids = allIds.sliding(getNumPartitions)
+    val ids = allIds.sliding(getNumPartitions).toList
     if (split.index < ids.size) {
-      ids.toSeq(split.index)
+      ids(split.index)
+    } else {
+      super.getPreferredLocations(split)
     }
-    super.getPreferredLocations(split)
   }
 
   def tryAndClose[A <: AutoCloseable, B](resource: A)(block: A => B): B = {
