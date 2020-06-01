@@ -14,7 +14,7 @@ jobs:
           - scala: '2.11'
             spark: '3.0.0-preview2'
             skip: true
-    name: Build Spark with Scala ${{ matrix.scala }} / Spark ${{ matrix.spark }}
+    name: Scala ${{ matrix.scala }} / Spark ${{ matrix.spark }}, skipped=${{ matrix.skip }}
 
     steps:
       - uses: actions/cache@v1
@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Build with Maven
+      - name: Build
         if: '!matrix.skip'
         run: |
           export MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=512m -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN"

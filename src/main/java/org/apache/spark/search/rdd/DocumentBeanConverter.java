@@ -68,7 +68,7 @@ public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors im
                 }
             }
             try {
-                source = classTag.getDeclaredConstructor(types).newInstance(values);
+                source = (T) classTag.getDeclaredConstructors()[0].newInstance(values);
             } catch (Exception e) {
                 throw new SearchException("unable to invoke case class constructor on "
                         + classTag + " with values '" + Arrays.toString(values) + "'", e);
