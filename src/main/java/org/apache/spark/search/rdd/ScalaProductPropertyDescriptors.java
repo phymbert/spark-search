@@ -41,7 +41,7 @@ class ScalaProductPropertyDescriptors implements Serializable {
 
     static {
         if (scala211) {
-            LoggerFactory.getLogger(SearchRDD.class).warn("Scala 2.11 Product constructor parameters are not named, fields order can be randomly switched!");
+            LoggerFactory.getLogger("SearchRDD").warn("Scala 2.11 Product constructor parameters are not named, fields order can be randomly switched!");
         }
     }
 
