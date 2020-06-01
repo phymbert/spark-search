@@ -17,6 +17,7 @@
         <spark.version>2.4.5</spark.version>
         <scala.version>2.12.11</scala.version>
         <scala.binary.version>2.12</scala.binary.version>
+        <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     </properties>
 
     <packaging>jar</packaging>
