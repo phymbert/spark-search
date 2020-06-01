@@ -24,7 +24,6 @@ class DocumentBeanConverterSuite extends AnyFunSuite {
 
   test("document bean converter should support case class") {
     val converter = new DocumentBeanConverter[TestData.Person]
-    converter.setClassTag(classOf[TestData.Person])
 
     val scoreDoc: ScoreDoc = new ScoreDoc(1, 2f, 3)
     val doc: Document = new Document
@@ -32,7 +31,7 @@ class DocumentBeanConverterSuite extends AnyFunSuite {
     doc.add(new StringField("lastName", "Duck", Field.Store.YES))
     doc.add(new StringField("age", "32", Field.Store.YES))
 
-    val searchRecord: SearchRecord[TestData.Person] = converter.convert(4, scoreDoc, doc)
+    val searchRecord: SearchRecord[TestData.Person] = converter.convert(4, scoreDoc, classOf[TestData.Person], doc)
     assertResult(1)(searchRecord.getId)
     assertResult(2f)(searchRecord.getScore)
     assertResult(3)(searchRecord.getShardIndex)

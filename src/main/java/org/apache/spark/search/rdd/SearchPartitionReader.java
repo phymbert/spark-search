@@ -16,12 +16,11 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.spark.search.SearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,12 +50,13 @@ class SearchPartitionReader<T> implements AutoCloseable {
 
     private final ReaderOptions<T> options;
     private final IndexSearcher indexSearcher;
-    private final QueryParser queryParser;
     private final String indexDirectory;
     private final AtomicLong queryCount = new AtomicLong();
     private final AtomicLong queryTime = new AtomicLong();
     private final DocumentConverter<T> documentConverter;
     private final DirectoryReader directory;
+    private final Class<T> classTag;
+    private final Analyzer analyzer;
 
     SearchPartitionReader(int index,
                           String indexDirectory,
@@ -65,37 +65,48 @@ class SearchPartitionReader<T> implements AutoCloseable {
             throws IOException, IllegalAccessException, InstantiationException {
         this.index = index;
         this.indexDirectory = indexDirectory;
+        this.classTag = classTag;
         this.options = options;
+        this.analyzer = options.getAnalyzer().newInstance();
 
         this.documentConverter = options.documentConverter.newInstance();
-        this.documentConverter.setClassTag(classTag);
 
-        this.queryParser = new QueryParser(options.getDefaultFieldName(),
-                options.getAnalyzer().newInstance());
         this.directory = DirectoryReader.open(options.indexDirectoryProvider.create(Paths.get(indexDirectory)));
         this.indexSearcher = new IndexSearcher(directory);
     }
 
     Long count() {
-        return monitorQuery(() -> (long) indexSearcher.count(new MatchAllDocsQuery()), null);
+        return monitorQuery(() -> (long) indexSearcher.count(new MatchAllDocsQuery()));
     }
 
-    Long count(String query) {
-        return monitorQuery(() -> (long) indexSearcher.count(queryParser.parse(query)), query);
+    Long count(String query) throws ParseException {
+        return count(queryParser().parse(query));
     }
 
-    List<SearchRecord<T>> searchList(String query, int topK) {
+    Long count(Query query) {
+        return monitorQuery(() -> (long) indexSearcher.count(query));
+    }
+
+    List<SearchRecord<T>> searchList(String query, int topK) throws ParseException {
+        return searchList(queryParser().parse(query), topK);
+    }
+
+    List<SearchRecord<T>> searchList(Query query, int topK) {
         return monitorQuery(() -> {
-            TopDocs docs = indexSearcher.search(queryParser.parse(query), topK);
+            TopDocs docs = indexSearcher.search(query, topK);
             return Arrays.stream(docs.scoreDocs)
                     .map(this::convertDoc)
                     .collect(toCollection(ArrayList::new));
-        }, query);
+        });
+    }
+
+    private QueryParser queryParser() {
+        return new QueryParser(options.getDefaultFieldName(), analyzer);
     }
 
     private SearchRecord<T> convertDoc(ScoreDoc scoreDoc) {
         try {
-            return documentConverter.convert(index, scoreDoc, indexSearcher.doc(scoreDoc.doc));
+            return documentConverter.convert(index, scoreDoc, classTag, indexSearcher.doc(scoreDoc.doc));
         } catch (Exception e) {
             throw new SearchException("unable to convert scored doc " + scoreDoc.doc + " on partition "
                     + index + " and directory " + indexDirectory, e);
@@ -112,9 +123,8 @@ class SearchPartitionReader<T> implements AutoCloseable {
         R query() throws Exception;
     }
 
-    private <R> R monitorQuery(QueryTask<R> task, String query) {
+    private <R> R monitorQuery(QueryTask<R> task) {
         try {
-            logger.trace("partition={} q={} directory={}", index, query, indexDirectory);
             long startTime = System.currentTimeMillis();
 
             R result = task.query();
@@ -133,7 +143,7 @@ class SearchPartitionReader<T> implements AutoCloseable {
             return result;
         } catch (Exception e) {
             throw new SearchException("query failed on partition "
-                    + index + " and directory " + indexDirectory + ": \"" + query + "\"", e);
+                    + index + " and directory " + indexDirectory, e);
         }
 
     }

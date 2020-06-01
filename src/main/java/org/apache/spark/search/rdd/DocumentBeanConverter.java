@@ -30,25 +30,21 @@ import java.util.Arrays;
 /**
  * Converts java bean or scala product to a search record.
  *
- * FIXME: replace all this by Encoders.
- *
  * @author Pierrick HYMBERT
  */
 public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors implements DocumentConverter<T> {
 
     private static final long serialVersionUID = 1L;
 
-    private Class<T> classTag;
-    private boolean scalaProduct;
-
     @Override
-    public SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Document doc) throws Exception {
+    public SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception {
         return new SearchRecord<>(scoreDoc.doc, partitionIndex,
-                scoreDoc.score, scoreDoc.shardIndex, convert(doc));
+                scoreDoc.score, scoreDoc.shardIndex, convert(classTag, doc));
     }
 
-    private T convert(Document doc) throws Exception {
+    private T convert(Class<T> classTag, Document doc) throws Exception {
         PropertyDescriptor[] propertyDescriptors;
+        boolean scalaProduct = scala.Product.class.isAssignableFrom(classTag);
         if (scalaProduct) {
             propertyDescriptors = getProductPropertyDescriptors((Class) classTag);
         } else {
@@ -108,12 +104,5 @@ public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors im
             }
         }
         return source;
-    }
-
-
-    @Override
-    public void setClassTag(Class<T> classTag) {
-        this.classTag = classTag;
-        this.scalaProduct = scala.Product.class.isAssignableFrom(classTag);
     }
 }

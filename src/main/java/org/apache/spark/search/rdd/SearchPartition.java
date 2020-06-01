@@ -53,8 +53,6 @@ class SearchPartition<T> implements Partition, Serializable {
      */
     final String indexDir;
 
-    transient Class<T> clazz;
-
     SearchPartition(int index, String rootDir, Partition parent) {
         this.index = index;
         this.parent = parent;
@@ -70,7 +68,7 @@ class SearchPartition<T> implements Partition, Serializable {
      * @param elements Elements to index
      * @param options  options of the indexation
      */
-    Class<T> index(Iterator<T> elements, IndexationOptions<T> options) {
+    void index(Iterator<T> elements, IndexationOptions<T> options) {
         cleanupDirectoryOnShutdown(options.getIndexDirectoryCleanupHandler());
 
         monitorIndexation(l -> {
@@ -93,7 +91,6 @@ class SearchPartition<T> implements Partition, Serializable {
                     indexingDocument.element = element;
                     options.getDocumentUpdater().update(indexingDocument);
                     indexWriter.addDocument(indexingDocument.doc);
-                    clazz = (Class<T>) element.getClass();
                     l.indexed();
                 } catch (Exception e) {
                     throw new SearchException("unable to index document " + element + " got " + e, e);
@@ -104,7 +101,6 @@ class SearchPartition<T> implements Partition, Serializable {
             indexWriter.close();
 
         }, options.getLogIndexationProgress());
-        return clazz;
     }
 
     @FunctionalInterface

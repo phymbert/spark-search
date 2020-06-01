@@ -30,7 +30,6 @@ public class DocumentBeanConverterTest {
     @Test
     public void shouldConvertJavaBean() throws Exception {
         DocumentBeanConverter<PersonJava> converter = new DocumentBeanConverter<>();
-        converter.setClassTag(PersonJava.class);
 
         ScoreDoc scoreDoc = new ScoreDoc(1, 2f, 3);
         Document doc = new Document();
@@ -38,7 +37,7 @@ public class DocumentBeanConverterTest {
         doc.add(new StringField("lastName", "Duck", Field.Store.YES));
         doc.add(new StringField("age", "32", Field.Store.YES));
 
-        SearchRecord<PersonJava> searchRecord = converter.convert(4, scoreDoc, doc);
+        SearchRecord<PersonJava> searchRecord = converter.convert(4, scoreDoc, PersonJava.class, doc);
         assertNotNull(searchRecord);
         assertNotNull(searchRecord.getSource());
         assertEquals(1, searchRecord.getId());

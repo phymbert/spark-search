@@ -23,16 +23,12 @@ import java.util.Objects;
 
 /**
  * Matching result of a document against a SearchRDD.
+ *
  * @param <S> Type of the bean from which the query was built
  * @param <H> Result hits type
  */
 public class Match<S, H> implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    /**
-     * Original RDD index where the doc come from.
-     */
-    private final long docIndex;
 
     /**
      * Original document which originated the query.
@@ -44,19 +40,10 @@ public class Match<S, H> implements Serializable {
      */
     private List<SearchRecord<H>> hits = new ArrayList<>();
 
-    public Match(long docIndex, S doc) {
-        this.docIndex = docIndex;
-        this.doc = doc;
-    }
 
-    public Match(long docIndex, S doc, List<SearchRecord<H>> hits) {
-        this.docIndex = docIndex;
+    public Match(S doc, List<SearchRecord<H>> hits) {
         this.doc = doc;
         this.hits = hits;
-    }
-
-    public long getDocIndex() {
-        return docIndex;
     }
 
     public S getDoc() {
@@ -67,28 +54,24 @@ public class Match<S, H> implements Serializable {
         return hits;
     }
 
-    public void setHits(List<SearchRecord<H>> hits) {
-        this.hits = hits;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Match<?, ?> match = (Match<?, ?>) o;
-        return docIndex == match.docIndex;
+        return doc.equals(match.doc) &&
+                hits.equals(match.hits);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(docIndex);
+        return Objects.hash(doc, hits);
     }
 
     @Override
     public String toString() {
         return "Match{" +
-                "docIndex=" + docIndex +
-                ", doc=" + doc +
+                "doc=" + doc +
                 ", hits=" + hits +
                 '}';
     }

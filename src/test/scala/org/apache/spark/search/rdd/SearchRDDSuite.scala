@@ -57,14 +57,15 @@ class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkCont
       Person("George", "Michal", 0),
       Person("Georgee", "Michall", 0),
       Person("Bobb", "Marley", 0),
-      Person("Bobby", "Marley", 0),
+      Person("Bob", "Marlley", 0),
       Person("Agnes", "Bartol", 0),
-      Person("Agness", "Barttol", 0))
+      Person("Agnec", "Barttol", 0))
 
     val searchRDD = sc.parallelize(persons2).searchRDD
     val matchingRDD = sc.parallelize(persons)
 
     val matches = searchRDD.matching(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
+    assertResult(3)(matches.map(m => m.getHits.size()).count(_ == 2))
   }
 }

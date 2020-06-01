@@ -24,12 +24,8 @@ import java.io.Serializable;
 /**
  * Convert scored and lucene documents to search record.
  */
+@FunctionalInterface
 public interface DocumentConverter<T> extends Serializable {
 
-    SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Document doc) throws Exception;
-
-    /**
-     * The type to convert to.
-     */
-    void setClassTag(Class<T> classTag);
+    SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception;
 }
