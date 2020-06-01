@@ -151,34 +151,16 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>compile-current-spark-version</id>
+                        <id>compile</id>
                         <goals>
                             <goal>compile</goal>
-                            <goal>testCompile</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>compile-scala-version-12</id>
+                        <id>testCompile</id>
                         <goals>
-                            <goal>compile</goal>
                             <goal>testCompile</goal>
                         </goals>
-                        <configuration>
-                            <scalaVersion>2.12.11</scalaVersion>
-                            <outputDir>target/scala-2.12/classes</outputDir>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>compile-scala-version-13</id>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <configuration>
-                            <scalaVersion>2.13.2</scalaVersion>
-                            <outputDir>target/scala-2.13/classes</outputDir>
-                            <testOutputDir></testOutputDir>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

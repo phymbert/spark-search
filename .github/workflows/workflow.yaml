@@ -18,3 +18,5 @@ jobs:
       - uses: codecov/codecov-action@v1
       - name: Build for spark 3.x
         run: mvn -B verify -Pspark3
+      - name: Build for scala 2.12
+        run: mvn -B verify -Dscala.version=2.12.11 -Dscala.binary.version=2.12

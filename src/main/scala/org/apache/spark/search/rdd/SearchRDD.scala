@@ -105,10 +105,10 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   /**
    * Matches the input RDD against this one.
    */
-  def matching[S](rdd: RDD[S], queryBuilder: QueryStringBuilder[S], topK: Int): RDD[Match[S, T]] = {
+  def matching[S](rdd: RDD[S], queryBuilder: S => String, topK: Int): RDD[Match[S, T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     val indicesAndDocs = rdd.zipWithIndex().map(_.swap)
-    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder.build(d._2)))
+    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder(d._2)))
     mapPartitionsWithIndex((partIndex, _) => Iterator(partIndex))
       .cartesian(docIndicesAndQueries)
       .groupBy(_._1) // Group all queries by each partition

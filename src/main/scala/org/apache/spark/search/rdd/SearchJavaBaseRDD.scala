@@ -55,5 +55,9 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
    * [[org.apache.spark.search.rdd.SearchRDD#matching(org.apache.spark.rdd.RDD, org.apache.spark.search.rdd.QueryStringBuilder, int)]]
    */
   override def matching[S](rdd: JavaRDD[S], queryBuilder: QueryStringBuilder[S], topK: jl.Integer): JavaRDD[Match[S, T]] =
-    searchRDD.matching(rdd, queryBuilder,topK).toJavaRDD()
+    searchRDD.matching(rdd, asQueryBuilderScala(queryBuilder), topK).toJavaRDD()
+
+  private def asQueryBuilderScala[S](queryBuilder: QueryStringBuilder[S]): S => String = {
+    s => queryBuilder.build(s)
+  }
 }
