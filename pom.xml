@@ -22,12 +22,26 @@
     <packaging>jar</packaging>
     <name>Spark Project Search</name>
 
-    <contributors>
-        <contributor>
+    <developers>
+        <developer>
+            <id>phymbert</id>
             <name>Pierrick HYMBERT</name>
             <url>https://twitter.com/phymbert</url>
-        </contributor>
-    </contributors>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>Apache 2.0 License</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git@github.com:phymbert/spark-search.git</connection>
+        <developerConnection>scm:git:git@github.com:phymbert/spark-search.git</developerConnection>
+        <url>scm:git:git@github.com:phymbert/spark-search.git</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <dependencies>
         <dependency>
