@@ -1,10 +1,10 @@
 # [Spark Search](https://github.com/phymbert/spark-search)
 
-[![CI](https://github.com/phymbert/spark-search/workflows/build-package/badge.svg?branch=branch-0.1)](https://github.com/phymbert/spark-search/actions)
+[![CI](https://github.com/phymbert/spark-search/workflows/build-package/badge.svg?branch=master)](https://github.com/phymbert/spark-search/actions)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
-[![codecov](https://codecov.io/gh/phymbert/spark-search/branch/branch-0.1/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
+[![codecov](https://codecov.io/gh/phymbert/spark-search/branch/master/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
 
 Spark Search brings advanced full text search features to RDD and Dataset, powered by Apache Lucene.
 
@@ -16,7 +16,7 @@ Spark Search brings advanced full text search features to RDD and Dataset, power
 <dependency>
     <groupId>org.phymbert.spark</groupId>
     <artifactId>spark-search_2.12</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -61,8 +61,8 @@ val searchRDD = computersReviewsRDD.searchRDD(
     .analyzer(classOf[EnglishAnalyzer])
     .build())
 
-// Boolean queries and boosting
-searchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+// Boolean queries and boosting returning RDD
+searchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
 // Fuzzy matching
 searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
