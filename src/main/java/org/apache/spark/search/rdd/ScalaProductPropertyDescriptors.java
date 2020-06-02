@@ -23,6 +23,8 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 class ScalaProductPropertyDescriptors implements Serializable {
 
@@ -51,15 +53,17 @@ class ScalaProductPropertyDescriptors implements Serializable {
         }
 
         Field[] fields = caseClass.getDeclaredFields();
-        propertyDescriptors = new PropertyDescriptor[fields.length];
-
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
+        List<PropertyDescriptor> propertyDescriptorsList = new ArrayList<>();
+        for (Field field : fields) {
             String fieldName = field.getName();
+            if (fieldName.startsWith("$")) {
+                continue; // $jacocoData and co
+            }
             PropertyDescriptor propertyDescriptor = new PropertyDescriptor(fieldName, caseClass.getDeclaredMethod(fieldName), null);
             propertyDescriptor.setValue(PRODUCT_FIELD_TYPE, field.getType());
-            propertyDescriptors[i] = propertyDescriptor;
+            propertyDescriptorsList.add(propertyDescriptor);
         }
+        propertyDescriptors = propertyDescriptorsList.toArray(new PropertyDescriptor[propertyDescriptorsList.size()]);
 
         productDescriptors.put(caseClass, propertyDescriptors);
         return propertyDescriptors;
