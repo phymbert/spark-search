@@ -172,7 +172,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
   override def persist(newLevel: StorageLevel): SearchRDD.this.type = {
     if (newLevel != StorageLevel.MEMORY_ONLY) {
-      throw new SearchException("persisting search RDD is not supported, call the backup to restore it later on")
+      throw new SearchException("persisting search RDD is not supported, saveAsZip(String) it to restore it later on")
     }
     super.persist(newLevel)
   }

@@ -20,6 +20,8 @@ import org.apache.spark.SparkContext
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import TestData._
+import org.apache.spark.api.java.StorageLevels
+import org.apache.spark.search.SearchException
 
 class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
 
@@ -67,5 +69,14 @@ class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkCont
     val matches = searchRDD.matching(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
     assertResult(3)(matches.map(m => m.getHits.size()).count(_ == 2))
+  }
+
+  test("Persisting RDD to local dirs is forbidden") {
+    sc = new SparkContext("local", "test")
+    val searchRDD = sc.parallelize(Seq(Person("George", "Michal", 0))).searchRDD
+    assertThrows[SearchException] {
+      searchRDD.persist(StorageLevels.MEMORY_AND_DISK)
+    }
+    searchRDD.cache
   }
 }
