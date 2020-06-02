@@ -16,11 +16,10 @@
 
 package org.apache.spark.search.rdd
 
-import java.util.Collections
-import java.util.stream.Collectors
-
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
+import org.apache.spark.search.SearchException
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
 import scala.collection.JavaConverters._
@@ -123,6 +122,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
             }).iterator
         }
       })
+      .reduceByKey(_++_) // Maybe need to apply the topK reduction here to save memory on executors
       .join(indicesAndDocs)
       .map({
         case (_, matches) => new Match[S, T](matches._2, matches._1.toList
@@ -169,5 +169,15 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
         throw e
     }
   }
+
+  override def persist(newLevel: StorageLevel): SearchRDD.this.type = {
+    if (newLevel != StorageLevel.MEMORY_AND_DISK) {
+      throw new SearchException("persisting search RDD is not supported, call the backup to restore it later on")
+    }
+    super.persist(newLevel)
+  }
+
+  override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
+      = new SearchRDD[T](firstParent.repartition(numPartitions), options)
 }
 
