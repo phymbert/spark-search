@@ -38,17 +38,29 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchRDDOptions[T])
   extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
-  override def count: Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(), _.sum)
+  /**
+   * Return the number of indexed elements in the RDD.
+   */
+  override def count: Long = runSearchJob[Long, Long](spr => spr.count(), _.sum)
 
   /**
    * Count how many documents match the given query.
    */
-  def count(query: String): Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(query), _.sum)
+  def count(query: String): Long = runSearchJob[Long, Long](spr => spr.count(query), _.sum)
 
   /**
    * Count how many documents match the given query.
    */
-  def count(query: Query): Long = runSearchJob[Long, Long](searchPartitionReader => searchPartitionReader.count(query), _.sum)
+  def count(query: Query): Long = runSearchJob[Long, Long](spr => spr.count(query), _.sum)
+
+  /**
+   * Finds the top topK hits for this query string.
+   *
+   * @note this method should only be used if the topK is expected to be small, as
+   *       all the data is loaded into the driver's memory.
+   */
+  def searchList(query: String, topK: Int = Int.MaxValue, minScore: Float = 0): Array[SearchRecord[T]] =
+    searchListInternal(query, topK, minScore)
 
   /**
    * Finds the top topK hits for query.
@@ -56,18 +68,80 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: String, topK: Int): List[SearchRecord[T]] =
-    runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
-      searchPartitionReader => searchPartitionReader.searchList(query, topK).asScala.toList,
-      _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK)) // FIXME factorize reducer
+  def searchList(query: Query, topK: Int = Int.MaxValue, minScore: Float = 0): Array[SearchRecord[T]] =
+    searchListInternal(query, topK, minScore)
 
-  def searchList(query: Query, topK: Int): List[SearchRecord[T]] =
-    runSearchJob[List[SearchRecord[T]], List[SearchRecord[T]]](
-      searchPartitionReader => searchPartitionReader.searchList(query, topK).asScala.toList,
-      _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK))
+  /**
+   * Finds the top topK hits per partition for query.
+   */
+  def search(query: String, topKByPartition: Int = Int.MaxValue, minScore: Float = 0): RDD[SearchRecord[T]] = {
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+    mapPartitionsWithIndex((index, _) =>
+      tryAndClose(reader(indexDirectoryByPartition, index)) {
+        spr => partitionReaderSearchListInternal(spr, query, topKByPartition, minScore)
+      }
+    ).sortBy(_.getScore, ascending = false)
+  }
+
+  /**
+   * Matches the input RDD against this one using query string parser.
+   */
+  def matching[S](rdd: RDD[S], queryBuilder: S => String, topK: Int = Int.MaxValue, minScore: Int = 0): RDD[Match[S, T]] =
+    matchingInternal(rdd, queryBuilder, topK, minScore)
+
+  /**
+   * Matches the input RDD against this one.
+   */
+  def matching[S](rdd: RDD[S], queryBuilder: S => Query, topK: Int = Int.MaxValue, minScore: Int = 0): RDD[Match[S, T]] =
+    matchingInternal(rdd, queryBuilder, topK, minScore)
+
+  override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
+  = new SearchRDD[T](firstParent.repartition(numPartitions), options)
+
+  private def searchListInternal(query: Any, topK: Int = Int.MaxValue, minScore: Float = 0): Array[SearchRecord[T]] =
+    runSearchJob[Array[SearchRecord[T]], Array[SearchRecord[T]]](
+      spr => partitionReaderSearchListInternal(spr, query, topK, minScore).toArray,
+      reduceSearchRecordsByTopK(topK))
+
+  private def matchingInternal[S](rdd: RDD[S], queryBuilder: S => Any, topK: Int, minScore: Int): RDD[Match[S, T]] = {
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+    val indicesAndDocs = rdd.zipWithIndex().map(_.swap)
+    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder(d._2)))
+    mapPartitionsWithIndex((partIndex, _) => Iterator(partIndex))
+      .cartesian(docIndicesAndQueries)
+      .groupBy(_._1) // Group all queries by each partition
+      .flatMap({ case (searchPartIndex, docIndicesAndQueriesBySearchPart) =>
+        tryAndClose(reader(indexDirectoryByPartition, searchPartIndex)) {
+          r =>
+            // FIXME: Here we break the spark contract: multiple/[[par]] threads/task,
+            // need to offer it as an option
+            docIndicesAndQueriesBySearchPart.par.map({
+              case (_, docIndexAndQuery) =>
+                (docIndexAndQuery._1, partitionReaderSearchListInternal(r, docIndexAndQuery._2, topK, minScore))
+            }).iterator
+        }
+      })
+      .reduceByKey(_ ++ _) // Maybe need to apply the topK reduction here to save memory on executors
+      .join(indicesAndDocs)
+      .map({
+        case (_, matches) => new Match[S, T](matches._2, matches._1.toList
+          .sortBy(_.getScore)(Ordering.Float.reverse)
+          .take(topK).asJava)
+      })
+  }
+
+  private def partitionReaderSearchListInternal(r: SearchPartitionReader[T],
+                                                query: Any, topK: Int, minScore: Float): Iterator[SearchRecord[T]] =
+    (query match {
+      case queryString: String => r.searchList(queryString, topK, minScore)
+      case query: Query => r.searchList(query, topK, minScore)
+    }).asScala
+
+  protected def reduceSearchRecordsByTopK(topK: Int): Iterator[Array[SearchRecord[T]]] => Array[SearchRecord[T]] =
+    _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK)
 
   protected def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: (SearchPartitionReader[T]) => R,
-                                                       reducer: (Iterator[R]) => A): A = {
+                                                       reducer: Iterator[R] => A): A = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
@@ -83,53 +157,8 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
       elementClassTag.runtimeClass.asInstanceOf[Class[T]],
       options.getReaderOptions)
 
-  private lazy val _indexDirectoryByPartition = {
-    val indexDirectoryByPartition = partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex
-      .map(t => (t._2, t._1.indexDir)).toMap
-    indexDirectoryByPartition
-  }
-
-  /**
-   * Finds the top topK hits for query per partition.
-   */
-  def search(query: String, topK: Int): RDD[SearchRecord[T]] = {
-    val indexDirectoryByPartition = _indexDirectoryByPartition
-    mapPartitionsWithIndex((index, _) =>
-      tryAndClose(reader(indexDirectoryByPartition, index)) {
-        r => r.searchList(query, topK).asScala.iterator
-      }
-    ).sortBy(_.getScore, ascending = false)
-  }
-
-  /**
-   * Matches the input RDD against this one.
-   */
-  def matching[S](rdd: RDD[S], queryBuilder: S => String, topK: Int): RDD[Match[S, T]] = {
-    val indexDirectoryByPartition = _indexDirectoryByPartition
-    val indicesAndDocs = rdd.zipWithIndex().map(_.swap)
-    val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder(d._2)))
-    mapPartitionsWithIndex((partIndex, _) => Iterator(partIndex))
-      .cartesian(docIndicesAndQueries)
-      .groupBy(_._1) // Group all queries by each partition
-      .flatMap({ case (searchPartIndex, docIndicesAndQueriesBySearchPart) =>
-        tryAndClose(reader(indexDirectoryByPartition, searchPartIndex)) {
-          r =>
-            // FIXME: Here we break the spark contract: multiple/par threads/task,
-            // need to offer it as an option
-            docIndicesAndQueriesBySearchPart.par.map({
-              case (_, docIndexAndQuery) => (docIndexAndQuery._1,
-                r.searchList(docIndexAndQuery._2, topK).asScala.toArray)
-            }).iterator
-        }
-      })
-      .reduceByKey(_++_) // Maybe need to apply the topK reduction here to save memory on executors
-      .join(indicesAndDocs)
-      .map({
-        case (_, matches) => new Match[S, T](matches._2, matches._1.toList
-          .sortBy(_.getScore)(Ordering.Float.reverse)
-          .take(topK).asJava)
-      })
-  }
+  private lazy val _indexDirectoryByPartition =
+    partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex.map(t => (t._2, t._1.indexDir)).toMap
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
@@ -176,8 +205,5 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     }
     super.persist(newLevel)
   }
-
-  override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
-      = new SearchRDD[T](firstParent.repartition(numPartitions), options)
 }
 

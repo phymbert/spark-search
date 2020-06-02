@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -87,16 +88,17 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return monitorQuery(() -> (long) indexSearcher.count(query));
     }
 
-    List<SearchRecord<T>> searchList(String query, int topK) throws ParseException {
-        return searchList(queryParser().parse(query), topK);
+    Iterator<SearchRecord<T>> searchList(String query, int topK, float minScore) throws ParseException {
+        return searchList(queryParser().parse(query), topK, minScore);
     }
 
-    List<SearchRecord<T>> searchList(Query query, int topK) {
+    Iterator<SearchRecord<T>> searchList(Query query, int topK, float minScore) {
         return monitorQuery(() -> {
             TopDocs docs = indexSearcher.search(query, topK);
             return Arrays.stream(docs.scoreDocs)
+                    .filter(d -> d.score > minScore)
                     .map(this::convertDoc)
-                    .collect(toCollection(ArrayList::new));
+                    .collect(toCollection(ArrayList::new)).iterator();
         });
     }
 
