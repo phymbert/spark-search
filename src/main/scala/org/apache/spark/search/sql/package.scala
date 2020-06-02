@@ -16,6 +16,10 @@
 
 package org.apache.spark.search
 
+import org.apache.spark.search.rdd.{Match, SearchRecord}
+import org.apache.spark.sql.{Encoder, Encoders}
+import scala.language.implicitConversions
+
 /**
  * Search SQL package provides search features to spark [[org.apache.spark.sql.Dataset]].
  *
@@ -23,4 +27,13 @@ package org.apache.spark.search
  */
 package object sql {
 
+  /**
+   * Allow search records rdd transformation to DS.
+   */
+  implicit def searchRecordEncoder[T]: Encoder[SearchRecord[T]] = Encoders.kryo(classOf[SearchRecord[T]])
+
+  /**
+   * Allow match record rdd transformation to DS.
+   */
+  implicit def matchingEncoder[T, S]: Encoder[Match[T, S]] = Encoders.kryo(classOf[Match[T, S]])
 }
