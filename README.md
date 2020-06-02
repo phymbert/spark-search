@@ -86,7 +86,7 @@ computersReviewsSearchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wil
 
 // RDD full text matching
 val softwareReviewsRDD = spark.read.json("...").as[Review].rdd
-val matchesRDD = searchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 val matchesReviewersRDD = computersReviewsSearchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 matchesReviewersRDD
   .filter(!_.getHits.isEmpty)

@@ -16,6 +16,7 @@
 
 package org.apache.spark.search
 
+import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 
 import scala.language.implicitConversions
@@ -25,5 +26,26 @@ import scala.reflect.ClassTag
  * Spark Search RDD.
  */
 package object rdd {
+
+  /**
+   * Default search options.
+   */
+  def defaultOpts[T]: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions.asInstanceOf[SearchRDDOptions[T]]
+
+  /**
+   * A search query to run against a [[org.apache.spark.search.rdd.SearchRDD]],
+   * can be a string to be parsed by [[org.apache.lucene.queryparser.classic.QueryParser]]
+   * or directly a [[org.apache.lucene.search.Query]].
+   */
+  trait SearchQuery
+
+  case class SearchQueryString(queryString: String) extends SearchQuery
+
+  case class SearchLuceneQuery(query: Query) extends SearchQuery
+
+  implicit def luceneQuery(query: Query): SearchQuery = SearchLuceneQuery(query)
+
+  implicit def queryString(queryString: String): SearchQuery = SearchQueryString(queryString)
+
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
 }

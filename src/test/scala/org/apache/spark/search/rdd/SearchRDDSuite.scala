@@ -16,45 +16,34 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.SparkContext
-import org.scalatest.BeforeAndAfter
-import org.scalatest.funsuite.AnyFunSuite
-import TestData._
 import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.search.SearchException
+import org.apache.spark.search.TestData._
+import org.scalatest.funsuite.AnyFunSuite
+import scala.language.implicitConversions
 
-class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkContext {
+class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
   test("count all indexed documents") {
-    sc = new SparkContext("local", "test")
-
-    assertResult(3)(sc.parallelize(persons).searchRDD.count)
+    assertResult(3)(sc.parallelize(persons).count)
   }
 
   test("count matched indexed documents") {
-    sc = new SparkContext("local", "test")
-
     assertResult(1)(sc.parallelize(persons)
       .count("firstName:bob"))
   }
 
   test("search list hits matching query") {
-    sc = new SparkContext("local", "test")
-
-    assertResult(List(new SearchRecord[Person](1, 0, 0.44583148f, 0,
+    assertResult(Array(new SearchRecord[Person](0, 0, 0.44583148f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob", 10))
   }
 
-  test("search hits matching query") {
-    sc = new SparkContext("local", "test")
-
+  test("search RDD hits matching query") {
     assertResult(Array(new SearchRecord[Person](1, 0, 0.44583148f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
   }
 
   test("Matching RDD") {
-    sc = new SparkContext("local", "test")
-
     val persons2 = Seq(
       Person("George", "Michal", 0),
       Person("Georgee", "Michall", 0),
@@ -66,13 +55,12 @@ class SearchRDDSuite extends AnyFunSuite with BeforeAndAfter with LocalSparkCont
     val searchRDD = sc.parallelize(persons2).repartition(2).searchRDD
     val matchingRDD = sc.parallelize(persons)
 
-    val matches = searchRDD.matching(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
+    val matches = searchRDD.searchJoin(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
     assertResult(3)(matches.map(m => m.getHits.size()).count(_ == 2))
   }
 
   test("Persisting RDD to local dirs is forbidden") {
-    sc = new SparkContext("local", "test")
     val searchRDD = sc.parallelize(Seq(Person("George", "Michal", 0))).searchRDD
     assertThrows[SearchException] {
       searchRDD.persist(StorageLevels.MEMORY_AND_DISK)

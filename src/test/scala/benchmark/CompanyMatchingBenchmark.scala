@@ -17,16 +17,10 @@
 package benchmark
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
+import org.apache.spark.search.TestData._
 import org.apache.spark.search.rdd._
 import org.apache.spark.search.sql._
 import org.apache.spark.sql.SparkSession
-
-case class SecEdgarCompanyInfo(lineNumber: String, companyName: String, CompanyCIKKey: String)
-
-case class AnyCompany(id: String, name: String, domain: String, yearFounded: String,
-                      industry: String, sizeRange: String, locality: String,
-                      country: String, linkedinUrl: String,
-                      currentEmployeeEstimate: String, totalEmployeeEstimate: String)
 
 object CompanyMatchingBenchmark {
 
@@ -36,31 +30,15 @@ object CompanyMatchingBenchmark {
     import spark.implicits._
 
     // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
-    val companies = spark.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .csv(args(0))
-      .withColumnRenamed("_c0", "id")
-      .withColumnRenamed("year founded", "yearFounded")
-      .withColumnRenamed("size range", "sizeRange")
-      .withColumnRenamed("linkedin url", "linkedinUrl")
-      .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
-      .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
-      .as[AnyCompany].rdd.cache
+    val companies = companiesDS(spark).rdd.cache
 
     // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
-    val secEdgarCompanyRDD = spark.read.option("header", "true")
-      .option("inferSchema", "true")
-      .csv(args(1))
-      .withColumnRenamed("Line Number", "lineNumber")
-      .withColumnRenamed("Company Name", "companyName")
-      .withColumnRenamed("Company CIK Key", "companyCIKKey")
-      .as[SecEdgarCompanyInfo].rdd.cache
+    val secEdgarCompanyRDD = companiesEdgarDS(spark).rdd.cache
 
     val matchedCompanies = companies.searchRDD(SearchRDDOptions
       .builder[AnyCompany]
       .analyzer(classOf[ShingleAnalyzerWrapper]).build).cache
-      .matching(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
+      .searchJoin(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
 
     matchedCompanies.toDS().write.json("output.json")
 

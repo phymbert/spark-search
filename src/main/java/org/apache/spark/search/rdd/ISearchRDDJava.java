@@ -16,37 +16,67 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
+import scala.Function1;
 
-import java.util.List;
+import java.io.Serializable;
 
 /**
  * Definition of search RDD for java.
  */
 public interface ISearchRDDJava<T> {
     /**
-     * {@link org.apache.spark.rdd.RDD#count()}
+     * {@link org.apache.spark.search.rdd.SearchRDD#count()}
      */
     long count();
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#count(java.lang.String)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#count(org.apache.spark.search.rdd.SearchQuery)}
      */
-    Long count(String query);
+    long count(String query);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(java.lang.String, int)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, float)}
      */
-    List<SearchRecord<T>> searchList(String query, Integer topK);
+    SearchRecord<T>[] searchList(String query, int topK, float minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, float)}
      */
-    JavaRDD<SearchRecord<T>> search(String query, Integer topK);
+    SearchRecord<T>[] searchList(Query query, int topK, float minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#matching(RDD, QueryStringBuilder, int)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, float)}
      */
-    <S> JavaRDD<Match<S, T>> matching(JavaRDD<S> rdd, QueryStringBuilder<S> builder, Integer topK);
+    JavaRDD<SearchRecord<T>> search(String query, int topK, float minScore);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, float)}
+     */
+    <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> builder, int topK, float minScore);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, float)}
+     */
+    <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> builder, int topK, float minScore);
+
+    /**
+     * Build a lucene query string to search for matching hits
+     * against the input bean.
+     */
+    @FunctionalInterface
+    interface QueryStringBuilder<T> extends Serializable {
+        String build(T doc);
+    }
+
+    /**
+     * Build a lucene query to search for matching hits
+     * against the input bean.
+     */
+    @FunctionalInterface
+    interface QueryBuilder<T> extends Serializable {
+        Query build(T doc);
+    }
 }

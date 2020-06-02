@@ -17,8 +17,10 @@
 package org.apache.spark.search
 
 import org.apache.spark.search.rdd.{Match, SearchRecord}
-import org.apache.spark.sql.{Encoder, Encoders}
+import org.apache.spark.sql.{Dataset, Encoder, Encoders}
+
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
  * Search SQL package provides search features to spark [[org.apache.spark.sql.Dataset]].
@@ -36,4 +38,9 @@ package object sql {
    * Allow match record rdd transformation to DS.
    */
   implicit def matchingEncoder[T, S]: Encoder[Match[T, S]] = Encoders.kryo(classOf[Match[T, S]])
+
+  /**
+   * Add search feature to DS
+   */
+  implicit def datasetWithSearch[T: ClassTag](dataset: Dataset[T]): DatasetWithSearch[T] = new DatasetWithSearch[T](dataset)
 }

@@ -16,48 +16,36 @@
 
 package org.apache.spark.search.rdd
 
-import java.util.{List => JList}
-import java.{lang => jl}
-
+import org.apache.lucene.search.Query
 import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.rdd.RDD
+import org.apache.spark.search.rdd.ISearchRDDJava.{QueryBuilder, QueryStringBuilder}
 
-import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
  * Java friendly version of [[SearchRDD]].
  */
-class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
+abstract class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
   extends JavaRDD[T](rdd.rdd) with ISearchRDDJava[T] {
 
   protected val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
 
-  /**
-   * [[org.apache.spark.search.rdd.SearchRDD#count(java.lang.String)]]
-   */
-  override def count(query: String): jl.Long =
+  override def count(query: String): Long =
     searchRDD.count(query)
 
-  /**
-   * [[org.apache.spark.search.rdd.SearchRDD#searchList(java.lang.String, int)]]
-   */
-  override def searchList(query: String, topK: jl.Integer): JList[SearchRecord[T]] =
-    searchRDD.searchList(query, topK).asJava
+  override def searchList(query: String, topK: Int, minScore: Float): Array[SearchRecord[T]] =
+    searchRDD.searchList(query, topK, minScore)
 
-  /**
-   * [[org.apache.spark.search.rdd.SearchRDD#search(java.lang.String, int)]]
-   */
-  override def search(query: String, topK: jl.Integer): JavaRDD[SearchRecord[T]] =
+  override def searchList(query: Query, topK: Int, minScore: Float): Array[SearchRecord[T]] =
+    searchRDD.searchList(query, topK, minScore)
+
+  override def search(query: String, topK: Int, minScore: Float): JavaRDD[SearchRecord[T]] =
     searchRDD.search(query, topK).toJavaRDD()
 
-  /**
-   * [[org.apache.spark.search.rdd.SearchRDD#matching(org.apache.spark.rdd.RDD, org.apache.spark.search.rdd.QueryStringBuilder, int)]]
-   */
-  override def matching[S](rdd: JavaRDD[S], queryBuilder: QueryStringBuilder[S], topK: jl.Integer): JavaRDD[Match[S, T]] =
-    searchRDD.matching(rdd, asQueryBuilderScala(queryBuilder), topK).toJavaRDD()
+  override def searchJoin[S](rdd: JavaRDD[S], queryStringBuilder: QueryStringBuilder[S], topK: Int, minScore: Float): JavaRDD[Match[S, T]] =
+    searchRDD.searchJoin(rdd, (s:S) => queryStringBuilder.build(s), topK, minScore).toJavaRDD()
 
-  private def asQueryBuilderScala[S](queryBuilder: QueryStringBuilder[S]): S => String = {
-    s => queryBuilder.build(s)
-  }
+  override def searchJoin[S](rdd: JavaRDD[S], queryBuilder: QueryBuilder[S], topK: Int, minScore: Float): JavaRDD[Match[S, T]] =
+    searchRDD.searchJoin(rdd, (s:S) => queryBuilder.build(s), topK, minScore).toJavaRDD()
+
 }

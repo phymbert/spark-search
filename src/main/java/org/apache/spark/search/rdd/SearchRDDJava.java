@@ -16,10 +16,9 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
 import scala.reflect.ClassTag;
-
-import java.util.List;
 
 /**
  * Java friendly version of {@link SearchRDD}.
@@ -53,22 +52,32 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     }
 
     @Override
-    public Long count(String query) {
+    public long count(String query) {
         return searchRDDJava.count(query);
     }
 
     @Override
-    public List<SearchRecord<T>> searchList(String query, Integer topK) {
-        return searchRDDJava.searchList(query, topK);
+    public SearchRecord<T>[] searchList(String query, int topK, float minScore) {
+        return searchRDDJava.searchList(query, topK, minScore);
     }
 
     @Override
-    public JavaRDD<SearchRecord<T>> search(String query, Integer topK) {
-        return searchRDDJava.search(query, topK);
+    public SearchRecord<T>[] searchList(Query query, int topK, float minScore) {
+        return searchRDDJava.searchList(query, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<Match<S, T>> matching(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, Integer topK) {
-        return searchRDDJava.matching(rdd, queryBuilder, topK);
+    public JavaRDD<SearchRecord<T>> search(String query, int topK, float minScore) {
+        return searchRDDJava.search(query, topK, minScore);
+    }
+
+    @Override
+    public <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, int topK, float minScore) {
+        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
+    }
+
+    @Override
+    public <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> queryBuilder, int topK, float minScore) {
+        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
     }
 }

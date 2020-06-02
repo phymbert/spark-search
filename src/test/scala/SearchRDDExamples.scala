@@ -92,7 +92,7 @@ object SearchRDDExamples {
 
     println("Downloaded amazon software reviews file, matching reviewer against computers:")
     // Match software and computer reviewers
-    val matchesReviewersRDD = computersReviewsSearchRDD.matching(softwareReviewsRDD,
+    val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD,
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
     matchesReviewersRDD
       .filter(!_.getHits.isEmpty)

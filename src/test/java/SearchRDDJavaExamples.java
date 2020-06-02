@@ -34,7 +34,9 @@ import java.util.Arrays;
  * Spark Search RDD Java examples.
  */
 public class SearchRDDJavaExamples {
+
     public static void main(String[] args) throws Exception {
+
         System.out.println("Downloading reviews...");
         File reviews = File.createTempFile("reviews", "json.gz");
         reviews.deleteOnExit();
@@ -60,14 +62,15 @@ public class SearchRDDJavaExamples {
 
         // List matching docs
         System.out.println("Reviews with good recommendations: ");
-        searchRDDJava.searchList("reviewText:recommend~0.8", 100).forEach(System.out::println);
+        SearchRecord<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
+        Arrays.stream(goodReviews).forEach(System.out::println);
 
         // Pass custom search options
         searchRDDJava = new SearchRDDJava<>(reviewRDD,
                 SearchRDDOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
 
         System.out.println("Reviews from Patosh: ");
-        searchRDDJava.search("reviewerName:Patrik~0.5", 100)
+        searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)
                 .map(SearchRecord::getSource)
                 .map(Review::getReviewerName)
                 .distinct()
