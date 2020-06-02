@@ -16,20 +16,13 @@
 
 package org.apache.spark.search.rdd;
 
-import com.google.common.collect.Collections2;
 import org.apache.commons.collections.FastHashMap;
-import org.apache.commons.lang3.ClassUtils;
-import org.apache.spark.search.SearchException;
-import org.slf4j.LoggerFactory;
 import scala.Product;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.*;
+import java.lang.reflect.Field;
 
 class ScalaProductPropertyDescriptors implements Serializable {
 
@@ -37,21 +30,13 @@ class ScalaProductPropertyDescriptors implements Serializable {
 
     protected static final String PRODUCT_FIELD_TYPE = "product.field.type";
 
-    private static final boolean scala211 = scala.util.Properties.versionNumberString().startsWith("2.11");
-
-    static {
-        if (scala211) {
-            LoggerFactory.getLogger("SearchRDD").warn("Scala 2.11 Product constructor parameters are not named, fields order can be randomly switched!");
-        }
-    }
-
     private FastHashMap productDescriptors;
 
-    protected PropertyDescriptor[] getProductPropertyDescriptors(scala.Product element) throws IntrospectionException {
+    protected PropertyDescriptor[] getProductPropertyDescriptors(scala.Product element) throws IntrospectionException, NoSuchMethodException {
         return getProductPropertyDescriptors(element.getClass());
     }
 
-    protected PropertyDescriptor[] getProductPropertyDescriptors(Class<? extends Product> caseClass) throws IntrospectionException {
+    protected PropertyDescriptor[] getProductPropertyDescriptors(Class<? extends Product> caseClass) throws IntrospectionException, NoSuchMethodException {
         if (productDescriptors == null) {
             synchronized (this) {
                 if (productDescriptors == null) {
@@ -65,58 +50,15 @@ class ScalaProductPropertyDescriptors implements Serializable {
             return propertyDescriptors;
         }
 
-        Map<String, PropertyDescriptor> propertyDescriptorsMap = new HashMap<>();
+        Field[] fields = caseClass.getDeclaredFields();
+        propertyDescriptors = new PropertyDescriptor[fields.length];
 
-        // while scala.Product#productElementNames (scala 1.13) is not shipped to spark (4 ?)
-        // https://stackoverflow.com/questions/31189754/get-field-names-list-from-case-class
-        for (Method method : caseClass.getDeclaredMethods()) {
-            String methodName = method.getName();
-            if (method.getParameterCount() > 0) {
-                continue;
-            }
-
-            switch (methodName) {
-                case "toString":
-                case "hashCode":
-                case "productIterator":
-                case "productArity":
-                case "productElementNames":
-                case "productPrefix":
-                    break;
-                default:
-                    if (methodName.contains("$")) {
-                        break;
-                    }
-                    PropertyDescriptor propertyDescriptor = new PropertyDescriptor(methodName, method, null);
-                    propertyDescriptor.setValue(PRODUCT_FIELD_TYPE, method.getReturnType());
-                    propertyDescriptorsMap.put(methodName, propertyDescriptor);
-                    break;
-            }
-        }
-
-        Constructor<?> constructor = caseClass.getDeclaredConstructors()[0];
-        if (scala211) {
-            // In scala 2.11, constructor parameters are not named
-            Class<?>[] constructorParameterTypes = constructor.getParameterTypes();
-            Class<?>[] parameterTypes = new Class<?>[propertyDescriptorsMap.size()];
-            Collection<List<PropertyDescriptor>> allConstructorParamsPower = Collections2.permutations(propertyDescriptorsMap.values());
-            propertyDescriptors = allConstructorParamsPower.stream().peek(s -> {
-                Iterator<PropertyDescriptor> it = s.iterator();
-                for (int i = 0; i < s.size(); i++) {
-                    parameterTypes[i] = (Class<?>) it.next().getValue(PRODUCT_FIELD_TYPE);
-                }
-            })
-                    .filter(pts -> ClassUtils.isAssignable(parameterTypes, constructorParameterTypes, true))
-                    .findFirst().orElseThrow(() -> new SearchException("unable to find suitable constructor on " + caseClass))
-                    .toArray(new PropertyDescriptor[0]);
-        } else {
-            // Reorder them based on the constructor order
-            propertyDescriptors = new PropertyDescriptor[propertyDescriptorsMap.size()];
-            Parameter[] parameters = constructor.getParameters();
-            for (int i = 0; i < parameters.length; i++) {
-                Parameter parameter = parameters[i];
-                propertyDescriptors[i] = propertyDescriptorsMap.get(parameter.getName());
-            }
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+            String fieldName = field.getName();
+            PropertyDescriptor propertyDescriptor = new PropertyDescriptor(fieldName, caseClass.getDeclaredMethod(fieldName), null);
+            propertyDescriptor.setValue(PRODUCT_FIELD_TYPE, field.getType());
+            propertyDescriptors[i] = propertyDescriptor;
         }
 
         productDescriptors.put(caseClass, propertyDescriptors);

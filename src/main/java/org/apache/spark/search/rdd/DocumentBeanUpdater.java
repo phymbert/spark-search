@@ -99,7 +99,7 @@ public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors impl
         }
     }
 
-    private PropertyDescriptor getPropertyDescriptor(T element, String name) throws IntrospectionException {
+    private PropertyDescriptor getPropertyDescriptor(T element, String name) throws IntrospectionException, NoSuchMethodException {
         PropertyDescriptor[] descriptors;
         if (element instanceof scala.Product) {
             descriptors = getProductPropertyDescriptors((scala.Product) element);
