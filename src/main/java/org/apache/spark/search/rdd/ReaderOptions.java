@@ -52,7 +52,7 @@ public class ReaderOptions<T> implements Serializable {
     /**
      * Log query time every 10K queries.
      */
-    public static final long DEFAULT_LOG_QUERY_TIME = 10000;
+    public static final long DEFAULT_LOG_QUERY_TIME = -1;
     private long logQueryTime = DEFAULT_LOG_QUERY_TIME;
 
     // Hidden, use builder or default.
