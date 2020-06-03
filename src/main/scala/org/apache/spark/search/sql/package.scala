@@ -33,17 +33,15 @@ package object sql {
   /**
    * Default search options.
    */
-  def defaultDatasetOpts[T]: SearchRDDOptions[T] = SearchRDDOptions
-    .builder()
-    .build()
+  def defaultDatasetOpts[T]: SearchRDDOptions[T] = SearchRDDOptions.builder().build()
 
   /**
-   * Allow search records rdd transformation to DS.
+   * Allow search record rdd transformation to Row.
    */
   implicit def searchRecordEncoder[T <: Product : TypeTag]: Encoder[SearchRecord[T]] = Encoders.product[SearchRecord[T]]
 
   /**
-   * Allow match record rdd transformation to DS.
+   * Allow match record rdd transformation to Row.
    */
   implicit def matchingEncoder[T <: Product : TypeTag, S <: Product : TypeTag]: Encoder[Match[T, S]] = Encoders.product[Match[T, S]]
 

@@ -18,7 +18,7 @@ object TestData {
     Person("Bob", "Marley", 37),
     Person("Agnès", "Bartoll", -1))
 
-  case class SecEdgarCompanyInfo(lineNumber: String, companyName: String, CompanyCIKKey: String)
+  case class SecEdgarCompanyInfo(lineNumber: String, companyName: String, companyCIKKey: String)
 
   case class Company(name: String,
                      domain: String,

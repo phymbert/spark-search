@@ -17,7 +17,6 @@ package org.apache.spark.search.sql
 
 import org.apache.spark.search.rdd.{SearchRDDOptions, SearchRecord, _}
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Dataset, Encoder, Row}
 
 import scala.reflect.ClassTag
@@ -36,33 +35,48 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
     searchRDD(opts).count(query)
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#searchList(SearchQuery, int, float)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(SearchQuery, int, Double)]]
    */
   def searchList(query: SearchQuery,
                  topK: Int = Int.MaxValue,
-                 minScore: Float = 0,
+                 minScore: Double = 0,
                  opts: SearchRDDOptions[T] = defaultDatasetOpts): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#search(SearchQuery, int, float)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#search(SearchQuery, int, Double)]]
    */
   def search(query: SearchQuery,
              topKByPartition: Int = Int.MaxValue,
-             minScore: Float = 0,
-             opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[SearchRecord[T]], enc2: Encoder[T]): Dataset[SearchRecord[T]] /*Dataset[SearchRecord[T]]*/ = {
-    val datasetSchema = enc2.schema
-    val schema = StructType(enc.schema.slice(0, enc.schema.length - 1) ++ Seq(StructField("source", datasetSchema)))
+             minScore: Double = 0,
+             opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[SearchRecord[T]]): Dataset[SearchRecord[T]] /*Dataset[SearchRecord[T]]*/ = {
 
+    val _searchRecordToRow = searchRecordToRow()
     val rdd = searchRDD(opts)
       .search(query, topKByPartition, minScore)
-      .map(b => new GenericRow(Array(b.id, b.partitionIndex, b.score, b.shardIndex, new GenericRow(b.source match {
+      .map(_searchRecordToRow)
+
+    dataset.sqlContext.createDataFrame(rdd, enc.schema).as[SearchRecord[T]]
+  }
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchJoin[S](ds: Dataset[S],
+                    queryBuilder: S => SearchQuery,
+                    topK: Int = Int.MaxValue,
+                    minScore: Double = 0,
+                    opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
+    val _searchRecordToRow = searchRecordToRow()
+    val rdd = searchRDD(opts)
+      .searchJoin(ds.rdd, queryBuilder, topK, minScore)
+      .map(m => new GenericRow(Array[Any](new GenericRow(m.doc match {
         case p: Product => p.productIterator.toSeq.toArray
         // FIXME Support Bean
         // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
-      }))).asInstanceOf[Row])
+      }), m.hits.map(_searchRecordToRow).toArray)).asInstanceOf[Row])
 
-    dataset.sqlContext.createDataFrame(rdd, schema).as[SearchRecord[T]]
+    dataset.sqlContext.createDataFrame(rdd, enc.schema).as[Match[S, T]]
   }
 
   def searchRDD: SearchRDD[T] = searchRDD(defaultOpts)
@@ -73,5 +87,12 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
    */
   def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] =
     new SearchRDD[T](dataset.rdd, opts).cache
+
+  private def searchRecordToRow(): SearchRecord[T] => Row = (sr: SearchRecord[T]) =>
+    new GenericRow(Array(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, new GenericRow(sr.source match {
+      case p: Product => p.productIterator.toSeq.toArray
+      // FIXME Support Bean
+      // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
+    }))).asInstanceOf[Row]
 
 }

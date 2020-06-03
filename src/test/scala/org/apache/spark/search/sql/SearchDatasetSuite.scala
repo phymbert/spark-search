@@ -3,16 +3,18 @@ package org.apache.spark.search.sql
 import java.io.File
 
 import org.apache.commons.io.FileUtils
+import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
+import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.search.TestData
-import org.apache.spark.search.TestData.Company
-import org.apache.spark.search.rdd.SearchRecord
+import org.apache.spark.search.TestData.{Company, SecEdgarCompanyInfo}
+import org.apache.spark.search.rdd.{Match, SearchRDDOptions, SearchRecord}
 import org.apache.spark.sql.Encoders
 import org.scalatest.funsuite.AnyFunSuite
 
 class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
 
 
-  test("A dataset can be full text queryable as list") {
+  test("A dataset can be full text searched") {
     val spark = _spark
 
     val companies = TestData.companiesDS(spark).repartition(4).cache
@@ -37,15 +39,11 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
       FileUtils.deleteDirectory(jsonFile)
     }
 
-    val sanofi = companies.search("name:sanoffi~8").cache
-    sanofi.map(_.source.name).foreach(println(_))
-    sanofi.map(_.score).foreach(println(_))
-    sanofi.foreach(println(_))
+    val sanofi = companies.search("name:sanoffi~8")
 
     sanofi.write.json(jsonFile.getAbsolutePath)
 
     val companiesLoaded = spark.read.json(jsonFile.getAbsolutePath).as[SearchRecord[Company]]
-    val cc = companiesLoaded.collect()
 
     assertResult(Array(SearchRecord(12, 3, 2.4564871788024902, 0,
       Company("sanofi", "sanofi.com", "", "pharmaceuticals", "10001+", "paris, île-de-france, france", "france", "linkedin.com/company/sanofi", "38533", 99940))))(companiesLoaded.collect())
@@ -60,9 +58,36 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     assertResult(1000)(companies.count)
 
     assertResult(1)(companies.search("name:IBM").count)
-    //assertResult("ibm.com")(companies.search("name:IBM").map(_.source.domain))
+    assertResult("ibm.com")(companies.search("name:IBM").map(_.source.domain).first)
 
-    //assertResult(Array("massgeneral.org"))(companies.search("name:\"masachusetts general hospital\"").map(_.source.domain).collect)
+    assertResult(Array("massgeneral.org", "mit.edu"))(companies.search("name:masachusetts~0.4").map(_.source.domain).collect)
   }
 
+  test("A dataset can be joined with another one by search queries") {
+    val spark = _spark
+    import spark.implicits._
+
+    val companies = TestData.companiesDS(spark).repartition(4).cache
+    val secCompanies = TestData.companiesEdgarDS(spark).repartition(4).cache
+
+    var matchedCompanies = companies.searchJoin(secCompanies,
+      (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName.slice(0, 32).replaceAllLiterally("\"", "\\\"") + "\""}",
+      topK = 1,
+      opts = SearchRDDOptions
+        .builder[Company]
+        .analyzer(classOf[ShingleAnalyzerWrapper]).build())
+      .filter(_.hits.nonEmpty)
+
+    val jsonFile = new File(System.getProperty("java.io.tmpdir"), "spark-search-test-companies-test-2")
+    if (jsonFile.exists()) {
+      FileUtils.deleteDirectory(jsonFile)
+    }
+
+    matchedCompanies.write.json(jsonFile.getAbsolutePath)
+
+    matchedCompanies = _spark.read.json(jsonFile.getAbsolutePath).as[Match[SecEdgarCompanyInfo, Company]]
+
+    matchedCompanies.foreach(println(_))
+    //assertResult(3)(matchedCompanies.count)
+  }
 }
