@@ -19,6 +19,7 @@ package org.apache.spark.search.rdd;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.Serializable;
+import java.util.function.Function;
 
 /**
  * Search RDD options.
@@ -28,9 +29,9 @@ public class SearchRDDOptions<T> implements Serializable {
 
     private static final SearchRDDOptions DEFAULT = builder().build();
 
-    private IndexationOptions<T> indexationOptions = IndexationOptions.defaultOptions();
+    private IndexationOptions<T> indexationOptions;
 
-    private ReaderOptions<T> readerOptions = ReaderOptions.defaultOptions();
+    private ReaderOptions<T> readerOptions;
 
     // Hidden, use builder or default.
     private SearchRDDOptions() {
@@ -66,31 +67,25 @@ public class SearchRDDOptions<T> implements Serializable {
      */
     public static final class Builder<T> extends SearchBaseOptionsBuilder {
         private final SearchRDDOptions<T> options = new SearchRDDOptions<T>();
+        private IndexationOptions.Builder<T> indexationOptionsBuilder = IndexationOptions.builder();
+        private ReaderOptions.Builder<T> readerOptionsBuilder = ReaderOptions.builder();
 
         private Builder() {
         }
 
         /**
-         * Indexations options.
-         *
-         * @param indexationOptions indexation options
-         * @return builder
+         * Indexations options builder.
          */
-        public Builder<T> indexationOptions(IndexationOptions<T> indexationOptions) {
-            requireNotNull(indexationOptions, "indexation options");
-            options.indexationOptions = indexationOptions;
+        public Builder<T> index(Function<IndexationOptions.Builder<T>, IndexationOptions.Builder<T>> indexationOption) {
+            indexationOptionsBuilder = indexationOption.apply(indexationOptionsBuilder);
             return this;
         }
 
         /**
-         * Reader options.
-         *
-         * @param readerOptions reader options
-         * @return builder
+         * Reader options builder.
          */
-        public Builder<T> readerOptions(ReaderOptions<T> readerOptions) {
-            requireNotNull(readerOptions, "reader options");
-            options.readerOptions = readerOptions;
+        public Builder<T> read(Function<ReaderOptions.Builder<T>, ReaderOptions.Builder<T>> readerOption) {
+            readerOptionsBuilder = readerOption.apply(readerOptionsBuilder);
             return this;
         }
 
@@ -102,24 +97,30 @@ public class SearchRDDOptions<T> implements Serializable {
          */
         public Builder<T> directoryProvider(IndexDirectoryProvider indexDirectoryProvider) {
             requireNotNull(indexDirectoryProvider, "index directory provider");
-            options.indexationOptions.indexDirectoryProvider = indexDirectoryProvider;
-            options.readerOptions.indexDirectoryProvider = indexDirectoryProvider;
+            indexationOptionsBuilder.directoryProvider(indexDirectoryProvider);
+            readerOptionsBuilder.directoryProvider(indexDirectoryProvider);
             return this;
         }
 
         /**
-         * COmmon analyzer to use both at indexation and search time.
+         * Common analyzer to use both at indexation and search time.
          */
         public Builder<T> analyzer(Class<? extends Analyzer> analyzer) {
             requireNotNull(analyzer, "analyzer");
-            options.indexationOptions.analyzer = analyzer;
-            options.readerOptions.analyzer = analyzer;
+            indexationOptionsBuilder.analyzer(analyzer);
+            readerOptionsBuilder.analyzer(analyzer);
             return this;
         }
+
         /**
          * @return built options.
          */
         public SearchRDDOptions<T> build() {
+            options.indexationOptions = indexationOptionsBuilder.build();
+            options.readerOptions = readerOptionsBuilder.build();
+            require(options.indexationOptions.indexDirectoryProvider.getClass()
+                            .isAssignableFrom(options.indexationOptions.indexDirectoryProvider.getClass()),
+                    "index directory are not compatibles between reader and indexer");
             return options;
         }
     }

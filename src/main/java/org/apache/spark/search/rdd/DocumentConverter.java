@@ -27,5 +27,5 @@ import java.io.Serializable;
 @FunctionalInterface
 public interface DocumentConverter<T> extends Serializable {
 
-    SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception;
+    SearchRecordJava<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception;
 }

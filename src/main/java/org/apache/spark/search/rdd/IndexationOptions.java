@@ -82,7 +82,7 @@ public final class IndexationOptions<T> implements Serializable {
     /**
      * Log indexation progress every 100K docs.
      */
-    public static final long DEFAULT_LOG_INDEXATION_PROGRESS = 100000;
+    public static final long DEFAULT_LOG_INDEXATION_PROGRESS = -1;
     private long logIndexationProgress = DEFAULT_LOG_INDEXATION_PROGRESS;
 
     /**

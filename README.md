@@ -1,6 +1,6 @@
 ## [Spark Search](https://github.com/phymbert/spark-search)
 
-[![CI](https://github.com/phymbert/spark-search/workflows/build-package/badge.svg?branch=master)](https://github.com/phymbert/spark-search/actions)
+[![CI](https://github.com/phymbert/spark-search/workflows/CI/badge.svg)](https://github.com/phymbert/spark-search/actions)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
@@ -67,30 +67,30 @@ computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\
   .foreach(println)
 
 // /!\ Important lucene indexation is done each time a SearchRDD is computed,
-// if you do multiple operations on the same parent RDD, you might a variable in the driver:
-val searchRDD = computersReviewsRDD.searchRDD(
-  SearchRDDOptions.builder[Review]() // See all other options SearchRDDOptions, IndexationOptions and ReaderOptions
+// if you do multiple operations on the same parent RDD, you might have a variable in the driver:
+val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
+  SearchRDDOptions.builder[Review]() // See all other options in SearchRDDOptions, IndexationOptions and ReaderOptions
     .readerOptions(ReaderOptions.builder()
       .defaultFieldName("reviewText")
       .build())
     .analyzer(classOf[EnglishAnalyzer])
     .build())
 
-// Boolean queries and boosting returning RDD
-searchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+// Boolean queries and boosting examples returning RDD
+computersReviewsSearchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
 // Fuzzy matching
-searchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
+computersReviewsSearchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
   .map(doc => (doc.getSource.reviewerName, doc.getScore))
   .foreach(println)
 
 // RDD full text matching
 val softwareReviewsRDD = spark.read.json("...").as[Review].rdd
-val matchesRDD = searchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
-val matchesReviewersRDD = searchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+val matchesReviewersRDD = computersReviewsSearchRDD.matching(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 matchesReviewersRDD
   .filter(!_.getHits.isEmpty)
-  .map(m => (m.getDoc.reviewerName, m.getHits.asScala.map(h => (h.getSource.reviewerName, h.getScore))))
+  .map(m => (m.doc.reviewerName, m.hits.asScala.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
 
 ```

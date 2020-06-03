@@ -18,6 +18,7 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.document.{Document, Field, StringField}
 import org.apache.lucene.search.ScoreDoc
+import org.apache.spark.search.TestData
 import org.scalatest.funsuite.AnyFunSuite
 
 class DocumentBeanConverterSuite extends AnyFunSuite {
@@ -31,13 +32,15 @@ class DocumentBeanConverterSuite extends AnyFunSuite {
     doc.add(new StringField("lastName", "Duck", Field.Store.YES))
     doc.add(new StringField("age", "32", Field.Store.YES))
 
-    val searchRecord: SearchRecord[TestData.Person] = converter.convert(4, scoreDoc, classOf[TestData.Person], doc)
-    assertResult(1)(searchRecord.getId)
-    assertResult(2f)(searchRecord.getScore)
-    assertResult(3)(searchRecord.getShardIndex)
-    assertResult(4)(searchRecord.getPartitionIndex)
+    val searchRecord: SearchRecord[TestData.Person] = searchRecordJavaToProduct(converter
+      .convert(4, scoreDoc, classOf[TestData.Person], doc))
 
-    val person: TestData.Person = searchRecord.getSource
+    assertResult(1)(searchRecord.id)
+    assertResult(2f)(searchRecord.score)
+    assertResult(3)(searchRecord.shardIndex)
+    assertResult(4)(searchRecord.partitionIndex)
+
+    val person: TestData.Person = searchRecord.source
     assertResult("Joe")(person.firstName)
     assertResult("Duck")(person.lastName)
     assertResult(32)(person.age)

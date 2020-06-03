@@ -13,16 +13,13 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+package org.apache.spark
 
-package org.apache.spark.search.rdd;
-
-import java.io.Serializable;
+import org.apache.spark.search.rdd.{IndexationOptions, ReaderOptions}
 
 /**
- * Build a lucene query string to search for matching hits
- * against the input bean.
+ * Spark Search brings advanced full text search features
+ * to your Dataframe, Dataset and RDD. Powered by Apache Lucene.
  */
-@FunctionalInterface
-public interface QueryStringBuilder<T> extends Serializable {
-    String build(T doc);
+package object search {
 }

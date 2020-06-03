@@ -37,7 +37,7 @@ public class DocumentBeanConverterTest {
         doc.add(new StringField("lastName", "Duck", Field.Store.YES));
         doc.add(new StringField("age", "32", Field.Store.YES));
 
-        SearchRecord<PersonJava> searchRecord = converter.convert(4, scoreDoc, PersonJava.class, doc);
+        SearchRecordJava<PersonJava> searchRecord = converter.convert(4, scoreDoc, PersonJava.class, doc);
         assertNotNull(searchRecord);
         assertNotNull(searchRecord.getSource());
         assertEquals(1, searchRecord.getId());

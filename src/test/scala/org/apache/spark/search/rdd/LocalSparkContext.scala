@@ -20,7 +20,8 @@ import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory
 import org.apache.spark.SparkContext
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
-trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll { self: Suite =>
+trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll {
+  self: Suite =>
 
   @transient var sc: SparkContext = _
 
@@ -40,6 +41,10 @@ trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll { self
   def resetSparkContext(): Unit = {
     LocalSparkContext.stop(sc)
     sc = null
+  }
+
+  override def beforeEach(): Unit = {
+    sc = new SparkContext("local", "test")
   }
 
 }
