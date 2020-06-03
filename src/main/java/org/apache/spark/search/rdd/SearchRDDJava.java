@@ -57,27 +57,27 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     }
 
     @Override
-    public SearchRecord<T>[] searchList(String query, int topK, float minScore) {
+    public SearchRecordJava<T>[] searchList(String query, int topK, double minScore) {
         return searchRDDJava.searchList(query, topK, minScore);
     }
 
     @Override
-    public SearchRecord<T>[] searchList(Query query, int topK, float minScore) {
+    public SearchRecordJava<T>[] searchList(Query query, int topK, double minScore) {
         return searchRDDJava.searchList(query, topK, minScore);
     }
 
     @Override
-    public JavaRDD<SearchRecord<T>> search(String query, int topK, float minScore) {
+    public JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore) {
         return searchRDDJava.search(query, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, int topK, float minScore) {
+    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, int topK, double minScore) {
         return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> queryBuilder, int topK, float minScore) {
+    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> queryBuilder, int topK, double minScore) {
         return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
     }
 }

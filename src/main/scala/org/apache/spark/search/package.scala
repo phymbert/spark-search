@@ -13,19 +13,13 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+package org.apache.spark
 
-package org.apache.spark.search.rdd;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.ScoreDoc;
-
-import java.io.Serializable;
+import org.apache.spark.search.rdd.{IndexationOptions, ReaderOptions}
 
 /**
- * Convert scored and lucene documents to search record.
+ * Spark Search brings advanced full text search features
+ * to your Dataframe, Dataset and RDD. Powered by Apache Lucene.
  */
-@FunctionalInterface
-public interface DocumentConverter<T> extends Serializable {
-
-    SearchRecordJava<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception;
+package object search {
 }

@@ -84,7 +84,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   def searchList(query: String,
                  topK: Int,
-                 minScore: Float): Array[SearchRecord[T]] =
+                 minScore: Double): Array[SearchRecord[T]] =
     searchRDD.searchList(query, topK, minScore)
 
   /**
@@ -100,7 +100,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   def searchList(query: String,
                  topK: Int,
-                 minScore: Float,
+                 minScore: Double,
                  opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
@@ -124,7 +124,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchJoin[S](rdd: RDD[S],
                     queryBuilder: S => String,
                     topK: Int,
-                    minScore: Float,
+                    minScore: Double,
                     opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
     searchRDD(opts).searchJoin(rdd, s => SearchQueryString(queryBuilder.apply(s)), topK, minScore)
 
@@ -183,7 +183,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   def searchList(query: Query,
                  topK: Int,
-                 minScore: Float): Array[SearchRecord[T]] =
+                 minScore: Double): Array[SearchRecord[T]] =
     searchRDD.searchList(query, topK, minScore)
 
   /**
@@ -199,7 +199,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   def searchList(query: Query,
                  topK: Int,
-                 minScore: Float,
+                 minScore: Double,
                  opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
@@ -223,7 +223,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchJoin[S](rdd: RDD[S],
                     queryBuilder: QueryBuilder[S],
                     topK: Int,
-                    minScore: Float,
+                    minScore: Double,
                     opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
     searchRDD(opts).searchJoin(rdd, s => SearchLuceneQuery(queryBuilder.apply(s)), topK, minScore)
 
@@ -242,13 +242,13 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   /**
    * Finds the top topK hits per partition for query.
    */
-  def search(query: String, topKByPartition: Int, minScore: Float): RDD[SearchRecord[T]] =
+  def search(query: String, topKByPartition: Int, minScore: Double): RDD[SearchRecord[T]] =
     searchRDD.search(query, topKByPartition, minScore)
 
   /**
    * Finds the top topK hits per partition for query.
    */
-  def search(query: String, topKByPartition: Int, minScore: Float,
+  def search(query: String, topKByPartition: Int, minScore: Double,
              opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
     searchRDD(opts).search(query, topKByPartition, minScore)
 
@@ -267,13 +267,13 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   /**
    * Finds the top topK hits per partition for query.
    */
-  def search(query: Query, topKByPartition: Int, minScore: Float): RDD[SearchRecord[T]] =
+  def search(query: Query, topKByPartition: Int, minScore: Double): RDD[SearchRecord[T]] =
     searchRDD.search(query, topKByPartition, minScore)
 
   /**
    * Finds the top topK hits per partition for query.
    */
-  def search(query: Query, topKByPartition: Int, minScore: Float,
+  def search(query: Query, topKByPartition: Int, minScore: Double,
              opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
     searchRDD(opts).search(query, topKByPartition, minScore)
 
@@ -289,4 +289,5 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] = new SearchRDD[T](rdd, opts)
 
   sealed trait QueryBuilder[S] extends (S => Query)
+
 }

@@ -15,9 +15,10 @@
  */
 package org.apache.spark.search.sql
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.search.rdd.{Match, SearchRDDOptions, SearchRecord, _}
-import org.apache.spark.sql.{Dataset, Encoder}
+import org.apache.spark.search.rdd.{SearchRDDOptions, SearchRecord, _}
+import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{Dataset, Encoder, Row}
 
 import scala.reflect.ClassTag
 
@@ -31,7 +32,7 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
   /**
    * [[org.apache.spark.search.rdd.SearchRDD#count(SearchQuery)]]
    */
-  def count(query: SearchQuery, opts: SearchRDDOptions[T] = defaultOpts): Long =
+  def count(query: SearchQuery, opts: SearchRDDOptions[T] = defaultDatasetOpts): Long =
     searchRDD(opts).count(query)
 
   /**
@@ -40,7 +41,7 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
   def searchList(query: SearchQuery,
                  topK: Int = Int.MaxValue,
                  minScore: Float = 0,
-                 opts: SearchRDDOptions[T] = defaultOpts): Array[SearchRecord[T]] =
+                 opts: SearchRDDOptions[T] = defaultDatasetOpts): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
   /**
@@ -49,26 +50,28 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
   def search(query: SearchQuery,
              topKByPartition: Int = Int.MaxValue,
              minScore: Float = 0,
-             opts: SearchRDDOptions[T] = defaultOpts): Dataset[SearchRecord[T]] =
-    asDS(searchRDD(opts).search(query, topKByPartition, minScore))
+             opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[SearchRecord[T]], enc2: Encoder[T]): Dataset[SearchRecord[T]] /*Dataset[SearchRecord[T]]*/ = {
+    val datasetSchema = enc2.schema
+    val schema = StructType(enc.schema.slice(0, enc.schema.length - 1) ++ Seq(StructField("source", datasetSchema)))
 
-  /**
-   * [[org.apache.spark.search.rdd.SearchRDD#searchJoin(org.apache.spark.rdd.RDD, scala.Function1, int, float)]]
-   */
-  def searchJoin[S](dataset: Dataset[S],
-                    queryBuilder: S => SearchQuery,
-                    topK: Int = Int.MaxValue,
-                    minScore: Float = 0,
-                    opts: SearchRDDOptions[T] = defaultOpts): Dataset[Match[S, T]] =
-    asDS(searchRDD(opts).searchJoin(dataset.rdd, queryBuilder, topK, minScore))
+    val rdd = searchRDD(opts)
+      .search(query, topKByPartition, minScore)
+      .map(b => new GenericRow(Array(b.id, b.partitionIndex, b.score, b.shardIndex, new GenericRow(b.source match {
+        case p: Product => p.productIterator.toSeq.toArray
+        // FIXME Support Bean
+        // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
+      }))).asInstanceOf[Row])
+
+    dataset.sqlContext.createDataFrame(rdd, schema).as[SearchRecord[T]]
+  }
+
+  def searchRDD: SearchRDD[T] = searchRDD(defaultOpts)
 
   /**
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] = new SearchRDD[T](dataset.rdd, opts)
+  def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] =
+    new SearchRDD[T](dataset.rdd, opts).cache
 
-  protected def asDS[R: Encoder](rdd: RDD[R]): Dataset[R] = {
-    dataset.sparkSession.createDataset[R](rdd)
-  }
 }

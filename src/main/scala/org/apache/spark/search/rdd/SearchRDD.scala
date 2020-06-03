@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * A search RDD indexes parent RDD partitions to lucene indexes.
  * It builds for all parent RDD partitions a one-2-one volatile Lucene index
- *  available during the lifecycle of the spark session across executors local directories and RAM.
+ * available during the lifecycle of the spark session across executors local directories and RAM.
  *
  * @author Pierrick HYMBERT
  */
@@ -55,7 +55,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: SearchQuery, topK: Int = Int.MaxValue, minScore: Float = 0): Array[SearchRecord[T]] =
+  def searchList(query: SearchQuery, topK: Int = Int.MaxValue, minScore: Double = 0): Array[SearchRecord[T]] =
     runSearchJob[Array[SearchRecord[T]], Array[SearchRecord[T]]](
       spr => _partitionReaderSearchList(spr, query, topK, minScore).toArray,
       reduceSearchRecordsByTopK(topK))
@@ -63,13 +63,13 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   /**
    * Finds the top topK hits per partition for query.
    */
-  def search(query: SearchQuery, topKByPartition: Int = Int.MaxValue, minScore: Float = 0): RDD[SearchRecord[T]] = {
+  def search(query: SearchQuery, topKByPartition: Int = Int.MaxValue, minScore: Double = 0): RDD[SearchRecord[T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     mapPartitionsWithIndex((index, _) =>
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         spr => _partitionReaderSearchList(spr, query, topKByPartition, minScore)
       }.iterator
-    ).sortBy(_.getScore, ascending = false)
+    ).sortBy(_.score, ascending = false)
   }
 
   /**
@@ -78,7 +78,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   def searchJoin[S](rdd: RDD[S],
                     queryBuilder: S => SearchQuery,
                     topK: Int = Int.MaxValue,
-                    minScore: Float = 0): RDD[Match[S, T]] = {
+                    minScore: Double = 0): RDD[Match[S, T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     val indicesAndDocs = rdd.zipWithIndex().map(_.swap)
     val docIndicesAndQueries = indicesAndDocs.map(d => (d._1, queryBuilder(d._2)))
@@ -100,8 +100,8 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
       .join(indicesAndDocs)
       .map({
         case (_, matches) => new Match[S, T](matches._2, matches._1.toList
-          .sortBy(_.getScore)(Ordering.Float.reverse)
-          .take(topK).asJava)
+          .sortBy(_.score)(Ordering.Double.reverse)
+          .take(topK))
       })
   }
 
@@ -109,14 +109,15 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   = new SearchRDD[T](firstParent.repartition(numPartitions), options)
 
   private def _partitionReaderSearchList(r: SearchPartitionReader[T],
-                                         query: SearchQuery, topK: Int, minScore: Float): Array[SearchRecord[T]] =
+                                         query: SearchQuery, topK: Int, minScore: Double): Array[SearchRecord[T]] =
     (query match {
       case SearchQueryString(queryString) => r.search(queryString, topK, minScore)
       case SearchLuceneQuery(query) => r.search(query, topK, minScore)
-    })
+    }).map(searchRecordJavaToProduct)
+
 
   protected def reduceSearchRecordsByTopK(topK: Int): Iterator[Array[SearchRecord[T]]] => Array[SearchRecord[T]] =
-    _.reduce(_ ++ _).sortBy(_.getScore)(Ordering[Float].reverse).take(topK)
+    _.reduce(_ ++ _).sortBy(_.score)(Ordering[Double].reverse).take(topK)
 
   protected def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: SearchPartitionReader[T] => R,
                                                        reducer: Iterator[R] => A): A = {

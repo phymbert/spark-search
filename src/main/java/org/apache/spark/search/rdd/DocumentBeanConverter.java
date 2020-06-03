@@ -37,8 +37,8 @@ public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors im
     private static final long serialVersionUID = 1L;
 
     @Override
-    public SearchRecord<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception {
-        return new SearchRecord<>(scoreDoc.doc, partitionIndex,
+    public SearchRecordJava<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception {
+        return new SearchRecordJava<>(scoreDoc.doc, partitionIndex,
                 scoreDoc.score, scoreDoc.shardIndex, convert(classTag, doc));
     }
 

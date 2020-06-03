@@ -57,11 +57,11 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
     val matches = searchRDD.searchJoin(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
-    assertResult(3)(matches.map(m => m.getHits.size()).count(_ == 2))
+    assertResult(3)(matches.map(m => m.hits.length).count(_ == 2))
   }
 
   test("Persisting RDD to local dirs is forbidden") {
-    val searchRDD = sc.parallelize(Seq(Person("George", "Michal", 0))).searchRDD
+    val searchRDD = sc.parallelize(Seq(Person("Georges", "Brassens", 99))).searchRDD
     assertThrows[SearchException] {
       searchRDD.persist(StorageLevels.MEMORY_AND_DISK)
     }

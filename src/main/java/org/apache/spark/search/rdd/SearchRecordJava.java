@@ -24,7 +24,7 @@ import java.util.Objects;
 /**
  * Search record.
  */
-public class SearchRecord<T> implements Serializable {
+public class SearchRecordJava<T> implements Serializable {
 
     private static final long serialVersionUID = 6220753751555421030L;
 
@@ -34,35 +34,38 @@ public class SearchRecord<T> implements Serializable {
      *
      * @see org.apache.lucene.search.ScoreDoc#doc
      */
-    public final int id;
+    public long id;
 
     /**
      * RDD Partition index.
      *
      * @see RDD#id()
      */
-    public final int partitionIndex;
+    public long partitionIndex;
 
     /**
      * The score of this document for the query.
      *
      * @see org.apache.lucene.search.ScoreDoc#score
      */
-    public final float score;
+    public double score;
 
     /**
      * Lucene shard index.
      *
      * @see org.apache.lucene.search.ScoreDoc#shardIndex
      */
-    public final int shardIndex;
+    public long shardIndex;
 
     /**
      * Source document.
      */
-    public final T source;
+    public T source;
 
-    public SearchRecord(int id, int partitionIndex, float score, int shardIndex, T source) {
+    public SearchRecordJava() {
+    }
+
+    public SearchRecordJava(long id, long partitionIndex, double score, long shardIndex, T source) {
         this.id = id;
         this.partitionIndex = partitionIndex;
         this.score = score;
@@ -70,19 +73,19 @@ public class SearchRecord<T> implements Serializable {
         this.source = source;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public int getPartitionIndex() {
+    public long getPartitionIndex() {
         return partitionIndex;
     }
 
-    public float getScore() {
+    public double getScore() {
         return score;
     }
 
-    public int getShardIndex() {
+    public long getShardIndex() {
         return shardIndex;
     }
 
@@ -90,14 +93,34 @@ public class SearchRecord<T> implements Serializable {
         return source;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setPartitionIndex(int partitionIndex) {
+        this.partitionIndex = partitionIndex;
+    }
+
+    public void setScore(double score) {
+        this.score = score;
+    }
+
+    public void setShardIndex(int shardIndex) {
+        this.shardIndex = shardIndex;
+    }
+
+    public void setSource(T source) {
+        this.source = source;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SearchRecord<?> that = (SearchRecord<?>) o;
+        SearchRecordJava<?> that = (SearchRecordJava<?>) o;
         return id == that.id &&
                 partitionIndex == that.partitionIndex &&
-                Float.compare(that.score, score) == 0 &&
+                Double.compare(that.score, score) == 0 &&
                 shardIndex == that.shardIndex &&
                 source.equals(that.source);
     }

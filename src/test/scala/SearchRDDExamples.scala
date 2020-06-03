@@ -21,9 +21,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.spark.search.rdd._
 import org.apache.spark.sql.SparkSession
 
-import scala.sys.process._
-
 import scala.collection.JavaConverters._
+import scala.sys.process._
 
 /**
  * Spark Search RDD examples.
@@ -69,9 +68,7 @@ object SearchRDDExamples {
     // if you do multiple operations on the same parent RDD, you might a variable in the driver:
     val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
       SearchRDDOptions.builder[Review]() // See all other options SearchRDDOptions, IndexationOptions and ReaderOptions
-        .readerOptions(ReaderOptions.builder()
-          .defaultFieldName("reviewText")
-          .build())
+        .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
         .analyzer(classOf[EnglishAnalyzer])
         .build())
     println("All reviews speaking about hardware:")
@@ -80,7 +77,7 @@ object SearchRDDExamples {
     // Fuzzy matching
     println("Some typo in names:")
     computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
-      .map(doc => (doc.getSource.reviewerName, doc.getScore))
+      .map(doc => (doc.source.reviewerName, doc.score))
       .foreach(println)
 
     // Amazon software reviews
@@ -95,8 +92,8 @@ object SearchRDDExamples {
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD,
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
     matchesReviewersRDD
-      .filter(!_.getHits.isEmpty)
-      .map(m => (m.doc.reviewerName, m.hits.asScala.map(h => (h.source.reviewerName, h.score))))
+      .filter(_.hits.nonEmpty)
+      .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
       .foreach(println)
 
     spark.close()

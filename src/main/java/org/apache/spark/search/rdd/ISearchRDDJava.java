@@ -38,29 +38,29 @@ public interface ISearchRDDJava<T> {
     long count(String query);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, float)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
      */
-    SearchRecord<T>[] searchList(String query, int topK, float minScore);
+    SearchRecordJava<T>[] searchList(String query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, float)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
      */
-    SearchRecord<T>[] searchList(Query query, int topK, float minScore);
+    SearchRecordJava<T>[] searchList(Query query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, float)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, double)}
      */
-    JavaRDD<SearchRecord<T>> search(String query, int topK, float minScore);
+    JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, float)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, double)}
      */
-    <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> builder, int topK, float minScore);
+    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> builder, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, float)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, double)}
      */
-    <S> JavaRDD<Match<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> builder, int topK, float minScore);
+    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> builder, int topK, double minScore);
 
     /**
      * Build a lucene query string to search for matching hits

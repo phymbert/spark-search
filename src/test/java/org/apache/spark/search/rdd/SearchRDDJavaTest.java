@@ -37,7 +37,7 @@ public class SearchRDDJavaTest {
 
         assertEquals(5, searchRDD.count());
 
-        assertEquals(new SearchRecord<>(1, 3, 0.2520535f, 0, PersonJava.PERSONS.get(4)),
+        assertEquals(new SearchRecordJava<>(1, 3, 0.2520535f, 0, PersonJava.PERSONS.get(4)),
                 searchRDD.searchList("firstName:agnes~0.5", 1,0)[0]);
     }
 }

@@ -36,7 +36,7 @@ object CompanyMatchingBenchmark {
     val secEdgarCompanyRDD = companiesEdgarDS(spark).rdd.cache
 
     val matchedCompanies = companies.searchRDD(SearchRDDOptions
-      .builder[AnyCompany]
+      .builder[Company]
       .analyzer(classOf[ShingleAnalyzerWrapper]).build).cache
       .searchJoin(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
 

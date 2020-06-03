@@ -16,6 +16,8 @@
 
 package org.apache.spark.search
 
+import java.util.function.{Function => JFunction}
+
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 
@@ -26,6 +28,16 @@ import scala.reflect.ClassTag
  * Spark Search RDD.
  */
 package object rdd {
+
+  /**
+   * Search record.
+   */
+  case class SearchRecord[T](id: Long, partitionIndex: Long, score: Double, shardIndex: Long, source: T)
+
+  /**
+   * Matched record.
+   */
+  case class Match[S, H](doc: S, hits: List[SearchRecord[H]])
 
   /**
    * Default search options.
@@ -48,4 +60,22 @@ package object rdd {
   implicit def queryString(queryString: String): SearchQuery = SearchQueryString(queryString)
 
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
+
+  implicit def indexOptions[T](optionsBuilderFunc: Function[IndexationOptions.Builder[T], IndexationOptions.Builder[T]]): JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] =
+    new JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] {
+      override def apply(opts: IndexationOptions.Builder[T]): IndexationOptions.Builder[T] = {
+        optionsBuilderFunc.apply(opts)
+      }
+    }
+
+  implicit def readerOptions[T](optionsBuilderFunc: Function[ReaderOptions.Builder[T], ReaderOptions.Builder[T]]): JFunction[ReaderOptions.Builder[T], ReaderOptions.Builder[T]] =
+    new JFunction[ReaderOptions.Builder[T], ReaderOptions.Builder[T]] {
+      override def apply(opts: ReaderOptions.Builder[T]): ReaderOptions.Builder[T] = {
+        optionsBuilderFunc.apply(opts)
+      }
+    }
+
+  private[rdd] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
+    SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
+  }
 }

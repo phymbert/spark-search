@@ -20,10 +20,16 @@ object TestData {
 
   case class SecEdgarCompanyInfo(lineNumber: String, companyName: String, CompanyCIKKey: String)
 
-  case class AnyCompany(name: String, domain: String, yearFounded: String,
-                        industry: String, sizeRange: String, locality: String,
-                        country: String, linkedinUrl: String,
-                        currentEmployeeEstimate: String, totalEmployeeEstimate: String)
+  case class Company(name: String,
+                     domain: String,
+                     yearFounded: String,
+                     industry: String,
+                     sizeRange: String,
+                     locality: String,
+                     country: String,
+                     linkedinUrl: String,
+                     currentEmployeeEstimate: String,
+                     totalEmployeeEstimate: Long)
 
   lazy val companiesCSVFilePath: String =
     new File(this.getClass.getResource("/companies.csv").toURI).getAbsolutePath
@@ -31,7 +37,7 @@ object TestData {
   /**
    * # Thankfully took from https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
    */
-  def companiesDS(spark: SparkSession): Dataset[AnyCompany] = {
+  def companiesDS(spark: SparkSession): Dataset[Company] = {
     import spark.implicits._
     spark.read
       .option("header", "true")
@@ -42,14 +48,14 @@ object TestData {
       .withColumnRenamed("linkedin url", "linkedinUrl")
       .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
       .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
-      .as[AnyCompany]
+      .as[Company]
   }
 
   lazy val companiesEdgarSecCSVFilePath: String =
     new File(this.getClass.getResource("/sec__edgar_company_info.csv").toURI).getAbsolutePath
 
   /**
-   * Thankfully took from https://www.kaggle.com/dattapiy/sec-edgar-companies-list/data?select=sec__edgar_company_info.csv
+   * Thankfully took from https://www.kaggle.com/dattapiy/sec-edgar-companies-list/data
    */
   def companiesEdgarDS(spark: SparkSession): Dataset[SecEdgarCompanyInfo] = {
     import spark.implicits._

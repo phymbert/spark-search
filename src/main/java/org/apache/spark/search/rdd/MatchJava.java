@@ -17,7 +17,6 @@
 package org.apache.spark.search.rdd;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,20 +26,23 @@ import java.util.Objects;
  * @param <S> Type of the bean from which the query was built
  * @param <H> Result hits type
  */
-public class Match<S, H> implements Serializable {
+public class MatchJava<S, H> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
      * Original document which originated the query.
      */
-    public final S doc;
+    public S doc;
 
     /**
      * TopK hits matching the source document for that query.
      */
-    public List<SearchRecord<H>> hits = new ArrayList<>();
+    public List<SearchRecordJava<H>> hits;
 
-    public Match(S doc, List<SearchRecord<H>> hits) {
+    public MatchJava() {
+    }
+
+    public MatchJava(S doc, List<SearchRecordJava<H>> hits) {
         this.doc = doc;
         this.hits = hits;
     }
@@ -49,15 +51,23 @@ public class Match<S, H> implements Serializable {
         return doc;
     }
 
-    public List<SearchRecord<H>> getHits() {
+    public List<SearchRecordJava<H>> getHits() {
         return hits;
+    }
+
+    public void setDoc(S doc) {
+        this.doc = doc;
+    }
+
+    public void setHits(List<SearchRecordJava<H>> hits) {
+        this.hits = hits;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Match<?, ?> match = (Match<?, ?>) o;
+        MatchJava<?, ?> match = (MatchJava<?, ?>) o;
         return doc.equals(match.doc) &&
                 hits.equals(match.hits);
     }

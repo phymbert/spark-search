@@ -27,12 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static java.util.stream.Collectors.toCollection;
 
 /**
  * Exposes search features on a search partition.
@@ -87,17 +83,17 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return monitorQuery(() -> (long) indexSearcher.count(query));
     }
 
-    SearchRecord<T>[] search(String query, int topK, float minScore) throws ParseException {
+    SearchRecordJava<T>[] search(String query, int topK, double minScore) throws ParseException {
         return search(queryParser().parse(query), topK, minScore);
     }
 
-    SearchRecord<T>[] search(Query query, int topK, float minScore) {
+    SearchRecordJava<T>[] search(Query query, int topK, double minScore) {
         return monitorQuery(() -> {
             TopDocs docs = indexSearcher.search(query, topK);
             return Arrays.stream(docs.scoreDocs)
                     .filter(d -> d.score > minScore)
                     .map(this::convertDoc)
-                    .toArray(SearchRecord[]::new);
+                    .toArray(SearchRecordJava[]::new);
         });
     }
 
@@ -105,7 +101,7 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return new QueryParser(options.getDefaultFieldName(), analyzer);
     }
 
-    private SearchRecord<T> convertDoc(ScoreDoc scoreDoc) {
+    private SearchRecordJava<T> convertDoc(ScoreDoc scoreDoc) {
         try {
             return documentConverter.convert(index, scoreDoc, classTag, indexSearcher.doc(scoreDoc.doc));
         } catch (Exception e) {

@@ -18,7 +18,7 @@ import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.search.rdd.SearchRDDOptions;
-import org.apache.spark.search.rdd.SearchRecord;
+import org.apache.spark.search.rdd.SearchRecordJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
 
@@ -62,7 +62,7 @@ public class SearchRDDJavaExamples {
 
         // List matching docs
         System.out.println("Reviews with good recommendations: ");
-        SearchRecord<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
+        SearchRecordJava<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
         Arrays.stream(goodReviews).forEach(System.out::println);
 
         // Pass custom search options
@@ -71,7 +71,7 @@ public class SearchRDDJavaExamples {
 
         System.out.println("Reviews from Patosh: ");
         searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)
-                .map(SearchRecord::getSource)
+                .map(SearchRecordJava::getSource)
                 .map(Review::getReviewerName)
                 .distinct()
                 .foreach(System.out::println);
