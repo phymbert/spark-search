@@ -21,18 +21,20 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](val searchRDD: SearchRDD[H
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val searchPartition = split.asInstanceOf[SearchPartition[H]]
 
-    // compute search rdd
+    // compute our search rdd partition if needed
     searchRDD.iterator(searchPartition, context)
 
-    val otherPartitions = other.partitions
-    val otherWithPartitionIndex = otherPartitions.zipWithIndex.map(_.swap)
+    val otherNumPartition = other.getNumPartitions
 
+    // Match other partitions against our
     tryAndClose(searchRDD.reader(searchPartition.index, searchPartition.indexDir)) {
-      spr => otherWithPartitionIndex.flatMap(p =>
-          other.iterator(p._2, context).zipWithIndex.map(_.swap)
-            .map(docIndex => (p._1.toLong * otherPartitions.length + docIndex._1,
+      spr =>
+        (0 until otherNumPartition).flatMap(partIndex => {
+          other.iterator(other.partitions(partIndex), context).zipWithIndex.map(_.swap)
+            .map(docIndex => (partIndex.toLong * otherNumPartition + docIndex._1,
               spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator)
-            )).iterator
+            )
+        }).iterator
     }
   }
 
