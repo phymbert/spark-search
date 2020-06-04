@@ -19,19 +19,19 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](val searchRDD: SearchRDD[H
   extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Seq(new OneToOneDependency(searchRDD))) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
-    val searchPartition = split.asInstanceOf[SearchPartition[H]]
+    val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    // compute our search rdd partition if needed
-    searchRDD.iterator(searchPartition, context)
+    // compute our current search rdd partition if needed
+    searchRDD.iterator(matchPartition.searchPartition, context)
 
-    val otherNumPartition = other.getNumPartitions
+    val otherNumPartitions = matchPartition.otherPartitions.length
 
     // Match other partitions against our
-    tryAndClose(searchRDD.reader(searchPartition.index, searchPartition.indexDir)) {
+    tryAndClose(searchRDD.reader(matchPartition.index, matchPartition.searchPartition.indexDir)) {
       spr =>
-        (0 until otherNumPartition).flatMap(partIndex => {
-          other.iterator(other.partitions(partIndex), context).zipWithIndex.map(_.swap)
-            .map(docIndex => (partIndex.toLong * otherNumPartition + docIndex._1,
+        matchPartition.otherPartitions.flatMap(part => {
+          other.iterator(part, context).zipWithIndex.map(_.swap)
+            .map(docIndex => (part.index.toLong * otherNumPartitions + docIndex._1,
               spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator)
             )
         }).iterator
@@ -41,5 +41,12 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](val searchRDD: SearchRDD[H
   override protected def getPreferredLocations(split: Partition): Seq[String] =
     searchRDD.getPreferredLocations(split)
 
-  override protected def getPartitions: Array[Partition] = searchRDD.partitions
+  override protected def getPartitions: Array[Partition] = {
+    searchRDD.partitions.map(searchPartition => new MatchRDDPartition(searchPartition.asInstanceOf[SearchPartition[H]], other.partitions))
+  }
+
+  private class MatchRDDPartition(val searchPartition: SearchPartition[H], val otherPartitions: Array[Partition]) extends Partition {
+    override def index: Int = searchPartition.index
+  }
+
 }
