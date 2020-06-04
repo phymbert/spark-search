@@ -90,6 +90,9 @@ package object rdd {
     @transient lazy val _analyzer: Analyzer = analyzerClass.newInstance()
   }
 
+  def defaultQueryBuilder[T: ClassTag]()(implicit cls : ClassTag[T]): T => Query =
+    new QueryBuilderWithAnalyzer[T](new DefaultQueryBuilder[T](cls.runtimeClass.asInstanceOf[Class[_<:T]]).asInstanceOf[(T, QueryBuilder) => Query])
+
   def queryStringBuilder[T](builder: T => String, opts: SearchRDDOptions[_] = defaultOpts): T => Query =
     new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName)
 
@@ -128,4 +131,5 @@ package object rdd {
         throw e
     }
   }
+
 }

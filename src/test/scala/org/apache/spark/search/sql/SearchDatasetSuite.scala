@@ -90,4 +90,14 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     matchedCompanies.foreach(println(_))
     //assertResult(3)(matchedCompanies.count)
   }
+
+  test("A dataset can drop duplicates") {
+    val spark = _spark
+    import spark.implicits._
+
+    val secCompanies = TestData.companiesEdgarDS(spark).repartition(4).cache
+
+    assertResult(1003)(secCompanies.count)
+    assertResult(1000)(secCompanies.dropDuplicates.count)
+  }
 }

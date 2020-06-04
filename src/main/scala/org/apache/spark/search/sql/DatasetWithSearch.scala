@@ -15,6 +15,7 @@
  */
 package org.apache.spark.search.sql
 
+import org.apache.lucene.search.Query
 import org.apache.spark.search.rdd.{SearchRDDOptions, SearchRecord, _}
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.{Dataset, Encoder, Row}
@@ -65,10 +66,10 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
    * [[org.apache.spark.search.rdd.SearchRDD#searchJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
    */
   def searchJoin[S: ClassTag](ds: Dataset[S],
-                    queryBuilder: S => String,
-                    topK: Int = Int.MaxValue,
-                    minScore: Double = 0,
-                    opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
+                              queryBuilder: S => String,
+                              topK: Int = Int.MaxValue,
+                              minScore: Double = 0,
+                              opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
     val _searchRecordToRow = searchRecordToRow()
     val rdd = searchRDD(opts)
       .searchQueryJoin(ds.rdd, queryStringBuilder(queryBuilder), topK, minScore)
@@ -79,6 +80,25 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
       }), m.hits.map(_searchRecordToRow).toArray)).asInstanceOf[Row])
 
     dataset.sqlContext.createDataFrame(rdd, enc.schema).as[Match[S, T]]
+  }
+
+
+  /**
+   * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
+   */
+  def dropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(),
+                     minScore: Int = 0,
+                     numPartitions: Int = dataset.rdd.getNumPartitions,
+                     opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[T]): Dataset[T] = {
+    val rdd = searchRDD(opts)
+      .dropDuplicates(queryBuilder, minScore, numPartitions)
+      .map(d => new GenericRow(d match {
+        case p: Product => p.productIterator.toSeq.toArray
+        // FIXME Support Bean
+        // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
+      }).asInstanceOf[Row])
+
+    dataset.sqlContext.createDataFrame(rdd, enc.schema).as[T]
   }
 
   def searchRDD: SearchRDD[T] = searchRDD(defaultOpts)
