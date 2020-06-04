@@ -44,7 +44,6 @@ public class SearchRDDOptions<T> implements Serializable {
         return DEFAULT;
     }
 
-
     /**
      * Search RDD options builder.
      *
@@ -54,11 +53,11 @@ public class SearchRDDOptions<T> implements Serializable {
         return new Builder<>();
     }
 
-    IndexationOptions<T> getIndexationOptions() {
+    public IndexationOptions<T> getIndexationOptions() {
         return indexationOptions;
     }
 
-    ReaderOptions<T> getReaderOptions() {
+    public ReaderOptions<T> getReaderOptions() {
         return readerOptions;
     }
 

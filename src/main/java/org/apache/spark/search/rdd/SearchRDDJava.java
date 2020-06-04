@@ -16,7 +16,6 @@
 
 package org.apache.spark.search.rdd;
 
-import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
 import scala.reflect.ClassTag;
 
@@ -57,12 +56,12 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     }
 
     @Override
-    public SearchRecordJava<T>[] searchList(String query, int topK, double minScore) {
-        return searchRDDJava.searchList(query, topK, minScore);
+    public SearchRecordJava<T>[] searchList(String query, int topK) {
+        return searchRDDJava.searchList(query, topK);
     }
 
     @Override
-    public SearchRecordJava<T>[] searchList(Query query, int topK, double minScore) {
+    public SearchRecordJava<T>[] searchList(String query, int topK, double minScore) {
         return searchRDDJava.searchList(query, topK, minScore);
     }
 

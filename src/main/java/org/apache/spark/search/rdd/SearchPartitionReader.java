@@ -16,10 +16,7 @@
 
 package org.apache.spark.search.rdd;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.spark.search.SearchException;
 import org.slf4j.Logger;
@@ -52,7 +49,6 @@ class SearchPartitionReader<T> implements AutoCloseable {
     private final DocumentConverter<T> documentConverter;
     private final DirectoryReader directory;
     private final Class<T> classTag;
-    private final Analyzer analyzer;
 
     SearchPartitionReader(int index,
                           String indexDirectory,
@@ -63,7 +59,6 @@ class SearchPartitionReader<T> implements AutoCloseable {
         this.indexDirectory = indexDirectory;
         this.classTag = classTag;
         this.options = options;
-        this.analyzer = options.getAnalyzer().newInstance();
 
         this.documentConverter = options.documentConverter.newInstance();
 
@@ -75,16 +70,8 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return monitorQuery(() -> (long) indexSearcher.count(new MatchAllDocsQuery()));
     }
 
-    Long count(String query) throws ParseException {
-        return count(queryParser().parse(query));
-    }
-
     Long count(Query query) {
         return monitorQuery(() -> (long) indexSearcher.count(query));
-    }
-
-    SearchRecordJava<T>[] search(String query, int topK, double minScore) throws ParseException {
-        return search(queryParser().parse(query), topK, minScore);
     }
 
     SearchRecordJava<T>[] search(Query query, int topK, double minScore) {
@@ -95,10 +82,6 @@ class SearchPartitionReader<T> implements AutoCloseable {
                     .map(this::convertDoc)
                     .toArray(SearchRecordJava[]::new);
         });
-    }
-
-    private QueryParser queryParser() {
-        return new QueryParser(options.getDefaultFieldName(), analyzer);
     }
 
     private SearchRecordJava<T> convertDoc(ScoreDoc scoreDoc) {

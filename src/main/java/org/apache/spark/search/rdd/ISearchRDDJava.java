@@ -33,32 +33,32 @@ public interface ISearchRDDJava<T> {
     long count();
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#count(org.apache.spark.search.rdd.SearchQuery)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#count(org.apache.lucene.search.Query)}
      */
     long count(String query);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)}
+     */
+    SearchRecordJava<T>[] searchList(String query, int topK);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)}
      */
     SearchRecordJava<T>[] searchList(String query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
-     */
-    SearchRecordJava<T>[] searchList(Query query, int topK, double minScore);
-
-    /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#search(org.apache.lucene.search.Query, int, double)}
      */
     JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(RDD, Function1, int, double)}
      */
     <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> builder, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchJoin(RDD, Function1, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(RDD, Function1, int, double)}
      */
     <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> builder, int topK, double minScore);
 

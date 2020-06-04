@@ -114,10 +114,10 @@ public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors impl
     }
 
     private String value(PropertyDescriptor propertyDescriptor, T element) throws Exception {
-        Object value = propertyDescriptor.getReadMethod().invoke(element);
+        String value = ConvertUtils.convert(propertyDescriptor.getReadMethod().invoke(element));
 
         if (value != null) {
-            return ConvertUtils.convert(value);
+            return value;
         }
         return "";
     }

@@ -36,7 +36,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @return Matched doc count
    */
   def count(query: String): Long =
-    searchRDD.count(query)
+    searchRDD.countQuery(parseQueryString(query))
 
   /**
    * Count how many documents match the given query.
@@ -46,7 +46,26 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @return Matched doc count
    */
   def count(query: String, opts: SearchRDDOptions[T]): Long =
-    searchRDD(opts).count(query)
+    searchRDD(opts).countQuery(parseQueryString(query))
+
+  /**
+   * Count how many documents match the given query.
+   *
+   * @param query Matching query
+   * @return Matched doc count
+   */
+  def countQuery(query: () => Query): Long =
+    searchRDD.countQuery(query)
+
+  /**
+   * Count how many documents match the given query.
+   *
+   * @param query Matching query
+   * @param opts  Search options
+   * @return Matched doc count
+   */
+  def countQuery(query: () => Query, opts: SearchRDDOptions[T]): Long =
+    searchRDD(opts).countQuery(query)
 
   /**
    * Finds the top topK hits for query.
@@ -57,7 +76,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    *       all the data is loaded into the driver's memory.
    */
   def searchList(query: String): Array[SearchRecord[T]] =
-    searchRDD.searchList(query)
+    searchRDD.searchQueryList(parseQueryString(query))
 
   /**
    * Finds the top topK hits for query.
@@ -70,7 +89,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    */
   def searchList(query: String,
                  topK: Int): Array[SearchRecord[T]] =
-    searchRDD.searchList(query, topK)
+    searchRDD.searchQueryList(parseQueryString(query), topK)
 
   /**
    * Finds the top topK hits for query.
@@ -85,7 +104,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchList(query: String,
                  topK: Int,
                  minScore: Double): Array[SearchRecord[T]] =
-    searchRDD.searchList(query, topK, minScore)
+    searchRDD.searchQueryList(parseQueryString(query), topK, minScore)
 
   /**
    * Finds the top topK hits for query.
@@ -102,50 +121,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
                  topK: Int,
                  minScore: Double,
                  opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
-    searchRDD(opts).searchList(query, topK, minScore)
-
-  /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S], queryBuilder: S => String): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, s => SearchQueryString(queryBuilder.apply(s)))
-
-  /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S],
-                    queryBuilder: S => String,
-                    topK: Int): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, s => SearchQueryString(queryBuilder.apply(s)), topK)
-
-  /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S],
-                    queryBuilder: S => String,
-                    topK: Int,
-                    minScore: Double,
-                    opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
-    searchRDD(opts).searchJoin(rdd, s => SearchQueryString(queryBuilder.apply(s)), topK, minScore)
-
-  /**
-   * Count how many documents match the given query.
-   *
-   * @param query Matching query
-   * @return Matched doc count
-   */
-  def count(query: Query): Long =
-    searchRDD.count(query)
-
-  /**
-   * Count how many documents match the given query.
-   *
-   * @param query Matching query
-   * @param opts  Search options
-   * @return Matched doc count
-   */
-  def count(query: Query, opts: SearchRDDOptions[T]): Long =
-    searchRDD(opts).count(query)
+    searchRDD(opts).searchQueryList(parseQueryString(query), topK, minScore)
 
   /**
    * Finds the top topK hits for query.
@@ -155,8 +131,8 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: Query): Array[SearchRecord[T]] =
-    searchRDD.searchList(query)
+  def searchQueryList(query: () => Query): Array[SearchRecord[T]] =
+    searchRDD.searchQueryList(query)
 
   /**
    * Finds the top topK hits for query.
@@ -167,9 +143,9 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: Query,
+  def searchQueryList(query: () => Query,
                  topK: Int): Array[SearchRecord[T]] =
-    searchRDD.searchList(query, topK)
+    searchRDD.searchQueryList(query, topK)
 
   /**
    * Finds the top topK hits for query.
@@ -181,10 +157,10 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: Query,
+  def searchQueryList(query: () => Query,
                  topK: Int,
                  minScore: Double): Array[SearchRecord[T]] =
-    searchRDD.searchList(query, topK, minScore)
+    searchRDD.searchQueryList(query, topK, minScore)
 
   /**
    * Finds the top topK hits for query.
@@ -197,85 +173,154 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchList(query: Query,
+  def searchQueryList(query: () => Query,
                  topK: Int,
                  minScore: Double,
                  opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
-    searchRDD(opts).searchList(query, topK, minScore)
+    searchRDD(opts).searchQueryList(query, topK, minScore)
 
   /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S], queryBuilder: QueryBuilder[S]): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, s => SearchLuceneQuery(queryBuilder.apply(s)))
-
-  /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S],
-                    queryBuilder: QueryBuilder[S],
-                    topK: Int): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, s => SearchLuceneQuery(queryBuilder.apply(s)), topK)
-
-  /**
-   * Joins the input RDD against this one and returns matching hits.
-   */
-  def searchJoin[S](rdd: RDD[S],
-                    queryBuilder: QueryBuilder[S],
-                    topK: Int,
-                    minScore: Double,
-                    opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
-    searchRDD(opts).searchJoin(rdd, s => SearchLuceneQuery(queryBuilder.apply(s)), topK, minScore)
-
-  /**
-   * Finds all hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query Lucene query syntax
+   * @return matching hits RDD
    */
   def search(query: String): RDD[SearchRecord[T]] =
     searchRDD.search(query)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @return topK per partition hits RDD
    */
-  def search(query: String, topKByPartition: Int): RDD[SearchRecord[T]] =
+  def search(query: String,
+             topKByPartition: Int): RDD[SearchRecord[T]] =
     searchRDD.search(query, topKByPartition)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @param minScore        minimum score of matching documents
+   * @return topK per partition hits RDD
    */
-  def search(query: String, topKByPartition: Int, minScore: Double): RDD[SearchRecord[T]] =
+  def search(query: String,
+             topKByPartition: Int,
+             minScore: Double): RDD[SearchRecord[T]] =
     searchRDD.search(query, topKByPartition, minScore)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @param opts            Search options
+   * @return topK partition hits RDD
    */
-  def search(query: String, topKByPartition: Int, minScore: Double,
+  def search(query: String,
+             topKByPartition: Int,
+             minScore: Double,
              opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
     searchRDD(opts).search(query, topKByPartition, minScore)
 
   /**
-   * Finds all hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query Lucene query syntax
+   * @return matching hits RDD
    */
-  def search(query: Query): RDD[SearchRecord[T]] =
-    searchRDD.search(query)
+  def searchQuery(query: () => Query): RDD[SearchRecord[T]] =
+    searchRDD.searchQuery(query)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @return topK hits per partition RDD
    */
-  def search(query: Query, topKByPartition: Int): RDD[SearchRecord[T]] =
-    searchRDD.search(query, topKByPartition)
+  def searchQuery(query: () => Query,
+             topKByPartition: Int): RDD[SearchRecord[T]] =
+    searchRDD.searchQuery(query, topKByPartition)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @param minScore        minimum score of matching documents
+   * @return topK hits per partition RDD
    */
-  def search(query: Query, topKByPartition: Int, minScore: Double): RDD[SearchRecord[T]] =
-    searchRDD.search(query, topKByPartition, minScore)
+  def searchQuery(query: () => Query,
+             topKByPartition: Int,
+             minScore: Double): RDD[SearchRecord[T]] =
+    searchRDD.searchQuery(query, topKByPartition, minScore)
 
   /**
-   * Finds the top topK hits per partition for query.
+   * Finds the top topK hits for query.
+   *
+   * @param query           Lucene query syntax
+   * @param topKByPartition topK to return
+   * @param minScore        minimum score of matching documents
+   * @param opts            Search options
+   * @return topK hits per partition RDD
    */
-  def search(query: Query, topKByPartition: Int, minScore: Double,
+  def searchQuery(query: () => Query,
+             topKByPartition: Int,
+             minScore: Double,
              opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
-    searchRDD(opts).search(query, topKByPartition, minScore)
+    searchRDD(opts).searchQuery(query, topKByPartition, minScore)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchJoin[S: ClassTag](rdd: RDD[S], queryBuilder: S => String): RDD[Match[S, T]] =
+    searchRDD.searchJoin(rdd, queryBuilder)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchJoin[S: ClassTag](rdd: RDD[S],
+                              queryBuilder: S => String,
+                              topK: Int): RDD[Match[S, T]] =
+    searchRDD.searchJoin(rdd, queryBuilder, topK)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchJoin[S: ClassTag](rdd: RDD[S],
+                              queryBuilder: S => String,
+                              topK: Int,
+                              minScore: Double,
+                              opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
+    searchRDD(opts).searchJoin(rdd, queryBuilder, topK, minScore)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchQueryJoin[S: ClassTag](rdd: RDD[S], queryBuilder: S => Query): RDD[Match[S, T]] =
+    searchRDD.searchQueryJoin(rdd, queryBuilder)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchQueryJoin[S: ClassTag](rdd: RDD[S],
+                              queryBuilder: S => Query,
+                              topK: Int): RDD[Match[S, T]] =
+    searchRDD.searchQueryJoin(rdd, queryBuilder, topK)
+
+  /**
+   * Joins the input RDD against this one and returns matching hits.
+   */
+  def searchQueryJoin[S: ClassTag](rdd: RDD[S],
+                              queryBuilder: S => Query,
+                              topK: Int,
+                              minScore: Double,
+                              opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
+    searchRDD(opts).searchQueryJoin(rdd, queryBuilder, topK, minScore)
 
   /**
    * @return Dependent RDD with search features
