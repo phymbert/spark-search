@@ -37,12 +37,12 @@ public class MatchJava<S, H> implements Serializable {
     /**
      * TopK hits matching the source document for that query.
      */
-    public List<SearchRecordJava<H>> hits;
+    public SearchRecordJava<H>[] hits;
 
     public MatchJava() {
     }
 
-    public MatchJava(S doc, List<SearchRecordJava<H>> hits) {
+    public MatchJava(S doc, SearchRecordJava<H>[] hits) {
         this.doc = doc;
         this.hits = hits;
     }
@@ -51,7 +51,7 @@ public class MatchJava<S, H> implements Serializable {
         return doc;
     }
 
-    public List<SearchRecordJava<H>> getHits() {
+    public SearchRecordJava<H>[] getHits() {
         return hits;
     }
 
@@ -59,7 +59,7 @@ public class MatchJava<S, H> implements Serializable {
         this.doc = doc;
     }
 
-    public void setHits(List<SearchRecordJava<H>> hits) {
+    public void setHits(SearchRecordJava<H>[] hits) {
         this.hits = hits;
     }
 

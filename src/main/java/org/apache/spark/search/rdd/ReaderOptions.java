@@ -31,13 +31,13 @@ public class ReaderOptions<T> implements Serializable {
     /**
      * Default field name for query terms.
      */
-    static final String DEFAULT_FIELD_NAME = "__default__";
+    public static final String DEFAULT_FIELD_NAME = "__default__";
     private String defaultFieldName = DEFAULT_FIELD_NAME;
 
     /**
      * Default search analyzer type: standard.
      */
-    Class<? extends Analyzer> analyzer = IndexationOptions.DEFAULT_ANALYZER;
+    public Class<? extends Analyzer> analyzer = IndexationOptions.DEFAULT_ANALYZER;
 
     /**
      * Directory is {@link org.apache.lucene.store.MMapDirectory} by default.
@@ -75,11 +75,11 @@ public class ReaderOptions<T> implements Serializable {
         return new Builder<>();
     }
 
-    String getDefaultFieldName() {
+    public String getDefaultFieldName() {
         return defaultFieldName;
     }
 
-    Class<? extends Analyzer> getAnalyzer() {
+    public Class<? extends Analyzer> getAnalyzer() {
         return analyzer;
     }
 

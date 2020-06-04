@@ -20,7 +20,7 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     val companies = TestData.companiesDS(spark).repartition(4).cache
 
     val l3Comm = companies.searchList("name:\"*3*communications\"~0.8")
-    assertResult(Array(new SearchRecord(94, 3, 3.7266731f, 0, Company("l-3 communications",
+    assertResult(Array(SearchRecord(94, 3, 3.7266731f, 0, Company("l-3 communications",
       "l3design.eu", "1997.0", "management consulting", "10001+",
       "new york, new york, united states", "united states",
       "linkedin.com/company/l3", "12268", 30840))))(l3Comm)

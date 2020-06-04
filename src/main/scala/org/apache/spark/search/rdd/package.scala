@@ -18,11 +18,16 @@ package org.apache.spark.search
 
 import java.util.function.{Function => JFunction}
 
+import org.apache.lucene.analysis.Analyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.Query
+import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.rdd.RDD
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 /**
  * Spark Search RDD.
@@ -37,7 +42,7 @@ package object rdd {
   /**
    * Matched record.
    */
-  case class Match[S, H](doc: S, hits: List[SearchRecord[H]])
+  case class Match[S, H](doc: S, hits: Array[SearchRecord[H]])
 
   /**
    * Default search options.
@@ -45,19 +50,53 @@ package object rdd {
   def defaultOpts[T]: SearchRDDOptions[T] = SearchRDDOptions.defaultOptions.asInstanceOf[SearchRDDOptions[T]]
 
   /**
-   * A search query to run against a [[org.apache.spark.search.rdd.SearchRDD]],
-   * can be a string to be parsed by [[org.apache.lucene.queryparser.classic.QueryParser]]
-   * or directly a [[org.apache.lucene.search.Query]].
+   * Abstract class to ease building lucene queries using query string lucene syntax with spark search RDD.
+   *
+   * @param queryStringBuilder Generate lucene query string for this input element
+   * @tparam T Type of input class
    */
-  trait SearchQuery
+  class QueryStringBuilderWithAnalyzer[T](val queryStringBuilder: T => String,
+                                          val defaultFieldName: String = ReaderOptions.DEFAULT_FIELD_NAME)
+    extends CanBuildQueryWithAnalyzer[T] {
 
-  case class SearchQueryString(queryString: String) extends SearchQuery
+    override def apply(t: T): Query =
+      new QueryParser(defaultFieldName, _analyzer).parse(queryStringBuilder.apply(t))
+  }
 
-  case class SearchLuceneQuery(query: Query) extends SearchQuery
+  /**
+   * Abstract class to ease building lucene query with spark search RDD, support serialization
+   * and query builder creation in a distributed world.
+   *
+   * @param queryBuilder Generate lucene query for this input element
+   * @tparam T Type of input class
+   */
+  class QueryBuilderWithAnalyzer[T](val queryBuilder: (T, QueryBuilder) => Query) extends CanBuildQueryWithAnalyzer[T] {
 
-  implicit def luceneQuery(query: Query): SearchQuery = SearchLuceneQuery(query)
+    @transient private lazy val _luceneQueryBuilder: QueryBuilder = new QueryBuilder(_analyzer)
 
-  implicit def queryString(queryString: String): SearchQuery = SearchQueryString(queryString)
+    override def apply(t: T): Query = queryBuilder.apply(t, _luceneQueryBuilder)
+  }
+
+  /**
+   * Abstract class to ease building lucene query with spark search RDD, support serialization
+   * and analyzer creation in a distributed world.
+   *
+   * @param analyzerClass Type of the analyzer to use with the query
+   * @tparam T Type of input class
+   */
+  abstract class CanBuildQueryWithAnalyzer[T](val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
+    extends (T => Query) with Serializable {
+
+    @transient lazy val _analyzer: Analyzer = analyzerClass.newInstance()
+  }
+
+  def queryStringBuilder[T](builder: T => String, opts: SearchRDDOptions[_] = defaultOpts): T => Query =
+    new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName)
+
+  def parseQueryString[T](queryString: String, opts: SearchRDDOptions[_] = defaultOpts): () => Query =
+  // Query parser is not thread safe
+    () => new QueryParser(opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer.newInstance())
+      .parse(queryString)
 
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
 
@@ -77,5 +116,16 @@ package object rdd {
 
   private[rdd] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
     SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
+  }
+
+  private[rdd] def tryAndClose[A <: AutoCloseable, B](resource: A)(block: A => B): B = {
+    Try(block(resource)) match {
+      case Success(result) =>
+        resource.close()
+        result
+      case Failure(e) =>
+        resource.close()
+        throw e
+    }
   }
 }

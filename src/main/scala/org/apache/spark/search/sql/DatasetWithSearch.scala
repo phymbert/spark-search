@@ -29,24 +29,24 @@ import scala.reflect.ClassTag
 class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#count(SearchQuery)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#count(org.apache.lucene.search.Query)]]
    */
-  def count(query: SearchQuery, opts: SearchRDDOptions[T] = defaultDatasetOpts): Long =
+  def count(query: String, opts: SearchRDDOptions[T] = defaultDatasetOpts): Long =
     searchRDD(opts).count(query)
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#searchList(SearchQuery, int, Double)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)]]
    */
-  def searchList(query: SearchQuery,
+  def searchList(query: String,
                  topK: Int = Int.MaxValue,
                  minScore: Double = 0,
                  opts: SearchRDDOptions[T] = defaultDatasetOpts): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
   /**
-   * [[org.apache.spark.search.rdd.SearchRDD#search(SearchQuery, int, Double)]]
+   * [[org.apache.spark.search.rdd.SearchRDD#search(org.apache.lucene.search.Query, int, double)]]
    */
-  def search(query: SearchQuery,
+  def search(query: String,
              topKByPartition: Int = Int.MaxValue,
              minScore: Double = 0,
              opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[SearchRecord[T]]): Dataset[SearchRecord[T]] /*Dataset[SearchRecord[T]]*/ = {
@@ -61,15 +61,17 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
 
   /**
    * Joins the input RDD against this one and returns matching hits.
+   *
+   * [[org.apache.spark.search.rdd.SearchRDD#searchJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
    */
-  def searchJoin[S](ds: Dataset[S],
-                    queryBuilder: S => SearchQuery,
+  def searchJoin[S: ClassTag](ds: Dataset[S],
+                    queryBuilder: S => String,
                     topK: Int = Int.MaxValue,
                     minScore: Double = 0,
                     opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
     val _searchRecordToRow = searchRecordToRow()
     val rdd = searchRDD(opts)
-      .searchJoin(ds.rdd, queryBuilder, topK, minScore)
+      .searchQueryJoin(ds.rdd, queryStringBuilder(queryBuilder), topK, minScore)
       .map(m => new GenericRow(Array[Any](new GenericRow(m.doc match {
         case p: Product => p.productIterator.toSeq.toArray
         // FIXME Support Bean
