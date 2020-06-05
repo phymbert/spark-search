@@ -47,7 +47,6 @@ sentiments.count("sentence:happy OR sentence:best or sentence:good")
 
 // coming soon
 sentiments.where($"sentence".matches($"searchKeyword" ))
-
 ```
 
 ### RDD API
@@ -91,6 +90,7 @@ matchesReviewersRDD
   .filter(!_.hits.isEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
+```
 
 See [Examples](src/test/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
 
@@ -117,7 +117,7 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
         .map(Review::getReviewerName)
         .forEach(System.out::println);
 ```
-See [Examples](src/test/java/org.apache.spark.search.rdd.SearchRDDJavaExamples.java) for more details.
+See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 
 ## Building Spark Search
