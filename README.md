@@ -35,7 +35,7 @@ Have a look and feel free to contribute!
 </repositories>
 ```
 
-### DataFrame API
+### Dataset/DataFrame API (In progress)
 * Scala
 ```scala
 import org.apache.spark.search.sql._
@@ -45,54 +45,10 @@ case class Sentiment(sentenceIndex: Long, sentence: String)
 val sentiments = spark.read.csv("...").as[Sentiment].toDF
 sentiments.count("sentence:happy OR sentence:best or sentence:good")
 
-val sentimentsKeywords = spark.sparkContext.parallelize(Seq("good", "bad", "happy", "sad", "best", "worst", "amazing"))
-      .toDF("sentimentKeyword")
-val sentimentsPerKeyWord = sentiments.searchJoin(sentimentsKeywords, (row: Row) => s"sentence:${row.getString(0)}")
-
 // coming soon
-sentiments.filter($"sentence" ~= $"searchKeyword" )
+sentiments.where($"sentence".matches($"searchKeyword" ))
 
 ```
-
-See [Examples](src/test/scala/org/apache/spark/search/sql/SearchDataFrameExamples.scala) for more details.
-
-### Dataset API
-
-* Scala
-```scala
-import org.apache.spark.search.sql._
-
-case class Review(asin: String, helpful: Array[Long], overall: Double,
-                  reviewText: String, reviewTime: String, reviewerID: String,
-                  reviewerName: String, summary: String, unixReviewTime: Long)
-
-val computersReviews = spark.read.json("...").as[Review]
-// Number of partition is the number of Lucene index which will be created across your cluster
-.repartition(4)
-
-// Search SQL API
-// import org.apache.spark.search.sql._ to implicitly enhance Dataset with search features
-
-// Count positive review: indexation + count matched doc
-computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
-
-// Search for key words
-computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
-  .foreach(println)
-
-// Match software and computer reviewers
-val matchesReviewers = computersReviews.searchJoin(softwareReviews,
-  (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
-.filter(_.hits.nonEmpty)
-.map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
-.foreach(println(_))
-
-// Dropping duplicates
-case class CompanyInfo(companyName: String)
-val companies = spark.read.json("...").as[CompanyInfo]
-companies.searchDropDuplicates(defaultQueryBuilder[CompanyInfo](), 3, 1)
-```
-See [Examples](src/test/scala/org/apache/spark/search/sql/SearchDatasetExamples.scala) for more details.
 
 ### RDD API
 * Scala
