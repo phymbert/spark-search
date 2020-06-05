@@ -26,7 +26,7 @@ import java.util.Objects;
  */
 public class SearchRecordJava<T> implements Serializable {
 
-    private static final long serialVersionUID = 6220753751555421030L;
+    private static final long serialVersionUID = 1L;
 
     /**
      * A hit document's number.
@@ -39,7 +39,7 @@ public class SearchRecordJava<T> implements Serializable {
     /**
      * RDD Partition index.
      *
-     * @see RDD#id()
+     * @see org.apache.spark.Partition#index()
      */
     public long partitionIndex;
 

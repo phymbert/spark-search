@@ -42,9 +42,6 @@ abstract class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOp
   override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
     searchRDD.search(query, topK).map(searchRecordAsJava).toJavaRDD()
 
-  override def searchJoin[S](rdd: JavaRDD[S], jQueryStringBuilder: QueryStringBuilder[S], topK: Int, minScore: Double): JavaRDD[MatchJava[S, T]] = ???
-    //searchRDD.searchQueryJoin(rdd, queryStringBuilder[S](s => jQueryStringBuilder.build(s), defaultOpts), topK, minScore).map(matchAsJava).toJavaRDD()
-
   private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
     new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))
   }

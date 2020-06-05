@@ -27,7 +27,7 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
+class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
 
   /**
    * [[org.apache.spark.search.rdd.SearchRDD#count(org.apache.lucene.search.Query)]]
@@ -70,35 +70,68 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
                               topK: Int = Int.MaxValue,
                               minScore: Double = 0,
                               opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
+    // FIXME support row natively
     val _searchRecordToRow = searchRecordToRow()
     val rdd = searchRDD(opts)
       .searchQueryJoin(ds.rdd, queryStringBuilder(queryBuilder), topK, minScore)
-      .map(m => new GenericRow(Array[Any](new GenericRow(m.doc match {
-        case p: Product => p.productIterator.toSeq.toArray
-        // FIXME Support Bean
-        // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
-      }), m.hits.map(_searchRecordToRow).toArray)).asInstanceOf[Row])
+      .map(m => new GenericRow(Array[Any](asRow(m.doc), m.hits.map(_searchRecordToRow))).asInstanceOf[Row])
 
     dataset.sqlContext.createDataFrame(rdd, enc.schema).as[Match[S, T]]
   }
+
+  /**
+   * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
+   */
+  def searchDropDuplicates(queryBuilder: T => Query)(implicit enc: Encoder[T]): Dataset[T] =
+    searchDropDuplicates(queryBuilder, Int.MaxValue)
 
 
   /**
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
-  def dropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(),
-                     minScore: Int = 0,
-                     numPartitions: Int = dataset.rdd.getNumPartitions,
-                     opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[T]): Dataset[T] = {
+  def searchDropDuplicates(queryBuilder: T => Query, topK: Int)(implicit enc: Encoder[T]): Dataset[T] =
+    searchDropDuplicates(queryBuilder, topK, 0)
+
+
+  /**
+   * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
+   */
+  def searchDropDuplicates(queryBuilder: T => Query, topK: Int, minScore: Double)(implicit enc: Encoder[T]): Dataset[T] =
+    searchDropDuplicates(queryBuilder, topK, minScore, dataset.rdd.getNumPartitions)
+
+  /**
+   * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
+   */
+  def searchDropDuplicates(queryBuilder: T => Query,
+                     topK: Int,
+                     minScore: Double,
+                     numPartitions: Int)(implicit enc: Encoder[T]): Dataset[T] =
+    searchDropDuplicates(queryBuilder, topK, minScore, numPartitions, defaultDatasetOpts[T])
+
+  /**
+   * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
+   */
+  def searchDropDuplicates(queryBuilder: T => Query,
+                     topK: Int,
+                     minScore: Double,
+                     numPartitions: Int,
+                     opts: SearchRDDOptions[T])(implicit enc: Encoder[T]): Dataset[T] = {
     val rdd = searchRDD(opts)
-      .dropDuplicates(queryBuilder, minScore, numPartitions)
-      .map(d => new GenericRow(d match {
+      .searchDropDuplicates(queryBuilder, topK, minScore, numPartitions)
+      .map(asRow)
+
+    dataset.sqlContext.createDataFrame(rdd, enc.schema).as[T]
+  }
+
+  private def asRow[H](d: H) = {
+    (d match {
+      case r: Row => r
+      case _ => new GenericRow(d match {
         case p: Product => p.productIterator.toSeq.toArray
         // FIXME Support Bean
         // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
-      }).asInstanceOf[Row])
-
-    dataset.sqlContext.createDataFrame(rdd, enc.schema).as[T]
+      })
+    }).asInstanceOf[Row]
   }
 
   def searchRDD: SearchRDD[T] = searchRDD(defaultOpts)
@@ -111,10 +144,6 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) {
     new SearchRDD[T](dataset.rdd, opts).cache
 
   private def searchRecordToRow(): SearchRecord[T] => Row = (sr: SearchRecord[T]) =>
-    new GenericRow(Array(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, new GenericRow(sr.source match {
-      case p: Product => p.productIterator.toSeq.toArray
-      // FIXME Support Bean
-      // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
-    }))).asInstanceOf[Row]
+    new GenericRow(Array(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, asRow(sr.source))).asInstanceOf[Row]
 
 }

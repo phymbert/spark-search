@@ -69,14 +69,4 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     public JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore) {
         return searchRDDJava.search(query, topK, minScore);
     }
-
-    @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
-    }
-
-    @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> queryBuilder, int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
-    }
 }

@@ -4,7 +4,6 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
-import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.search.TestData
 import org.apache.spark.search.TestData.{Company, SecEdgarCompanyInfo}
 import org.apache.spark.search.rdd.{Match, SearchRDDOptions, SearchRecord}
@@ -30,7 +29,6 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     Encoders.bean(classOf[SearchRecord[_]])
 
     val spark = _spark
-    import spark.implicits._
 
     val companies = TestData.companiesDS(spark).repartition(4).cache
 
@@ -65,7 +63,6 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
 
   test("A dataset can be joined with another one by search queries") {
     val spark = _spark
-    import spark.implicits._
 
     val companies = TestData.companiesDS(spark).repartition(4).cache
     val secCompanies = TestData.companiesEdgarDS(spark).repartition(4).cache
@@ -97,7 +94,9 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
 
     val secCompanies = TestData.companiesEdgarDS(spark).repartition(4).cache
 
-    assertResult(1003)(secCompanies.count)
-    assertResult(1000)(secCompanies.dropDuplicates.count)
+    assertResult(10003)(secCompanies.count)
+    val deduplicated = secCompanies.searchDropDuplicates(defaultQueryBuilder[SecEdgarCompanyInfo](), 3, 1)
+    deduplicated.foreach(println(_))
+    assertResult(2513)(deduplicated.count)
   }
 }

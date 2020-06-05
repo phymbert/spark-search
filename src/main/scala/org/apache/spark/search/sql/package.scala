@@ -16,6 +16,7 @@
 
 package org.apache.spark.search
 
+import org.apache.lucene.search.Query
 import org.apache.spark.search.rdd._
 import org.apache.spark.sql.{Dataset, Encoder, Encoders}
 
@@ -34,6 +35,11 @@ package object sql {
    * Default search options.
    */
   def defaultDatasetOpts[T]: SearchRDDOptions[T] = SearchRDDOptions.builder().build()
+
+  /**
+   * Default query builder.
+   */
+  def defaultQueryBuilder[T: ClassTag]()(implicit enc: Encoder[T]): T => Query = rdd.defaultQueryBuilder[T]()
 
   /**
    * Allow search record rdd transformation to Row.

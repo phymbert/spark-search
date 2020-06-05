@@ -17,7 +17,6 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.commons.beanutils.ConvertUtils;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ScoreDoc;
@@ -32,7 +31,7 @@ import java.util.Arrays;
  *
  * @author Pierrick HYMBERT
  */
-public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors implements DocumentConverter<T> {
+public class DocumentBeanConverter<T> extends DocumentBasePropertyDescriptors implements DocumentConverter<T> {
 
     private static final long serialVersionUID = 1L;
 
@@ -43,16 +42,10 @@ public class DocumentBeanConverter<T> extends ScalaProductPropertyDescriptors im
     }
 
     private T convert(Class<T> classTag, Document doc) throws Exception {
-        PropertyDescriptor[] propertyDescriptors;
-        boolean scalaProduct = scala.Product.class.isAssignableFrom(classTag);
-        if (scalaProduct) {
-            propertyDescriptors = getProductPropertyDescriptors((Class) classTag);
-        } else {
-            propertyDescriptors = PropertyUtils.getPropertyDescriptors(classTag);
-        }
+        PropertyDescriptor[] propertyDescriptors = getPropertyDescriptors(classTag);
 
         T source;
-        if (scalaProduct) {
+        if (isScalaProduct(classTag)) {
             Class<?>[] types = new Class[propertyDescriptors.length];
             Object[] values = new Object[propertyDescriptors.length];
             for (int i = 0; i < types.length; i++) {

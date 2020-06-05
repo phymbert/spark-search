@@ -16,8 +16,6 @@
 
 package org.apache.spark.search.rdd;
 
-import org.apache.commons.beanutils.ConvertUtils;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
@@ -35,7 +33,7 @@ import java.util.List;
  *
  * @author Pierrick HYMBERT
  */
-public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors implements DocumentUpdater<T> {
+public class DocumentBeanUpdater<T> extends DocumentBasePropertyDescriptors implements DocumentUpdater<T> {
 
     private static final long serialVersionUID = 1L;
 
@@ -59,12 +57,7 @@ public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors impl
 
     private void buildFields(IndexingDocument<T> indexingDocument) throws Exception {
         T element = indexingDocument.element;
-        PropertyDescriptor[] propertyDescriptors;
-        if (element instanceof scala.Product) {
-            propertyDescriptors = getProductPropertyDescriptors((scala.Product) element);
-        } else {
-            propertyDescriptors = PropertyUtils.getPropertyDescriptors(element);
-        }
+        PropertyDescriptor[] propertyDescriptors = getPropertyDescriptors(element.getClass());
         for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
             Method readMethod = propertyDescriptor.getReadMethod();
             if (readMethod == null) {
@@ -100,25 +93,11 @@ public class DocumentBeanUpdater<T> extends ScalaProductPropertyDescriptors impl
     }
 
     private PropertyDescriptor getPropertyDescriptor(T element, String name) throws IntrospectionException, NoSuchMethodException {
-        PropertyDescriptor[] descriptors;
-        if (element instanceof scala.Product) {
-            descriptors = getProductPropertyDescriptors((scala.Product) element);
-        } else {
-            descriptors = PropertyUtils.getPropertyDescriptors(element);
-        }
+        PropertyDescriptor[] descriptors = getPropertyDescriptors(element.getClass());
         for (PropertyDescriptor descriptor : descriptors) {
             if (name.equals(descriptor.getName()))
                 return descriptor;
         }
         throw new IllegalStateException("no property descriptors for field " + name + " on " + element.getClass());
-    }
-
-    private String value(PropertyDescriptor propertyDescriptor, T element) throws Exception {
-        String value = ConvertUtils.convert(propertyDescriptor.getReadMethod().invoke(element));
-
-        if (value != null) {
-            return value;
-        }
-        return "";
     }
 }

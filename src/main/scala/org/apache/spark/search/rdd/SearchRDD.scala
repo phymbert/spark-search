@@ -16,6 +16,8 @@
 
 package org.apache.spark.search.rdd
 
+import java.util.Objects
+
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.SearchException
@@ -106,10 +108,11 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
+    val otherNumPartitions = other.getNumPartitions
     other.mapPartitionsWithIndex((index: Int, part: Iterator[S]) => part
       .zipWithIndex
       .map(_.swap)
-      .map(doc => (index.toLong * other.getNumPartitions + doc._1, doc._2)))
+      .map(doc => (index.toLong * otherNumPartitions + doc._1, doc._2)))
       .join(new MatchRDD[S, T](this, other, queryBuilder, topK, minScore))
       .reduceByKey((d1, d2) => {
         (d1._1, d1._2 ++ d2._2)
@@ -124,19 +127,24 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * alias for dropDuplicates
    */
   override def distinct(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T] =
-    dropDuplicates(numPartitions = numPartitions)
+    searchDropDuplicates(numPartitions = numPartitions)
 
   /**
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
-  def dropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(),
-                     minScore: Int = 0,
-                     numPartitions: Int = getNumPartitions): RDD[T] = {
-    // FIXME optimize
-    searchQueryJoin[T](rdd, queryBuilder, minScore)
-      .map(m => (m.hits.map(_.source.hashCode).mkString("-"), m))
+  def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(),
+                           topK: Int = Int.MaxValue,
+                           minScore: Double = 0,
+                           numPartitions: Int = getNumPartitions): RDD[T] = {
+    searchQueryJoin[T](rdd, queryBuilder, topK, minScore)
+      .map(m => {
+        val matchHashes = m.hits.filter(_.hashCode != m.hashCode).map(_.source.hashCode)
+        val allHashes = (Seq(m.hashCode) ++ matchHashes).sorted
+        (Objects.hash(allHashes), m)
+      })
       .reduceByKey((m1, _) => m1)
       .map(_._2.doc)
+      .repartition(numPartitions)
   }
 
   override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
