@@ -23,7 +23,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.spark.search.DocumentUpdater;
-import org.apache.spark.sql.Row;
+import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
@@ -34,22 +34,32 @@ import java.util.List;
  *
  * @author Pierrick HYMBERT
  */
-public class DocumentRowUpdater implements DocumentUpdater<Row> {
+public class DocumentRowUpdater implements DocumentUpdater<InternalRow> {
 
     private static final long serialVersionUID = 1L;
 
+    private final StructType schema;
+
+    public DocumentRowUpdater(StructType schema) {
+        this.schema = schema;
+    }
+
     @Override
-    public void update(IndexingDocument<Row> indexingDocument) throws Exception {
+    public void update(IndexingDocument<InternalRow> indexingDocument) throws Exception {
         if (indexingDocument.doc.getFields().isEmpty()) {
             buildFields(indexingDocument);
         }
-        StructType schema = indexingDocument.element.schema();
 
+        InternalRow row = indexingDocument.element;
         StructField[] sqlFields = schema.fields();
         List<IndexableField> docFields = indexingDocument.doc.getFields();
         for (int i = 0; i < sqlFields.length; i++) {
             StructField sqlField = sqlFields[i]; // FIXME support struct fields / array
-            String value = ConvertUtils.convert(indexingDocument.element.get(i));
+            String value = null;
+            if (!row.isNullAt(i)) {
+                value = ConvertUtils.convert(row.getString(i));
+            }
+
             if (value == null) {
                 value = "";
             }
@@ -57,8 +67,7 @@ public class DocumentRowUpdater implements DocumentUpdater<Row> {
         }
     }
 
-    private void buildFields(IndexingDocument<Row> indexingDocument) {
-        StructType schema = indexingDocument.element.schema();
+    private void buildFields(IndexingDocument<InternalRow> indexingDocument) {
         for (StructField sqlField : schema.fields()) {
             String fieldName = sqlField.name();
             Field.Store storedField = Field.Store.YES;

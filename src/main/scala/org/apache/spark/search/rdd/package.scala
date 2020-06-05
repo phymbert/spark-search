@@ -43,5 +43,4 @@ package object rdd {
         throw e
     }
   }
-
 }

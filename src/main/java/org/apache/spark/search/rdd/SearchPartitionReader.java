@@ -57,7 +57,7 @@ class SearchPartitionReader<T> implements AutoCloseable {
                           String indexDirectory,
                           Class<T> classTag,
                           ReaderOptions<T> options)
-            throws IOException, IllegalAccessException, InstantiationException {
+            throws IOException {
         this.index = index;
         this.indexDirectory = indexDirectory;
         this.classTag = classTag;

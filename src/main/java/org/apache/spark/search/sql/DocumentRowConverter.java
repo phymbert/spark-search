@@ -4,11 +4,11 @@ import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.spark.search.SearchException;
 import org.apache.spark.search.DocumentConverter;
+import org.apache.spark.search.SearchException;
 import org.apache.spark.search.SearchRecordJava;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.catalyst.expressions.GenericRow;
+import org.apache.spark.sql.catalyst.InternalRow;
+import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
 import org.apache.spark.sql.types.DataType;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
@@ -18,7 +18,7 @@ import org.apache.spark.sql.types.StructType;
  *
  * @author Pierrick HYMBERT
  */
-public class DocumentRowConverter implements DocumentConverter<Row> {
+public class DocumentRowConverter implements DocumentConverter<InternalRow> {
 
     private final StructType schema;
 
@@ -27,13 +27,13 @@ public class DocumentRowConverter implements DocumentConverter<Row> {
     }
 
     @Override
-    public SearchRecordJava<Row> convert(int partitionIndex, ScoreDoc scoreDoc, Class<Row> classTag, Document doc) throws Exception {
+    public SearchRecordJava<InternalRow> convert(int partitionIndex, ScoreDoc scoreDoc, Class<InternalRow> classTag, Document doc) throws Exception {
         return new SearchRecordJava<>(scoreDoc.doc, partitionIndex,
                 scoreDoc.score, scoreDoc.shardIndex, asRow(doc));
     }
 
-    private Row asRow(Document doc) {
-        return new GenericRow(doc.getFields().stream().map(this::convert).toArray());
+    private InternalRow asRow(Document doc) {
+        return new GenericInternalRow(doc.getFields().stream().map(this::convert).toArray());
     }
 
     private Object convert(IndexableField indexableField) {
