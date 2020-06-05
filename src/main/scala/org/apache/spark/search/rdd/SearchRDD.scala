@@ -108,19 +108,20 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
+    val sortTopK = (matches: Iterator[SearchRecord[T]]) => matches.toArray
+      .sortBy(_.score)(Ordering.Double.reverse)
+      .take(topK)
+
     val otherNumPartitions = other.getNumPartitions
     other.mapPartitionsWithIndex((index: Int, part: Iterator[S]) => part
       .zipWithIndex
       .map(_.swap)
       .map(doc => (index.toLong * otherNumPartitions + doc._1, doc._2)))
       .join(new MatchRDD[S, T](this, other, queryBuilder, topK, minScore))
-      .reduceByKey((d1, d2) => {
-        (d1._1, d1._2 ++ d2._2)
-      }).map {
-      case (_, (doc, matches)) => new Match[S, T](doc, matches.toList
-        .sortBy(_.score)(Ordering.Double.reverse)
-        .take(topK).toArray)
-    }
+      .reduceByKey((d1, d2) => (d1._1, sortTopK(d1._2 ++ d2._2).iterator))
+      .map {
+        case (_, (doc, matches)) => new Match[S, T](doc, sortTopK(matches))
+      }
   }
 
   /**
