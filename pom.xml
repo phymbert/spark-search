@@ -43,6 +43,7 @@
         <url>scm:git:git@github.com:phymbert/spark-search.git</url>
         <tag>HEAD</tag>
     </scm>
+    <inceptionYear>2020</inceptionYear>
 
     <distributionManagement>
         <repository>
@@ -58,6 +59,11 @@
             <url>https://github.com/phymbert/spark-search</url>
         </site>
     </distributionManagement>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/phymbert/spark-search/issues</url>
+    </issueManagement>
 
     <dependencies>
         <dependency>
@@ -121,6 +127,15 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>NOTICE*</include>
+                    <include>LICENSE*</include>
+                </includes>
+            </resource>
+        </resources>
         <outputDirectory>target/scala-${scala.binary.version}/classes</outputDirectory>
         <testOutputDirectory>target/scala-${scala.binary.version}/test-classes</testOutputDirectory>
         <plugins>
