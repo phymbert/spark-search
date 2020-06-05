@@ -21,7 +21,7 @@ Have a look and feel free to contribute!
 
 ```xml
 <dependency>
-    <groupId>org.phymbert.spark</groupId>
+    <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
     <version>0.1.2</version>
 </dependency>
