@@ -23,7 +23,7 @@ Have a look and feel free to contribute!
 <dependency>
     <groupId>org.phymbert.spark</groupId>
     <artifactId>spark-search_2.12</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 
 <repositories>
