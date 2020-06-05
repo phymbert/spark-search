@@ -21,18 +21,10 @@ Have a look and feel free to contribute!
 
 ```xml
 <dependency>
-    <groupId>org.phymbert.spark</groupId>
-    <artifactId>spark-search_2.12</artifactId>
-    <version>0.1.1</version>
+    <groupId>io.github.phymbert</groupId>
+    <artifactId>spark-search_${scala.binary.version}</artifactId>
+    <version>0.1.2</version>
 </dependency>
-
-<repositories>
-    ... maven central ...
-    <repository>
-      <id>github-spark-search</id>
-      <url>https://maven.pkg.github.com/phymbert/spark-search</url>
-    </repository>
-</repositories>
 ```
 
 ### Dataset/DataFrame API (In progress)
@@ -40,13 +32,11 @@ Have a look and feel free to contribute!
 ```scala
 import org.apache.spark.search.sql._
 
-case class Sentiment(sentenceIndex: Long, sentence: String)
+val sentences = spark.read.csv("...")
+sentences.count("sentence:happy OR sentence:best or sentence:good")
 
-val sentiments = spark.read.csv("...").as[Sentiment].toDF
-sentiments.count("sentence:happy OR sentence:best or sentence:good")
-
-// coming soon
-sentiments.where($"sentence".matches($"searchKeyword" ))
+// coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
+sentences.where($"sentence".matches($"searchKeyword" ))
 ```
 
 ### RDD API
@@ -119,6 +109,20 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
 ```
 See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
+## Release notes
+
+##### v0.1.2 
+* Released to maven central
+
+##### v0.1.1
+* First stable version of the Scala Spark Search RDD
+* Support of `SearchRDD#searchJoin(RDD, S => String)` - join 2 RDD by matching queries
+* Support of `SearchRDD#dropDuplicates(S => String)` - deduplicate an RDD based on matching query
+
+##### v0.1.0
+* Support of `SearchRDD#count(String)` -  count matching hits
+* Support of `SearchRDD#searchList(String)` - search matching records as list
+* Support of `SearchRDD#search(String)` - search matching records as RDD
 
 ## Building Spark Search
 ```shell script
