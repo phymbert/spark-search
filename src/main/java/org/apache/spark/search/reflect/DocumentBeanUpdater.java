@@ -14,13 +14,14 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search.reflect;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.spark.search.DocumentUpdater;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;

@@ -17,15 +17,14 @@
 package org.apache.spark.search.rdd
 
 import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.search.rdd.ISearchRDDJava.QueryStringBuilder
+import org.apache.spark.search._
 
-import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
  * Java friendly version of [[SearchRDD]].
  */
-abstract class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchRDDOptions[T])
+abstract class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
   extends JavaRDD[T](rdd.rdd) with ISearchRDDJava[T] {
 
   protected val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)

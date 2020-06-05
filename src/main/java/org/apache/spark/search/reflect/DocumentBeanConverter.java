@@ -14,13 +14,15 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search.reflect;
 
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.spark.search.DocumentConverter;
 import org.apache.spark.search.SearchException;
+import org.apache.spark.search.SearchRecordJava;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;

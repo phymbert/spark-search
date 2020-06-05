@@ -1,10 +1,5 @@
-package org.apache.spark.search.rdd;
+package org.apache.spark.search.reflect;
 
-import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -12,9 +7,7 @@ import org.apache.lucene.util.QueryBuilder;
 import org.apache.spark.search.SearchException;
 import scala.Serializable;
 
-import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
 import java.util.function.BiFunction;
 
 /**

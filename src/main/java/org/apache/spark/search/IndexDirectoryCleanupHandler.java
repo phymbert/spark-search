@@ -14,18 +14,14 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.ScoreDoc;
+package org.apache.spark.search;
 
 import java.io.Serializable;
 
 /**
- * Convert scored and lucene documents to search record.
+ * Responsible to schedule the cleanup of the index directory.
  */
 @FunctionalInterface
-public interface DocumentConverter<T> extends Serializable {
-
-    SearchRecordJava<T> convert(int partitionIndex, ScoreDoc scoreDoc, Class<T> classTag, Document doc) throws Exception;
+public interface IndexDirectoryCleanupHandler extends Serializable {
+    void apply(Runnable cleanupIndexDirectory);
 }

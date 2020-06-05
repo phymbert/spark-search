@@ -14,10 +14,9 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 
 /**

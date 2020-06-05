@@ -16,7 +16,8 @@
 package org.apache.spark.search.sql
 
 import org.apache.lucene.search.Query
-import org.apache.spark.search.rdd.{SearchRDDOptions, SearchRecord, _}
+import org.apache.spark.search.{SearchOptions, _}
+import org.apache.spark.search.rdd._
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.{Dataset, Encoder, Row}
 
@@ -25,6 +26,8 @@ import scala.reflect.ClassTag
 /**
  * Dataset with search features.
  *
+ * FIXME: maybe need to deal only with Rows, instead of reflection with product/beans, just use encoder, and let spark does the conversions
+ *
  * @author Pierrick HYMBERT
  */
 class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
@@ -32,16 +35,43 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
   /**
    * [[org.apache.spark.search.rdd.SearchRDD#count(org.apache.lucene.search.Query)]]
    */
-  def count(query: String, opts: SearchRDDOptions[T] = defaultDatasetOpts): Long =
+  def count(query: String): Long =
+    count(query, defaultDatasetOpts[T])
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#count(org.apache.lucene.search.Query)]]
+   */
+  def count(query: String, opts: SearchOptions[T]): Long =
     searchRDD(opts).count(query)
 
   /**
    * [[org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)]]
    */
+  def searchList(query: String): Array[SearchRecord[T]] =
+    searchList(query, Int.MaxValue)
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)]]
+   */
   def searchList(query: String,
-                 topK: Int = Int.MaxValue,
-                 minScore: Double = 0,
-                 opts: SearchRDDOptions[T] = defaultDatasetOpts): Array[SearchRecord[T]] =
+                 topK: Int): Array[SearchRecord[T]] =
+    searchList(query, topK, 0)
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)]]
+   */
+  def searchList(query: String,
+                 topK: Int,
+                 minScore: Double): Array[SearchRecord[T]] =
+    searchList(query, topK, minScore, defaultDatasetOpts[T])
+
+  /**
+   * [[org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)]]
+   */
+  def searchList(query: String,
+                 topK: Int,
+                 minScore: Double,
+                 opts: SearchOptions[T]): Array[SearchRecord[T]] =
     searchRDD(opts).searchList(query, topK, minScore)
 
   /**
@@ -50,9 +80,9 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
   def search(query: String,
              topKByPartition: Int = Int.MaxValue,
              minScore: Double = 0,
-             opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[SearchRecord[T]]): Dataset[SearchRecord[T]] /*Dataset[SearchRecord[T]]*/ = {
+             opts: SearchOptions[T] = defaultDatasetOpts[T])(implicit enc: Encoder[SearchRecord[T]]): Dataset[SearchRecord[T]] = {
 
-    val _searchRecordToRow = searchRecordToRow()
+    val _searchRecordToRow = searchRecordToRow[T]()
     val rdd = searchRDD(opts)
       .search(query, topKByPartition, minScore)
       .map(_searchRecordToRow)
@@ -61,7 +91,7 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
   }
 
   /**
-   * Joins the input RDD against this one and returns matching hits.
+   * Joins the input DS against this one and returns matching hits.
    *
    * [[org.apache.spark.search.rdd.SearchRDD#searchJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
    */
@@ -69,9 +99,8 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
                               queryBuilder: S => String,
                               topK: Int = Int.MaxValue,
                               minScore: Double = 0,
-                              opts: SearchRDDOptions[T] = defaultDatasetOpts)(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
-    // FIXME support row natively
-    val _searchRecordToRow = searchRecordToRow()
+                              opts: SearchOptions[T] = defaultDatasetOpts[T])(implicit enc: Encoder[Match[S, T]]): Dataset[Match[S, T]] = {
+    val _searchRecordToRow = searchRecordToRow[T]()
     val rdd = searchRDD(opts)
       .searchQueryJoin(ds.rdd, queryStringBuilder(queryBuilder), topK, minScore)
       .map(m => new GenericRow(Array[Any](asRow(m.doc), m.hits.map(_searchRecordToRow))).asInstanceOf[Row])
@@ -92,7 +121,6 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
   def searchDropDuplicates(queryBuilder: T => Query, topK: Int)(implicit enc: Encoder[T]): Dataset[T] =
     searchDropDuplicates(queryBuilder, topK, 0)
 
-
   /**
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
@@ -103,19 +131,19 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
   def searchDropDuplicates(queryBuilder: T => Query,
-                     topK: Int,
-                     minScore: Double,
-                     numPartitions: Int)(implicit enc: Encoder[T]): Dataset[T] =
+                           topK: Int,
+                           minScore: Double,
+                           numPartitions: Int)(implicit enc: Encoder[T]): Dataset[T] =
     searchDropDuplicates(queryBuilder, topK, minScore, numPartitions, defaultDatasetOpts[T])
 
   /**
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
   def searchDropDuplicates(queryBuilder: T => Query,
-                     topK: Int,
-                     minScore: Double,
-                     numPartitions: Int,
-                     opts: SearchRDDOptions[T])(implicit enc: Encoder[T]): Dataset[T] = {
+                           topK: Int,
+                           minScore: Double,
+                           numPartitions: Int,
+                           opts: SearchOptions[T])(implicit enc: Encoder[T]): Dataset[T] = {
     val rdd = searchRDD(opts)
       .searchDropDuplicates(queryBuilder, topK, minScore, numPartitions)
       .map(asRow)
@@ -123,27 +151,12 @@ class DatasetWithSearch[T: ClassTag](dataset: Dataset[T]) extends Serializable {
     dataset.sqlContext.createDataFrame(rdd, enc.schema).as[T]
   }
 
-  private def asRow[H](d: H) = {
-    (d match {
-      case r: Row => r
-      case _ => new GenericRow(d match {
-        case p: Product => p.productIterator.toSeq.toArray
-        // FIXME Support Bean
-        // GenCode for others case _ => enc.asInstanceOf[ExpressionEncoder].deserializer.genCode()
-      })
-    }).asInstanceOf[Row]
-  }
-
-  def searchRDD: SearchRDD[T] = searchRDD(defaultOpts)
-
   /**
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] =
+  def searchRDD(opts: SearchOptions[T]): SearchRDD[T] =
     new SearchRDD[T](dataset.rdd, opts).cache
 
-  private def searchRecordToRow(): SearchRecord[T] => Row = (sr: SearchRecord[T]) =>
-    new GenericRow(Array(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, asRow(sr.source))).asInstanceOf[Row]
-
+  private[sql] def searchRDD: SearchRDD[T] = searchRDD(defaultDatasetOpts[T])
 }

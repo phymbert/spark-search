@@ -17,6 +17,7 @@
 package org.apache.spark.search.rdd;
 
 
+import org.apache.spark.search.IndexationOptions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

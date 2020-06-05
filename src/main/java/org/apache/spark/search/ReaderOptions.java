@@ -14,9 +14,10 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.spark.search.reflect.DocumentBeanConverter;
 
 import java.io.Serializable;
 
@@ -42,12 +43,12 @@ public class ReaderOptions<T> implements Serializable {
     /**
      * Directory is {@link org.apache.lucene.store.MMapDirectory} by default.
      */
-    IndexDirectoryProvider indexDirectoryProvider = IndexationOptions.DEFAULT_DIRECTORY_PROVIDER;
+    public IndexDirectoryProvider indexDirectoryProvider = IndexationOptions.DEFAULT_DIRECTORY_PROVIDER;
 
     /**
      * Default document converter.
      */
-    Class<? extends DocumentConverter<T>> documentConverter = (Class) DocumentBeanConverter.class;
+    public DocumentConverter<T> documentConverter = new DocumentBeanConverter<>();
 
     /**
      * Log query time every 10K queries.
@@ -87,11 +88,11 @@ public class ReaderOptions<T> implements Serializable {
         return indexDirectoryProvider;
     }
 
-    long getLogQueryTime() {
+    public long getLogQueryTime() {
         return logQueryTime;
     }
 
-    Class<? extends DocumentConverter<T>> getDocumentConverter() {
+    DocumentConverter<T> getDocumentConverter() {
         return documentConverter;
     }
 
@@ -160,7 +161,7 @@ public class ReaderOptions<T> implements Serializable {
          * @param documentConverter Document converter
          * @return builder
          */
-        public Builder<T> documentConverter(Class<? extends DocumentConverter<T>> documentConverter) {
+        public Builder<T> documentConverter(DocumentConverter<T> documentConverter) {
             requireNotNull(documentConverter, "document converter");
             options.documentConverter = documentConverter;
             return this;

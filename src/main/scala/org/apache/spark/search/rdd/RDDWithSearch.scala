@@ -18,6 +18,8 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
+import org.apache.spark.search.SearchOptions
+import org.apache.spark.search._
 
 import scala.reflect.ClassTag
 
@@ -45,7 +47,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param opts  Search options
    * @return Matched doc count
    */
-  def count(query: String, opts: SearchRDDOptions[T]): Long =
+  def count(query: String, opts: SearchOptions[T]): Long =
     searchRDD(opts).countQuery(parseQueryString(query))
 
   /**
@@ -64,7 +66,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param opts  Search options
    * @return Matched doc count
    */
-  def countQuery(query: () => Query, opts: SearchRDDOptions[T]): Long =
+  def countQuery(query: () => Query, opts: SearchOptions[T]): Long =
     searchRDD(opts).countQuery(query)
 
   /**
@@ -120,7 +122,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchList(query: String,
                  topK: Int,
                  minScore: Double,
-                 opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
+                 opts: SearchOptions[T]): Array[SearchRecord[T]] =
     searchRDD(opts).searchQueryList(parseQueryString(query), topK, minScore)
 
   /**
@@ -176,7 +178,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchQueryList(query: () => Query,
                  topK: Int,
                  minScore: Double,
-                 opts: SearchRDDOptions[T]): Array[SearchRecord[T]] =
+                 opts: SearchOptions[T]): Array[SearchRecord[T]] =
     searchRDD(opts).searchQueryList(query, topK, minScore)
 
   /**
@@ -223,7 +225,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def search(query: String,
              topKByPartition: Int,
              minScore: Double,
-             opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
+             opts: SearchOptions[T]): RDD[SearchRecord[T]] =
     searchRDD(opts).search(query, topKByPartition, minScore)
 
   /**
@@ -271,7 +273,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
   def searchQuery(query: () => Query,
              topKByPartition: Int,
              minScore: Double,
-             opts: SearchRDDOptions[T]): RDD[SearchRecord[T]] =
+             opts: SearchOptions[T]): RDD[SearchRecord[T]] =
     searchRDD(opts).searchQuery(query, topKByPartition, minScore)
 
   /**
@@ -295,7 +297,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
                               queryBuilder: S => String,
                               topK: Int,
                               minScore: Double,
-                              opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
+                              opts: SearchOptions[T]): RDD[Match[S, T]] =
     searchRDD(opts).searchJoin(rdd, queryBuilder, topK, minScore)
 
   /**
@@ -319,7 +321,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
                               queryBuilder: S => Query,
                               topK: Int,
                               minScore: Double,
-                              opts: SearchRDDOptions[T]): RDD[Match[S, T]] =
+                              opts: SearchOptions[T]): RDD[Match[S, T]] =
     searchRDD(opts).searchQueryJoin(rdd, queryBuilder, topK, minScore)
 
   /**
@@ -331,7 +333,7 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T]) {
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchRDDOptions[T]): SearchRDD[T] = new SearchRDD[T](rdd, opts)
+  def searchRDD(opts: SearchOptions[T]): SearchRDD[T] = new SearchRDD[T](rdd, opts)
 
   sealed trait QueryBuilder[S] extends (S => Query)
 

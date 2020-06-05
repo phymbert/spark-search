@@ -16,6 +16,8 @@
 
 package org.apache.spark.search.rdd;
 
+import org.apache.spark.search.IndexDirectoryCleanupHandler;
+import org.apache.spark.search.IndexationOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

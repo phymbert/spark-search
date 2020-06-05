@@ -20,6 +20,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.spark.search.DocumentUpdater;
+import org.apache.spark.search.IndexationOptions;
+import org.apache.spark.search.reflect.DocumentBeanUpdater;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

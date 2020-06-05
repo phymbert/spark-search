@@ -4,9 +4,8 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
-import org.apache.spark.search.TestData
 import org.apache.spark.search.TestData.{Company, SecEdgarCompanyInfo}
-import org.apache.spark.search.rdd.{Match, SearchRDDOptions, SearchRecord}
+import org.apache.spark.search._
 import org.apache.spark.sql.Encoders
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -70,7 +69,7 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     var matchedCompanies = companies.searchJoin(secCompanies,
       (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName.slice(0, 32).replaceAllLiterally("\"", "\\\"") + "\""}",
       topK = 1,
-      opts = SearchRDDOptions
+      opts = SearchOptions
         .builder[Company]
         .analyzer(classOf[ShingleAnalyzerWrapper]).build())
       .filter(_.hits.nonEmpty)

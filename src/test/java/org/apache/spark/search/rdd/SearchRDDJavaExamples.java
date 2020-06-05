@@ -1,4 +1,4 @@
-/*
+package org.apache.spark.search.rdd;/*
  *    Copyright 2020 the Spark Search contributors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,8 @@
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.search.rdd.SearchRDDJava;
-import org.apache.spark.search.rdd.SearchRDDOptions;
-import org.apache.spark.search.rdd.SearchRecordJava;
+import org.apache.spark.search.SearchOptions;
+import org.apache.spark.search.SearchRecordJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
 
@@ -67,7 +66,7 @@ public class SearchRDDJavaExamples {
 
         // Pass custom search options
         searchRDDJava = new SearchRDDJava<>(reviewRDD,
-                SearchRDDOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
+                SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
 
         System.out.println("Reviews from Patosh: ");
         searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)

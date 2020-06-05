@@ -18,9 +18,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.rdd.RDD;
-import scala.Function1;
-import scala.reflect.ClassTag;
+import org.apache.spark.search.SearchRecordJava;
 
 import java.io.Serializable;
 

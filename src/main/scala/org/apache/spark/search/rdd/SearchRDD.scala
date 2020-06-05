@@ -20,7 +20,7 @@ import java.util.Objects
 
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
-import org.apache.spark.search.SearchException
+import org.apache.spark.search._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
@@ -35,7 +35,7 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
-                                             val options: SearchRDDOptions[T])
+                                             val options: SearchOptions[T])
   extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
   /**
