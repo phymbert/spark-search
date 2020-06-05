@@ -18,6 +18,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.search.SearchRecordJava;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 

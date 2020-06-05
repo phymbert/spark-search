@@ -14,8 +14,10 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search.reflect;
 
+import org.apache.commons.beanutils.ConvertUtils;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.FastHashMap;
 import scala.Product;
 
@@ -26,7 +28,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-class ScalaProductPropertyDescriptors implements Serializable {
+class DocumentBasePropertyDescriptors implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -67,5 +69,28 @@ class ScalaProductPropertyDescriptors implements Serializable {
 
         productDescriptors.put(caseClass, propertyDescriptors);
         return propertyDescriptors;
+    }
+
+    protected <T> String value(PropertyDescriptor propertyDescriptor, T element) throws Exception {
+        String value = ConvertUtils.convert(propertyDescriptor.getReadMethod().invoke(element));
+
+        if (value != null) {
+            return value;
+        }
+        return "";
+    }
+
+    protected <T> PropertyDescriptor[] getPropertyDescriptors(Class<T> classTag) throws IntrospectionException, NoSuchMethodException {
+        PropertyDescriptor[] propertyDescriptors;
+        if (isScalaProduct(classTag)) {
+            propertyDescriptors = getProductPropertyDescriptors((Class) classTag);
+        } else {
+            propertyDescriptors = PropertyUtils.getPropertyDescriptors(classTag);
+        }
+        return propertyDescriptors;
+    }
+
+    protected <T> boolean isScalaProduct(Class<T> classTag) {
+        return Product.class.isAssignableFrom(classTag);
     }
 }

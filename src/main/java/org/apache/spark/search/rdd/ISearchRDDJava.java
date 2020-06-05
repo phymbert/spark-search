@@ -18,8 +18,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.rdd.RDD;
-import scala.Function1;
+import org.apache.spark.search.SearchRecordJava;
 
 import java.io.Serializable;
 
@@ -51,16 +50,6 @@ public interface ISearchRDDJava<T> {
      * {@link org.apache.spark.search.rdd.SearchRDD#search(org.apache.lucene.search.Query, int, double)}
      */
     JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
-
-    /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(RDD, Function1, int, double)}
-     */
-    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> builder, int topK, double minScore);
-
-    /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(RDD, Function1, int, double)}
-     */
-    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> builder, int topK, double minScore);
 
     /**
      * Build a lucene query string to search for matching hits

@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import java.util.Collection;
 

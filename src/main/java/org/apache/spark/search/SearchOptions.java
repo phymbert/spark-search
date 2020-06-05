@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import org.apache.lucene.analysis.Analyzer;
 
@@ -24,23 +24,23 @@ import java.util.function.Function;
 /**
  * Search RDD options.
  */
-public class SearchRDDOptions<T> implements Serializable {
+public class SearchOptions<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private static final SearchRDDOptions DEFAULT = builder().build();
+    private static final SearchOptions DEFAULT = builder().build();
 
     private IndexationOptions<T> indexationOptions;
 
     private ReaderOptions<T> readerOptions;
 
     // Hidden, use builder or default.
-    private SearchRDDOptions() {
+    private SearchOptions() {
     }
 
     /**
      * @return Default search rdd options.
      */
-    public static <T> SearchRDDOptions<T> defaultOptions() {
+    public static <T> SearchOptions<T> defaultOptions() {
         return DEFAULT;
     }
 
@@ -65,7 +65,7 @@ public class SearchRDDOptions<T> implements Serializable {
      * Indexation option builder.
      */
     public static final class Builder<T> extends SearchBaseOptionsBuilder {
-        private final SearchRDDOptions<T> options = new SearchRDDOptions<T>();
+        private final SearchOptions<T> options = new SearchOptions<T>();
         private IndexationOptions.Builder<T> indexationOptionsBuilder = IndexationOptions.builder();
         private ReaderOptions.Builder<T> readerOptionsBuilder = ReaderOptions.builder();
 
@@ -114,7 +114,7 @@ public class SearchRDDOptions<T> implements Serializable {
         /**
          * @return built options.
          */
-        public SearchRDDOptions<T> build() {
+        public SearchOptions<T> build() {
             options.indexationOptions = indexationOptionsBuilder.build();
             options.readerOptions = readerOptionsBuilder.build();
             require(options.indexationOptions.indexDirectoryProvider.getClass()

@@ -16,7 +16,8 @@
 
 package org.apache.spark.search.rdd
 
-import org.apache.spark.search.TestData
+import org.apache.spark.search.reflect.DocumentBeanUpdater
+import org.apache.spark.search._
 import org.scalatest.funsuite.AnyFunSuite
 
 class DocumentBeanUpdaterSuite extends AnyFunSuite {

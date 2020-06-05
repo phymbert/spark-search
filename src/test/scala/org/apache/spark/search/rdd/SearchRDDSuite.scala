@@ -19,6 +19,7 @@ package org.apache.spark.search.rdd
 import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.search.SearchException
 import org.apache.spark.search.TestData._
+import org.apache.spark.search._
 import org.scalatest.funsuite.AnyFunSuite
 import scala.language.implicitConversions
 

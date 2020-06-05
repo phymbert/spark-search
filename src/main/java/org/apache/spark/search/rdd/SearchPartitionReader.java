@@ -18,7 +18,10 @@ package org.apache.spark.search.rdd;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.*;
+import org.apache.spark.search.DocumentConverter;
+import org.apache.spark.search.ReaderOptions;
 import org.apache.spark.search.SearchException;
+import org.apache.spark.search.SearchRecordJava;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +63,7 @@ class SearchPartitionReader<T> implements AutoCloseable {
         this.classTag = classTag;
         this.options = options;
 
-        this.documentConverter = options.documentConverter.newInstance();
+        this.documentConverter = options.documentConverter;
 
         this.directory = DirectoryReader.open(options.indexDirectoryProvider.create(Paths.get(indexDirectory)));
         this.indexSearcher = new IndexSearcher(directory);

@@ -2,6 +2,7 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
+import org.apache.spark.search.SearchRecord
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
 import scala.reflect.ClassTag

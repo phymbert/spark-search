@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import org.apache.lucene.document.Document;
 
@@ -42,7 +42,7 @@ public interface DocumentUpdater<T> extends Serializable {
          */
         public final IndexationOptions<T> options;
 
-        IndexingDocument(IndexationOptions<T> options) {
+        public IndexingDocument(IndexationOptions<T> options) {
             this.options = options;
         }
     }

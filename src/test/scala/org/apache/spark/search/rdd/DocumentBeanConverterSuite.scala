@@ -18,7 +18,8 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.document.{Document, Field, StringField}
 import org.apache.lucene.search.ScoreDoc
-import org.apache.spark.search.TestData
+import org.apache.spark.search._
+import org.apache.spark.search.reflect.DocumentBeanConverter
 import org.scalatest.funsuite.AnyFunSuite
 
 class DocumentBeanConverterSuite extends AnyFunSuite {

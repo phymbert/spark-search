@@ -17,6 +17,7 @@
 package benchmark
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
+import org.apache.spark.search.SearchOptions
 import org.apache.spark.search.TestData._
 import org.apache.spark.search.rdd._
 import org.apache.spark.search.sql._
@@ -35,7 +36,7 @@ object CompanyMatchingBenchmark {
     // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
     val secEdgarCompanyRDD = companiesEdgarDS(spark).rdd.cache
 
-    val matchedCompanies = companies.searchRDD(SearchRDDOptions
+    val matchedCompanies = companies.searchRDD(SearchOptions
       .builder[Company]
       .analyzer(classOf[ShingleAnalyzerWrapper]).build).cache
       .searchJoin(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)

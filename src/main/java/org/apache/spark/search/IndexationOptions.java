@@ -14,13 +14,14 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.search.rdd;
+package org.apache.spark.search;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.spark.search.reflect.DocumentBeanUpdater;
 import org.apache.spark.util.ShutdownHookManager;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
@@ -125,43 +126,43 @@ public final class IndexationOptions<T> implements Serializable {
         return new Builder<>();
     }
 
-    Class<? extends Analyzer> getAnalyzer() {
+    public Class<? extends Analyzer> getAnalyzer() {
         return analyzer;
     }
 
-    boolean isStoreFields() {
+    public boolean isStoreFields() {
         return storeFields;
     }
 
-    DocumentUpdater<T> getDocumentUpdater() {
+    public DocumentUpdater<T> getDocumentUpdater() {
         return documentUpdater;
     }
 
-    double getCacheMemoryExecutorRatio() {
+    public double getCacheMemoryExecutorRatio() {
         return cacheMemoryExecutorRatio;
     }
 
-    String getRootIndexDirectory() {
+    public String getRootIndexDirectory() {
         return rootIndexDirectory;
     }
 
-    long getLogIndexationProgress() {
+    public long getLogIndexationProgress() {
         return logIndexationProgress;
     }
 
-    IndexDirectoryProvider getIndexDirectoryProvider() {
+    public IndexDirectoryProvider getIndexDirectoryProvider() {
         return indexDirectoryProvider;
     }
 
-    IndexDirectoryCleanupHandler getIndexDirectoryCleanupHandler() {
+    public IndexDirectoryCleanupHandler getIndexDirectoryCleanupHandler() {
         return indexDirectoryCleanupHandler;
     }
 
-    List<String> getNotStoredFields() {
+    public List<String> getNotStoredFields() {
         return notStoredFields;
     }
 
-    IndexOptions getFieldIndexOptions() {
+    public IndexOptions getFieldIndexOptions() {
         return fieldIndexOptions;
     }
 

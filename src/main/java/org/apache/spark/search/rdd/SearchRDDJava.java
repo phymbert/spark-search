@@ -17,6 +17,8 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.search.SearchOptions;
+import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
 /**
@@ -28,17 +30,17 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     private final ISearchRDDJava<T> searchRDDJava;
 
     public SearchRDDJava(JavaRDD<T> rdd) {
-        this(rdd, SearchRDDOptions.defaultOptions());
+        this(rdd, SearchOptions.defaultOptions());
     }
 
-    public SearchRDDJava(JavaRDD<T> rdd, SearchRDDOptions<T> options) {
+    public SearchRDDJava(JavaRDD<T> rdd, SearchOptions<T> options) {
         super(rdd.rdd(), scala.reflect.ClassTag$.MODULE$.apply(Object.class));
         try {
             // Yes, what a mess: JavaFirst was maybe not a good choice
             this.searchRDDJava
                     = (ISearchRDDJava) getClass().getClassLoader()
                     .loadClass("org.apache.spark.search.rdd.SearchJavaBaseRDD")
-                    .getConstructor(JavaRDD.class, SearchRDDOptions.class, ClassTag.class)
+                    .getConstructor(JavaRDD.class, SearchOptions.class, ClassTag.class)
                     .newInstance(rdd, options, classTag());
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -68,15 +70,5 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     @Override
     public JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore) {
         return searchRDDJava.search(query, topK, minScore);
-    }
-
-    @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryStringBuilder<S> queryBuilder, int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
-    }
-
-    @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd, QueryBuilder<S> queryBuilder, int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
     }
 }
