@@ -23,6 +23,9 @@
     <packaging>jar</packaging>
     <name>Spark Project Search</name>
 
+    <url>https://github.com/phymbert/spark-search</url>
+    <description>Spark Search - high performance advanced search features based on Apache Lucene</description>
+
     <developers>
         <developer>
             <id>phymbert</id>
