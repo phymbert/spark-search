@@ -32,13 +32,11 @@ Have a look and feel free to contribute!
 ```scala
 import org.apache.spark.search.sql._
 
-case class Sentiment(sentenceIndex: Long, sentence: String)
+val sentences = spark.read.csv("...")
+sentences.count("sentence:happy OR sentence:best or sentence:good")
 
-val sentiments = spark.read.csv("...").as[Sentiment].toDF
-sentiments.count("sentence:happy OR sentence:best or sentence:good")
-
-// coming soon
-sentiments.where($"sentence".matches($"searchKeyword" ))
+// coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
+sentences.where($"sentence".matches($"searchKeyword" ))
 ```
 
 ### RDD API
