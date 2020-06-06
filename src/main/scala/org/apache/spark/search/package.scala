@@ -69,7 +69,8 @@ package object search {
    * @param queryBuilder Generate lucene query for this input element
    * @tparam T Type of input class
    */
-  class QueryBuilderWithAnalyzer[T](val queryBuilder: (T, QueryBuilder) => Query) extends CanBuildQueryWithAnalyzer[T] {
+  class QueryBuilderWithAnalyzer[T](queryBuilder: (T, QueryBuilder) => Query, override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
+    extends CanBuildQueryWithAnalyzer[T] {
 
     @transient private lazy val _luceneQueryBuilder: QueryBuilder = new QueryBuilder(_analyzer)
 
@@ -91,6 +92,9 @@ package object search {
 
   def defaultQueryBuilder[T: ClassTag]()(implicit cls: ClassTag[T]): T => Query =
     new QueryBuilderWithAnalyzer[T](new DefaultQueryBuilder[T](cls.runtimeClass.asInstanceOf[Class[_ <: T]]).asInstanceOf[(T, QueryBuilder) => Query])
+
+  def queryBuilder[T](builder: (T, QueryBuilder) => Query, opts: SearchOptions[_] = defaultOpts): T => Query =
+    new QueryBuilderWithAnalyzer[T](builder, opts.getReaderOptions.analyzer)
 
   def queryStringBuilder[T](builder: T => String, opts: SearchOptions[_] = defaultOpts): T => Query =
     new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName)

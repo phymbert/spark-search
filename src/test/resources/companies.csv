@@ -228,7 +228,7 @@ los angeles unified school district,lausd.net,1853.0,education management,10001+
 army national guard,nationalguard.com,,military,10001+,"arlington, virginia, united states",united states,linkedin.com/company/army-national-guard,20390,42468
 nordstrom,nordstrom.com,1901.0,retail,10001+,"seattle, washington, united states",united states,linkedin.com/company/nordstrom,20376,81777
 lifespan,lifespan.org,1994.0,hospital & health care,10001+,"providence, rhode island, united states",united states,linkedin.com/company/lifespan,20341,23426
-fedex,,1973.0,package/freight delivery,10001+,"memphis, tennessee, united states",united states,linkedin.com/company/fedex,20317,40732
+fedex ltd.,,1973.0,package/freight delivery,10001+,"memphis, tennessee, united states",united states,linkedin.com/company/fedex,20317,40732
 edward jones,edwardjones.com,1922.0,financial services,10001+,"st. louis, missouri, united states",united states,linkedin.com/company/edward-jones,20238,37140
 particular,demelon.net,,computer software,10001+,,,linkedin.com/company/particular_5,20231,22904
 travelers,travelers.com,1853.0,insurance,10001+,"new york, new york, united states",united states,linkedin.com/company/travelers,20065,39698
@@ -425,7 +425,7 @@ magna international,magna.com,1957.0,automotive,10001+,"aurora, ontario, canada"
 walt disney world,waltdisneyworld.jobs,1971.0,entertainment,10001+,"lake buena vista, florida, united states",united states,linkedin.com/company/walt-disney-world,13420,66819
 auchan,groupe-auchan.com,1961.0,retail,10001+,"lille, hauts-de-france, france",france,linkedin.com/company/auchan,13415,37506
 staples,staples.com,1986.0,business supplies and equipment,10001+,"framingham, massachusetts, united states",united states,linkedin.com/company/staples,13400,49487
-no-company,pearsonfamily.id.au,2009.0,information technology and services,10001+,,,linkedin.com/company/no-company_6,13400,14060
+pearsonfamily,pearsonfamily.id.au,2009.0,information technology and services,10001+,,,linkedin.com/company/no-company_6,13400,14060
 the salvation army,salvationarmyusa.org,1865.0,non-profit organization management,10001+,"nassau, new york, united states",united states,linkedin.com/company/the-salvation-army,13374,27701
 inditex,inditex.com,1974.0,retail,10001+,"arteixo, galicia, spain",spain,linkedin.com/company/inditex,13366,45690
 barclays investment bank,,,financial services,10001+,"new york, new york, united states",united states,linkedin.com/company/barclays-investment-bank,13330,45981
@@ -680,7 +680,7 @@ idol image consulting,idol-image.com,2010.0,management consulting,10001+,,,linke
 kpn,kpn.com,1989.0,telecommunications,10001+,"the hague, zuid-holland, netherlands",netherlands,linkedin.com/company/kpn,9838,47611
 pacific gas and electric company,pge.com,,utilities,10001+,"san francisco, california, united states",united states,linkedin.com/company/pacific-gas-and-electric-company,9807,17240
 prosegur,prosegur.com,1976.0,security and investigations,10001+,"madrid, madrid, spain",spain,linkedin.com/company/prosegur,9794,19705
-home depot,,,construction,10001+,,,linkedin.com/company/home-depot-at-home-services,9756,19207
+home depot construction,,,construction,10001+,,,linkedin.com/company/home-depot-at-home-services,9756,19207
 me,excellent-solutions.be,,computer software,10001+,,,linkedin.com/company/me_2,9709,10184
 ingram micro,ingrammicro.com,1979.0,information technology and services,10001+,"irvine, california, united states",united states,linkedin.com/company/ingram-micro,9705,26586
 nxp semiconductors,nxp.com,2006.0,semiconductors,10001+,"brabant, west virginia, united states",united states,linkedin.com/company/nxp-semiconductors,9686,24318
@@ -715,7 +715,7 @@ hcl infosystems ltd,hclinfosystems.com,1976.0,information technology and service
 "kbr, inc.",kbr.com,1919.0,construction,10001+,"houston, texas, united states",united states,linkedin.com/company/kbr-inc,9338,33116
 arbonne international llc,arbonne.com,1975.0,consumer goods,10001+,"irvine, california, united states",united states,linkedin.com/company/arbonne-international,9329,11846
 undp,undp.org,1974.0,international affairs,10001+,"new york, new york, united states",united states,linkedin.com/company/undp,9326,31074
-no company,markhorst.net,,civic & social organization,10001+,,,linkedin.com/company/no-company_10,9323,10160
+markhorst,markhorst.net,,civic & social organization,10001+,,,linkedin.com/company/no-company_10,9323,10160
 sitel,sitel.com,1985.0,outsourcing/offshoring,10001+,"nashville, tennessee, united states",united states,linkedin.com/company/sitel,9321,38524
 indian oil corporation limited,iocl.com,1959.0,oil & energy,10001+,,,linkedin.com/company/indian-oil-corporation-limited,9308,17006
 infor,infor.com,2003.0,computer software,10001+,"new york, new york, united states",united states,linkedin.com/company/infor,9308,20133
@@ -957,7 +957,7 @@ ingersoll rand,ingersollrand.com,,electrical/electronic manufacturing,10001+,"sw
 nhs england,england.nhs.uk,2012.0,hospital & health care,10001+,"redditch, worcestershire, united kingdom",united kingdom,linkedin.com/company/nhsengland,7515,12805
 tecnológico de monterrey,itesm.edu,1943.0,higher education,10001+,"monterrey, nuevo leon, mexico",mexico,linkedin.com/company/itesm,7513,17094
 universidade de são paulo,usp.br,,higher education,10001+,"sao paulo, sao paulo, brazil",brazil,linkedin.com/company/universidade-de-s-o-paulo,7498,16400
-department of education,ed.gov,1980.0,government administration,10001+,"washington, district of columbia, united states",united states,linkedin.com/company/u.s.-department-of-education,7476,11885
+washington department of education,ed.gov,1980.0,government administration,10001+,"washington, district of columbia, united states",united states,linkedin.com/company/u.s.-department-of-education,7476,11885
 dsv - global transport and logistics,dsv.com,1976.0,logistics and supply chain,10001+,"hedehusene, capital region, denmark",denmark,linkedin.com/company/dsv,7465,14354
 pitney bowes,pitneybowes.com,1920.0,information technology and services,10001+,"stamford, connecticut, united states",united states,linkedin.com/company/pitney-bowes,7464,25804
 china mobile,chinamobileltd.com,1997.0,telecommunications,10001+,"los angeles, california, united states",united states,linkedin.com/company/china-mobile,7464,9664
