@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](val searchRDD: SearchRDD[H],
-                                                      val other: RDD[S],
+                                                      val other: RDD[(Long, S)],
                                                       queryBuilder: S => Query,
                                                       topK: Int = Int.MaxValue,
                                                       minScore: Double = 0)
@@ -25,14 +25,12 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](val searchRDD: SearchRDD[H
     // compute our current search rdd partition if needed
     searchRDD.iterator(matchPartition.searchPartition, context)
 
-    val otherNumPartitions = matchPartition.otherPartitions.length
-
     // Match other partitions against our
     tryAndClose(searchRDD.reader(matchPartition.index, matchPartition.searchPartition.indexDir)) {
       spr =>
-        matchPartition.otherPartitions.flatMap(part => {
-          other.iterator(part, context).zipWithIndex.map(_.swap)
-            .map(docIndex => (part.index.toLong * otherNumPartitions + docIndex._1,
+        matchPartition.otherPartitions.flatMap(otherPart => {
+          other.iterator(otherPart, context)
+            .map(docIndex => (docIndex._1,
               spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator)
             )
         }).iterator

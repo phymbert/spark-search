@@ -108,19 +108,17 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
-    val sortTopK = (matches: Iterator[SearchRecord[T]]) => matches.toArray
+    val topKMonoid = (matches: Iterator[SearchRecord[T]]) => matches.toArray
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)
 
-    val otherNumPartitions = other.getNumPartitions
-    other.mapPartitionsWithIndex((index: Int, part: Iterator[S]) => part
-      .zipWithIndex
-      .map(_.swap)
-      .map(doc => (index.toLong * otherNumPartitions + doc._1, doc._2)))
-      .join(new MatchRDD[S, T](this, other, queryBuilder, topK, minScore))
-      .reduceByKey((d1, d2) => (d1._1, sortTopK(d1._2 ++ d2._2).iterator))
+    val otherZipped = other.zipWithIndex.map(_.swap)
+    otherZipped
+      .join(new MatchRDD[S, T](this, otherZipped, queryBuilder, topK, minScore))
+      .reduceByKey((d1, d2) => (d1._1, topKMonoid(d1._2 ++ d2._2).iterator))
       .map {
-        case (_, (doc, matches)) => new Match[S, T](doc, sortTopK(matches))
+        case (_, (doc, matches)) =>
+          new Match[S, T](doc, matches.toArray)
       }
   }
 
@@ -137,7 +135,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                            topK: Int = Int.MaxValue,
                            minScore: Double = 0,
                            numPartitions: Int = getNumPartitions): RDD[T] = {
-    searchQueryJoin[T](rdd, queryBuilder, topK, minScore)
+    searchQueryJoin[T](rdd, queryBuilder, topK, minScore) // FIXME add tests
       .map(m => {
         val matchHashes = m.hits.filter(_.hashCode != m.hashCode).map(_.source.hashCode)
         val allHashes = (Seq(m.hashCode) ++ matchHashes).sorted
@@ -199,7 +197,11 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     // One-2-One partition
     firstParent.partitions.map(p =>
       new SearchPartition[T](p.index,
-        s"${options.getIndexationOptions.getRootIndexDirectory}-rdd${id}", p)).toArray
+        s"${
+          options.getIndexationOptions.getRootIndexDirectory
+        }-rdd${
+          id
+        }", p)).toArray
   }
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {

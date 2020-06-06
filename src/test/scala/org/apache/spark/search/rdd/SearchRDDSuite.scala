@@ -16,11 +16,14 @@
 
 package org.apache.spark.search.rdd
 
+import org.apache.lucene.search.BooleanClause.Occur
+import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
-import org.apache.spark.search.SearchException
 import org.apache.spark.search.TestData._
-import org.apache.spark.search._
+import org.apache.spark.search.{SearchException, _}
+import org.apache.spark.sql.SparkSession
 import org.scalatest.funsuite.AnyFunSuite
+
 import scala.language.implicitConversions
 
 class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
@@ -67,5 +70,41 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       searchRDD.persist(StorageLevels.MEMORY_AND_DISK)
     }
     searchRDD.cache
+  }
+
+  test("self search join with one query value should returns all document with one match") {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Spark Search Test")
+      .getOrCreate()
+    import spark.implicits._
+    val companies = TestData.companiesDS(spark).repartition(4).as[Company].cache.rdd
+
+    val searchRDD = companies.searchJoin[Company](companies, (_: Company) => "name:ibm", 1)
+      .filter(_.hits.count(_.source.name.equals("ibm")) == 1)
+    assertResult(1000)(searchRDD.count)
+
+    spark.stop
+  }
+
+  test("self search join with self query value should returns all document with self match") {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Spark Search Test")
+      .getOrCreate()
+    import spark.implicits._
+    val companies = TestData.companiesDS(spark).repartition(4).as[Company].cache.rdd
+
+    val searchRDD = companies.searchQueryJoin(companies,
+      queryBuilder[Company]((c: Company, lqb: QueryBuilder) => lqb.createBooleanQuery("name", c.name, Occur.MUST)),
+      topK = 1,
+      minScore = 0,
+      opts = SearchOptions.builder().analyzer(classOf[TestAnalyzer]).build())
+      .filter(m => m.hits.count(h => h.source.name.equals(m.doc.name)) == 1)
+      .cache
+    searchRDD.map(m => (m.doc.name, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
+    assertResult(1000)(searchRDD.count)
+
+    spark.stop
   }
 }
