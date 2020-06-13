@@ -31,14 +31,31 @@ object CompanyMatchingBenchmark {
     import spark.implicits._
 
     // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
-    val companies = companiesDS(spark).rdd.cache
+    val companies = spark.read
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .csv(args(0))
+      .withColumnRenamed("year founded", "yearFounded")
+      .withColumnRenamed("size range", "sizeRange")
+      .withColumnRenamed("linkedin url", "linkedinUrl")
+      .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
+      .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
+      .as[Company].cache.rdd
 
     // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
-    val secEdgarCompanyRDD = companiesEdgarDS(spark).rdd.cache
+    val secEdgarCompanyRDD = spark.read.option("header", "true")
+      .option("inferSchema", "true")
+      .csv(args(1))
+      .withColumnRenamed("Line Number", "lineNumber")
+      .withColumnRenamed("Company Name", "companyName")
+      .withColumnRenamed("Company CIK Key", "companyCIKKey")
+      .as[SecEdgarCompanyInfo]
+      .rdd
 
     val matchedCompanies = companies.searchRDD(SearchOptions
       .builder[Company]
-      .analyzer(classOf[ShingleAnalyzerWrapper]).build).cache
+      .analyzer(classOf[ShingleAnalyzerWrapper]).build)
+      .cache
       .searchJoin(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
 
     matchedCompanies.toDS().write.json("output.json")

@@ -23,7 +23,7 @@ Have a look and feel free to contribute!
 <dependency>
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 </dependency>
 ```
 
@@ -77,7 +77,7 @@ val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use
 val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 matchesReviewersRDD
-  .filter(!_.hits.isEmpty)
+  .filter(_.hits.nonEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
 ```
@@ -110,6 +110,9 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
 See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Release notes
+
+##### v0.1.4
+* Optimize searchJoin for small num partition
 
 ##### v0.1.3
 * Fix searchJoin on multiple partitions
