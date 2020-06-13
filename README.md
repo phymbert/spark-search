@@ -77,7 +77,7 @@ val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use
 val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
 matchesReviewersRDD
-  .filter(!_.hits.isEmpty)
+  .filter(_.hits.nonEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
 ```
