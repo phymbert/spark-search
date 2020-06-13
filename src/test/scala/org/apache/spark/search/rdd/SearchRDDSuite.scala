@@ -38,12 +38,12 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("search list hits matching query") {
-    assertResult(Array(new SearchRecord[Person](1, 0, 0.44583148f, 0,
+    assertResult(Array(new SearchRecord[Person](0, 2, 0.13076457381248474f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob", 10))
   }
 
   test("search RDD hits matching query") {
-    assertResult(Array(new SearchRecord[Person](1, 0, 0.44583148f, 0,
+    assertResult(Array(new SearchRecord[Person](0, 2, 0.13076457381248474f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
   }
 
