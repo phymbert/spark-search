@@ -23,7 +23,7 @@ Have a look and feel free to contribute!
 <dependency>
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 </dependency>
 ```
 
@@ -110,6 +110,9 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
 See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Release notes
+
+##### v0.1.4
+* Optimize searchJoin for small num partition
 
 ##### v0.1.3
 * Fix searchJoin on multiple partitions
