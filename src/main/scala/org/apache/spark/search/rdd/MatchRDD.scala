@@ -6,7 +6,7 @@ import java.nio.file.Paths
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.search.{IndexSearcher, MatchAllDocsQuery, Query}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.search.SearchRecord
+import org.apache.spark.search.{SearchException, SearchRecord}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Dependency, NarrowDependency, Partition, TaskContext}
 
@@ -18,13 +18,12 @@ import scala.util.control.Breaks._
  *
  * @author Pierrick HYMBERT
  */
-private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H],
-                                                      var other: RDD[(Long, S)],
-                                                      queryBuilder: S => Query,
-                                                      topK: Int = Int.MaxValue,
-                                                      minScore: Double = 0)
+class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H],
+                                         var other: RDD[(Long, S)],
+                                         queryBuilder: S => Query,
+                                         topK: Int = Int.MaxValue,
+                                         minScore: Double = 0)
   extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil) {
-
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
@@ -40,7 +39,11 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H
       spr =>
         dependencies.last.rdd.asInstanceOf[RDD[(Long, S)]].iterator(matchPartition.otherPartition, context)
           .map(docIndex => (docIndex._1,
-            spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator)
+            try {
+              spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
+            } catch {
+              case e: SearchException => throw new SearchException("error during querying from " + docIndex._1 + ": " + docIndex._2, e)
+            })
           ).toArray.toIterator
     }
   }
@@ -95,11 +98,11 @@ private[rdd] class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H
     }
   }
 
-  private class MatchRDDPartition(val idx: Int,
-                                  val searchPartitionIndex: Int,
-                                  val otherPartitionIndex: Int,
-                                  @transient private val searchRDD: SearchRDD[H],
-                                  @transient private val other: RDD[(Long, S)]) extends Partition {
+  class MatchRDDPartition(val idx: Int,
+                          val searchPartitionIndex: Int,
+                          val otherPartitionIndex: Int,
+                          @transient private val searchRDD: SearchRDD[H],
+                          @transient private val other: RDD[(Long, S)]) extends Partition {
     override def index: Int = idx
 
     var searchPartition: SearchPartition[H] = searchRDD.partitions(searchPartitionIndex).asInstanceOf[SearchPartition[H]]
