@@ -40,25 +40,32 @@ object CompanyMatchingBenchmark {
       .withColumnRenamed("linkedin url", "linkedinUrl")
       .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
       .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
-      .as[Company].cache.rdd
+      .withColumnRenamed("_c0", "id")
+      .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country",  "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
+      .as[Company]
+      .repartition(7, $"id")
+      .cache
+      .rdd
 
     // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
-    val secEdgarCompanyRDD = spark.read.option("header", "true")
+    val secEdgarCompany = spark.read.option("header", "true")
       .option("inferSchema", "true")
       .csv(args(1))
       .withColumnRenamed("Line Number", "lineNumber")
       .withColumnRenamed("Company Name", "companyName")
       .withColumnRenamed("Company CIK Key", "companyCIKKey")
       .as[SecEdgarCompanyInfo]
+      .repartition(2, $"lineNumber")
+      .cache
       .rdd
 
     val matchedCompanies = companies.searchRDD(SearchOptions
       .builder[Company]
       .analyzer(classOf[ShingleAnalyzerWrapper]).build)
       .cache
-      .searchJoin(secEdgarCompanyRDD, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
+      .searchJoin(secEdgarCompany, (c: SecEdgarCompanyInfo) => s"name:${"\"" + c.companyName + "\""}", 1)
 
-    matchedCompanies.toDS().write.json("output.json")
+    matchedCompanies.toDS().filter(_.hits.nonEmpty).repartition(1).write.json("output.json")
 
     spark.stop
   }

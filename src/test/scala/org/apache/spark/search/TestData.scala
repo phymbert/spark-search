@@ -29,7 +29,7 @@ object TestData {
                      country: String,
                      linkedinUrl: String,
                      currentEmployeeEstimate: String,
-                     totalEmployeeEstimate: Long)
+                     totalEmployeeEstimate: String)
 
   lazy val companiesCSVFilePath: String =
     new File(this.getClass.getResource("/companies.csv").toURI).getAbsolutePath

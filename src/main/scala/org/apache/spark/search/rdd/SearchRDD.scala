@@ -208,8 +208,8 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     // Try to balance partitions across executors
     val allIds = context.getExecutorIds()
     val ids = allIds.sliding(getNumPartitions).toList
-    if (split.index < ids.size) {
-      ids(split.index)
+    if (ids.nonEmpty) {
+      ids(split.index % ids.length)
     } else {
       super.getPreferredLocations(split)
     }

@@ -18,26 +18,32 @@ import scala.util.control.Breaks._
  *
  * @author Pierrick HYMBERT
  */
-class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H],
-                                         var other: RDD[(Long, S)],
+class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
+                                         @transient var other: RDD[(Long, S)],
                                          queryBuilder: S => Query,
                                          topK: Int = Int.MaxValue,
                                          minScore: Double = 0)
-  extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil) {
+  extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil)
+    with Serializable {
+
+  var options = searchRDD.options
+
+  @throws(classOf[IOException])
+  private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
+    // Update the reference to parent split at the time of task serialization
+    options = searchRDD.options
+    oos.defaultWriteObject()
+  }
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    if (matchPartition.otherPartitionIndex < 1) {
-      dependencies.head.rdd.iterator(matchPartition.searchPartition, context)
-    } else {
-      waitForIndex(matchPartition.searchPartition.indexDir)
-    }
+    parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our
-    tryAndClose(searchRDD.reader(matchPartition.searchPartition.index, matchPartition.searchPartition.indexDir)) {
+    tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index, matchPartition.searchPartition.indexDir)) {
       spr =>
-        dependencies.last.rdd.asInstanceOf[RDD[(Long, S)]].iterator(matchPartition.otherPartition, context)
+        parent[(Long, S)](1).iterator(matchPartition.otherPartition, context)
           .map(docIndex => (docIndex._1,
             try {
               spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
@@ -54,16 +60,15 @@ class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H],
     other = null
   }
 
-  private val numPartitionsInSearch = searchRDD.partitions.length
   private val numPartitionsInOther = other.partitions.length
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    dependencies.head.rdd.asInstanceOf[SearchRDD[H]]
+    parent[H](0).asInstanceOf[SearchRDD[H]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
   override protected def getPartitions: Array[Partition] = {
     val array = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
-    for (s1 <- searchRDD.partitions; s2 <- other.partitions) {
+    for (s1 <- parent[H](0).partitions; s2 <- parent[(Long, S)](1).partitions) {
       val idx = s1.index * numPartitionsInOther + s2.index
       array(idx) = new MatchRDDPartition(idx, s1.index, s2.index, searchRDD, other)
     }
@@ -79,12 +84,16 @@ class MatchRDD[S: ClassTag, H: ClassTag](var searchRDD: SearchRDD[H],
     }
   )
 
-  private def waitForIndex(indexDir: String): Unit = {
+  private def waitForIndex(matchRDDPartition: MatchRDDPartition): Unit = {
     breakable {
       while (true) {
         var dr: DirectoryReader = null
         try {
-          dr = DirectoryReader.open(searchRDD.options.getReaderOptions.indexDirectoryProvider.create(Paths.get(indexDir)))
+          logInfo(s"Waiting for part ${matchRDDPartition.index} directory ${matchRDDPartition.searchPartition.indexDir} on part ${matchRDDPartition.searchPartitionIndex} other part ${matchRDDPartition.otherPartitionIndex}")
+          dr = DirectoryReader.open(options
+            .getReaderOptions
+            .indexDirectoryProvider
+            .create(Paths.get(matchRDDPartition.searchPartition.indexDir)))
           val idex = new IndexSearcher(dr)
           idex.count(new MatchAllDocsQuery)
           break
