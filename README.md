@@ -15,6 +15,17 @@ Spark Search fits your needs: it builds for all parent RDD partitions a one-2-on
 Strongly typed, Spark Search API plans to support Java, Scala and Python Spark SQL, Dataset and RDD SDKs.
 Have a look and feel free to contribute!
 
+## Benchmark
+
+All benchmarks were made on EMR 7 workers EC2 m5.xlarge, 7 r5.large.elasticsearch datanode for ES
+
+| Feature | Alternatives  | Time  |   |   |
+|---|---|---|---|---|
+| Count  | SearchRDD |   |   |   |
+| Count  | Elasticsearch Hadoop |   |   |   |
+| Count  | LuceneRDD  |   |   |   |
+| Count  | Spark RDD matches  |   |   |   |
+
 ## Getting started
 
 ### Maven dependency
