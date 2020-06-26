@@ -70,7 +70,40 @@ hdfs.copyFromLocalFile(srcEdgarCompaniesPath, destEdgarCompaniesPath)
  * submit the benchmark job
  
 ````sh
-spark-submit --master yarn --deploy-mode cluster --class benchmark.SearchRDDBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+ spark-submit --master yarn --deploy-mode cluster --class benchmark.SearchRDDBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar \
+ &&  spark-submit --master yarn --deploy-mode cluster --class benchmark.LuceneRDDBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar \
+ && spark-submit --master yarn --deploy-mode cluster --class benchmark.SparkRDDRegexBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
 ````
 
+# Output
 
+## Search RDD
+````
+Count 310 matches in 0.0ms
+(6.369204521179199,ibm)
+(6.263510704040527,ibm)
+(6.263510704040527,ibm)
+(6.263186454772949,ibm)
+(6.263186454772949,ibm)
+(6.263186454772949,ibm)
+(6.171557426452637,ibm)
+(6.171557426452637,ibm)
+(6.171557426452637,ibm)
+(5.75221061706543,viện ibm (ibm institute))
+Joined 33372 matches in 131.072s
+(PLAYDEK, INC.,8.471635818481445,playdek inc.)
+(DATAPOINT CORP,6.320140838623047,datapoint corp san antonio tx)
+(INDEPENDENT FRANCHISE PARTNERS LLP,10.725297927856445,independent franchise partners, llp)
+(BELLWETHER INVESTMENT GROUP, LLC,9.817503929138184,bellwether investment group, llc)
+(SCOPERTA, INC.,8.197378158569336,scoperta inc.)
+(KANDI TECHNOLOGIES GROUP, INC.,9.264042854309082,kandi technologies group, inc.)
+(HIGH ADVENTURE TRAVEL INC,8.207137107849121,far & high adventure travel, inc,)
+(RANDALL PERRY,8.656317710876465,randall perry photography)
+(CONNECTICUT SURGERY CENTER, LIMITED PARTNERSHIP,11.38363265991211,connecticut surgery center, limited partnership)
+(MERCHANT CAPITAL LLC,6.929649353027344,talon merchant capital llc)
+````
+
+### LuceneRDD
+````
+
+````

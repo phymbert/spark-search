@@ -14,7 +14,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       classOf[StandardAnalyzer].getName,
       "classic")
     luceneRDD.query(s"name:${name}", Int.MaxValue)
-      .map(r => (r.getAs[Double]("__score__"), r.getAs[String]("name")))
+      .map(r => (r.getAs[Float]("__score__").toDouble, r.getAs[String]("name")))
       .sortBy(_._1, ascending = false) // Not sorted by RDD but by partition
   }
 

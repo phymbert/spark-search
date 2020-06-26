@@ -46,7 +46,7 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
     var count = matches.count
     var endTime = System.currentTimeMillis()
     println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat)}ms")
-    matches.take(10).foreach(println(_))
+    matches.take(100).foreach(println(_))
     matches.unpersist()
 
     // Join matches
@@ -55,7 +55,7 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
     count = joinedMatches.count
     endTime = System.currentTimeMillis()
     println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
-    joinedMatches.take(10).foreach(println(_))
+    joinedMatches.take(100).foreach(println(_))
     joinedMatches.unpersist()
 
     spark.stop()

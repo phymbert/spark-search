@@ -26,6 +26,7 @@ import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * A search RDD indexes parent RDD partitions to lucene indexes.
@@ -199,9 +200,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
       new SearchPartition[T](p.index,
         s"${
           options.getIndexationOptions.getRootIndexDirectory
-        }-rdd${
-          id
-        }", p)).toArray
+        }-rdd${id}-${Math.abs(Random.nextLong())}", p)).toArray
   }
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
