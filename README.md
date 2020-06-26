@@ -17,14 +17,15 @@ Have a look and feel free to contribute!
 
 ## Benchmark
 
-All benchmarks were made on EMR 7 workers EC2 m5.xlarge, 7 r5.large.elasticsearch datanode for ES
+All benchmarks run under AWS EMR with 3 spark workers EC2 m5.xlarge and 3 r5.large.elasticsearch data nodes for ES.
+The general use cases is to match companies names between two data set (7M vs 600K rows)
 
-| Feature | Alternatives  | Time  |   |   |
+| Feature | SearchRDD  | Elasticsearch Hadoop  |  LuceneRDD | Spark regex matches  |
 |---|---|---|---|---|
-| Count  | SearchRDD |   |   |   |
-| Count  | Elasticsearch Hadoop |   |   |   |
-| Count  | LuceneRDD  |   |   |   |
-| Count  | Spark RDD matches  |   |   |   |
+| Count matches | 131.072s |   |   |   |
+| Join matches |  |   |   |   |
+
+*DISCLAIMER* If you are the author of one the above library, please fill free to update results by a pull request. 
 
 ## Getting started
 
@@ -34,7 +35,7 @@ All benchmarks were made on EMR 7 workers EC2 m5.xlarge, 7 r5.large.elasticsearc
 <dependency>
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.4</version>
+    <version>0.1.5</version>
 </dependency>
 ```
 
@@ -121,6 +122,10 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
 See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Release notes
+
+##### v0.1.5
+* Support AWS EMR
+* Adding benchmark example with alternatives libraries
 
 ##### v0.1.4
 * Optimize searchJoin for small num partition

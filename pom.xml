@@ -125,21 +125,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Benchmarks -->
-        <dependency>
-            <groupId>org.zouzias</groupId>
-            <artifactId>spark-lucenerdd_2.11</artifactId>
-            <version>0.3.7</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch-hadoop</artifactId>
-            <version>7.7.0</version>
-            <scope>test</scope>
-        </dependency>
-
-
     </dependencies>
 
     <build>

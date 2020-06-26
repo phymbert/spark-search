@@ -1,17 +1,14 @@
 package org.apache.spark.search.rdd
 
 import java.io.{IOException, ObjectOutputStream}
-import java.nio.file.Paths
 
-import org.apache.lucene.index.DirectoryReader
-import org.apache.lucene.search.{IndexSearcher, MatchAllDocsQuery, Query}
+import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.{SearchException, SearchRecord}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Dependency, NarrowDependency, Partition, TaskContext}
 
 import scala.reflect.ClassTag
-import scala.util.control.Breaks._
 
 /**
  * Result RDD of a [[org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
@@ -26,18 +23,10 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil)
     with Serializable {
 
-  var options = searchRDD.options
-
-  @throws(classOf[IOException])
-  private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
-    // Update the reference to parent split at the time of task serialization
-    options = searchRDD.options
-    oos.defaultWriteObject()
-  }
-
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
+    // Be sure indexation is done
     parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our
@@ -67,12 +56,12 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
   override protected def getPartitions: Array[Partition] = {
-    val array = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
+    val parts = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
     for (s1 <- parent[H](0).partitions; s2 <- parent[(Long, S)](1).partitions) {
       val idx = s1.index * numPartitionsInOther + s2.index
-      array(idx) = new MatchRDDPartition(idx, s1.index, s2.index, searchRDD, other)
+      parts(idx) = new MatchRDDPartition(idx, s1.index, s2.index, searchRDD, other)
     }
-    array
+    parts
   }
 
   override def getDependencies: Seq[Dependency[_]] = List(
@@ -83,29 +72,6 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
       def getParents(id: Int): Seq[Int] = List(id % numPartitionsInOther)
     }
   )
-
-  private def waitForIndex(matchRDDPartition: MatchRDDPartition): Unit = {
-    breakable {
-      while (true) {
-        var dr: DirectoryReader = null
-        try {
-          logInfo(s"Waiting for part ${matchRDDPartition.index} directory ${matchRDDPartition.searchPartition.indexDir} on part ${matchRDDPartition.searchPartitionIndex} other part ${matchRDDPartition.otherPartitionIndex}")
-          dr = DirectoryReader.open(options
-            .getReaderOptions
-            .indexDirectoryProvider
-            .create(Paths.get(matchRDDPartition.searchPartition.indexDir)))
-          val idex = new IndexSearcher(dr)
-          idex.count(new MatchAllDocsQuery)
-          break
-        } catch {
-          case _: IOException => Thread.sleep(10)
-        } finally {
-          if (dr != null)
-            dr.close()
-        }
-      }
-    }
-  }
 
   class MatchRDDPartition(val idx: Int,
                           val searchPartitionIndex: Int,

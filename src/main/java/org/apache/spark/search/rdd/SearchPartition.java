@@ -106,12 +106,10 @@ class SearchPartition<T> implements Partition, Serializable {
         }, options.getLogIndexationProgress());
     }
 
-    @FunctionalInterface
     private interface IndexationTask {
         void index(IndexationListener indexationListener) throws Exception;
     }
 
-    @FunctionalInterface
     private interface IndexationListener {
         void indexed();
     }
