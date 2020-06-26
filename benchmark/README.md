@@ -10,8 +10,8 @@ mvn clean package
 # Infrastructure
 All benchmarks run within AWS m5.xlarge instances.
 
-For Spark, 3 workers required.
-For Spark+ES: 3 data nodes required.
+For Spark, 3 workers allocated.
+For Spark+ES: 3 data nodes allocated.
 
 # Prepare data from master
 ```sh
@@ -81,15 +81,6 @@ hdfs.copyFromLocalFile(srcEdgarCompaniesPath, destEdgarCompaniesPath)
 ````
 Count 310 matches in 0.0ms
 (6.369204521179199,ibm)
-(6.263510704040527,ibm)
-(6.263510704040527,ibm)
-(6.263186454772949,ibm)
-(6.263186454772949,ibm)
-(6.263186454772949,ibm)
-(6.171557426452637,ibm)
-(6.171557426452637,ibm)
-(6.171557426452637,ibm)
-(5.75221061706543,viện ibm (ibm institute))
 Joined 33372 matches in 131.072s
 (PLAYDEK, INC.,8.471635818481445,playdek inc.)
 (DATAPOINT CORP,6.320140838623047,datapoint corp san antonio tx)
@@ -105,5 +96,7 @@ Joined 33372 matches in 131.072s
 
 ### LuceneRDD
 ````
+Count 310 matches in 393216.0ms
+(11.202088356018066,ibm)
 
 ````

@@ -200,14 +200,14 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
       new SearchPartition[T](p.index,
         s"${
           options.getIndexationOptions.getRootIndexDirectory
-        }-rdd${id}-${Math.abs(Random.nextLong())}", p)).toArray
+        }-rdd${id}", p)).toArray
   }
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
     val allIds = context.getExecutorIds()
-    val ids = allIds.sliding(getNumPartitions).toList
-    if (ids.nonEmpty) {
+    if (allIds.nonEmpty) {
+      val ids = allIds.sliding(getNumPartitions).toList
       ids(split.index % ids.length)
     } else {
       super.getPreferredLocations(split)
