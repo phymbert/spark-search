@@ -70,9 +70,16 @@ hdfs.copyFromLocalFile(srcEdgarCompaniesPath, destEdgarCompaniesPath)
  * submit the benchmark job
  
 ````sh
- spark-submit --master yarn --deploy-mode cluster --class benchmark.SearchRDDBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar \
- &&  spark-submit --master yarn --deploy-mode cluster --class benchmark.LuceneRDDBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar \
- && spark-submit --master yarn --deploy-mode cluster --class benchmark.SparkRDDRegexBenchmark /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+for bench in SearchRDDBenchmark LuceneRDDBenchmark SparkRDDRegexBenchmark
+do
+ spark-submit \
+ --master yarn \
+ --deploy-mode cluster \
+ --class benchmark.${bench} \
+ --executor-memory 10G \
+ --executor-cores 4 \
+ /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+done
 ````
 
 # Output
