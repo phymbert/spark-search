@@ -81,22 +81,18 @@ hdfs.copyFromLocalFile(srcEdgarCompaniesPath, destEdgarCompaniesPath)
 ````
 Count 310 matches in 0.0ms
 (6.369204521179199,ibm)
+...
 Joined 33372 matches in 131.072s
 (PLAYDEK, INC.,8.471635818481445,playdek inc.)
-(DATAPOINT CORP,6.320140838623047,datapoint corp san antonio tx)
-(INDEPENDENT FRANCHISE PARTNERS LLP,10.725297927856445,independent franchise partners, llp)
-(BELLWETHER INVESTMENT GROUP, LLC,9.817503929138184,bellwether investment group, llc)
-(SCOPERTA, INC.,8.197378158569336,scoperta inc.)
-(KANDI TECHNOLOGIES GROUP, INC.,9.264042854309082,kandi technologies group, inc.)
-(HIGH ADVENTURE TRAVEL INC,8.207137107849121,far & high adventure travel, inc,)
-(RANDALL PERRY,8.656317710876465,randall perry photography)
-(CONNECTICUT SURGERY CENTER, LIMITED PARTNERSHIP,11.38363265991211,connecticut surgery center, limited partnership)
-(MERCHANT CAPITAL LLC,6.929649353027344,talon merchant capital llc)
+...
 ````
 
 ### LuceneRDD
 ````
 Count 310 matches in 393216.0ms
 (11.202088356018066,ibm)
-
+...
+Joined 33372 matches in 786.432s
+(BLUE VASE SECURITIES, LLC,16.833273,blue vase securities llc)
+...
 ````

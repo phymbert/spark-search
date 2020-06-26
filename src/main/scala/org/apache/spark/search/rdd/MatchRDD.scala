@@ -26,9 +26,6 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    // Be sure indexation is done
-    parent[H](0).iterator(matchPartition.searchPartition, context)
-
     // Match other partitions against our
     tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index, matchPartition.searchPartition.indexDir)) {
       spr =>
@@ -37,7 +34,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
             try {
               spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
             } catch {
-              case e: SearchException => throw new SearchException("error during querying from " + docIndex._1 + ": " + docIndex._2, e)
+              case e: SearchException => throw new SearchException(s"error during matching ${docIndex._1}: ${docIndex._2}", e)
             })
           ).toArray.toIterator
     }
