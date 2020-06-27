@@ -71,7 +71,9 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
     spark.conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
     spark.conf.set("es.port", "80")
 
-    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}/companies,secEdgarCompanies")
-    (new DefaultHttpClient).execute(deleteIndices)
+    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}/companies,sec_edgar_companies")
+    println(s"Deleting indices ${deleteIndices}...")
+    val resp = (new DefaultHttpClient).execute(deleteIndices)
+    println(s"Indices deleted: ${resp}")
   }
 }
