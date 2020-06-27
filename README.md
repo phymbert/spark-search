@@ -130,6 +130,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 ##### v0.1.5
 * Fix SearchRDD#searchDropDuplicate method
+* Save/Restore search RDD to/from HDF
 * Yarn support and tested over AWS EMR
 * Adding and running [benchmark](benchmark) examples with alternatives libraries on AWS EMR
 * Support of spark 3.0.0
