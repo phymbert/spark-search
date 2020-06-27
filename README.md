@@ -80,6 +80,13 @@ matchesReviewersRDD
   .filter(_.hits.nonEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
+
+// Save then restore onto hdfs
+matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
+val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query-on")
+
+// Drop duplicates (see options)
+restoredSearchRDD.searchDropDuplicates()
 ```
 
 See [Examples](src/test/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
