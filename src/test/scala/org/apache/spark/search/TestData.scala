@@ -4,9 +4,7 @@ import java.io.File
 
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents
 import org.apache.lucene.analysis.ngram.NGramTokenizer
-import org.apache.lucene.analysis.shingle.ShingleFilter
-import org.apache.lucene.analysis.standard.StandardTokenizer
-import org.apache.lucene.analysis.{Analyzer, LowerCaseFilter, TokenStream}
+import org.apache.lucene.analysis.{Analyzer, TokenStream}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 /**
@@ -76,7 +74,8 @@ object TestData {
   class TestPersonAnalyzer extends Analyzer {
     override def createComponents(fieldName: String): TokenStreamComponents = {
       val src = new NGramTokenizer(1, 3)
-      new TokenStreamComponents(r => src.setReader(r), src)
+      var tok: TokenStream = src
+      new TokenStreamComponents(r => src.setReader(r), tok)
     }
   }
 
