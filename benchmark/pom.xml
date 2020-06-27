@@ -112,9 +112,10 @@
 
                 <configuration>
                     <artifactSet>
-                        <includes>
+                        <excludes>
                             <exclude>org.apache.spark:*</exclude>
-                        </includes>
+                            <exclude>org.scala-lang:*</exclude>
+                        </excludes>
                     </artifactSet>
                 </configuration>
                 <executions>
