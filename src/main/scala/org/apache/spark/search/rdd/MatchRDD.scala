@@ -38,15 +38,16 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     // Match other partitions against our
     tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
-      spr => matchPartition.otherPartitions.flatMap(op =>
-        parent[(Long, S)](1).iterator(op, context)
-          .map(docIndex => (docIndex._1,
-            try {
-              spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
-            } catch {
-              case e: SearchException => throw new SearchException(s"error during matching ${docIndex._1}: ${docIndex._2}", e)
-            })
-          )).toIterator
+      spr =>
+        matchPartition.otherPartitions.flatMap(op =>
+          parent[(Long, S)](1).iterator(op, context)
+            .map(docIndex => (docIndex._1,
+              try {
+                spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
+              } catch {
+                case e: SearchException => throw new SearchException(s"error during matching ${docIndex._1}: ${docIndex._2}", e)
+              })
+            )).toIterator
     }
   }
 
@@ -57,30 +58,32 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   }
 
   override protected def getPartitions: Array[Partition] = {
-    val parts = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
+    val parts = new Array[Partition](searchRDD.partitions.length)
     for (s1 <- parent[H](0).partitions) {
-      parts(s1.index) = new MatchRDDPartition(s1.index, searchRDD, other)
+      parts(s1.index) = new MatchRDDPartition(s1.index, parent[S](1).partitions.map(_.index), searchRDD, other)
     }
     parts
   }
 
   override def getDependencies: Seq[Dependency[_]] = Seq(
-    new OneToOneDependency(searchRDD)
+    new OneToOneDependency(searchRDD),
+    new OneToOneDependency(other)
   )
 
   class MatchRDDPartition(val idx: Int,
+                          val otherIndex: Array[Int],
                           @transient private val searchRDD: SearchRDD[H],
                           @transient private val other: RDD[(Long, S)]) extends Partition {
     override def index: Int = idx
 
     var searchPartition: SearchPartition[H] = searchRDD.partitions(idx).asInstanceOf[SearchPartition[H]]
-    var otherPartitions: Array[Partition] = other.partitions
+    var otherPartitions: Array[Partition] = otherIndex.map(i => other.partitions(i))
 
     @throws(classOf[IOException])
     private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
       // Update the reference to parent split at the time of task serialization
       searchPartition = searchRDD.partitions(idx).asInstanceOf[SearchPartition[H]]
-      otherPartitions = other.partitions
+      otherPartitions = otherIndex.map(i => other.partitions(i))
       oos.defaultWriteObject()
     }
   }
