@@ -16,6 +16,7 @@
 
 package org.apache.spark.search.rdd
 
+import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
 import org.apache.lucene.search.BooleanClause.Occur
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
@@ -38,12 +39,12 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("search list hits matching query") {
-    assertResult(Array(new SearchRecord[Person](0,1,0.3150668740272522f, 0,
+    assertResult(Array(new SearchRecord[Person](0, 1, 0.3150668740272522f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchList("firstName:bob", 10))
   }
 
   test("search RDD hits matching query") {
-    assertResult(Array(new SearchRecord[Person](0,1,0.3150668740272522f, 0,
+    assertResult(Array(new SearchRecord[Person](0, 1, 0.3150668740272522f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
   }
 
@@ -99,12 +100,84 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       queryBuilder[Company]((c: Company, lqb: QueryBuilder) => lqb.createBooleanQuery("name", c.name, Occur.MUST)),
       topK = 1,
       minScore = 0,
-      opts = SearchOptions.builder().analyzer(classOf[TestAnalyzer]).build())
+      opts = SearchOptions.builder().analyzer(classOf[ShingleAnalyzerWrapper]).build())
       .filter(m => m.hits.count(h => h.source.name.equals(m.doc.name)) == 1)
       .cache
     searchRDD.map(m => (m.doc.name, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
     assertResult(1000)(searchRDD.count)
 
     spark.stop
+  }
+
+  test("Should convert to product") {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Spark Search Test")
+      .getOrCreate()
+    import spark.implicits._
+    val companies = TestData.companiesDS(spark).repartition(4).as[Company].cache.rdd
+    val companies2 = TestData.companiesEdgarDS(spark).repartition(4).as[SecEdgarCompanyInfo].cache.rdd
+
+    val matchRDD = companies.searchQueryJoin(companies2,
+      queryBuilder[SecEdgarCompanyInfo]((c: SecEdgarCompanyInfo, lqb: QueryBuilder) => lqb.createBooleanQuery("name", c.companyName, Occur.MUST)),
+      topK = 1,
+      minScore = 0,
+      opts = SearchOptions.builder().analyzer(classOf[ShingleAnalyzerWrapper]).build())
+      .cache
+    matchRDD.map(m => (m.doc.companyName, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
+    assertResult(10003)(matchRDD.count)
+
+    spark.stop
+  }
+
+  test("Distinct with no minimum score test RDD") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(1).searchRDD
+
+    val deduplicated = searchRDD.distinct().collect
+    assertResult(1)(deduplicated.length)
+  }
+
+  test("Drop duplicate with min score test RDD") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(1)
+      .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
+
+    val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
+    assertResult(3)(deduplicated.length)
+  }
+
+  test("Save and restor index from/to hdfs") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(1).searchRDD
+    assertResult(6)(searchRDD.count())
+
+    searchRDD.save("target/test-save")
+
+    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
+
+    val c = restoredSearchRDD.count("firstName:Bob~0.5")
+    assertResult(2)(c)
   }
 }

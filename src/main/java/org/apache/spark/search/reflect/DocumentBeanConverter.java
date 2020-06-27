@@ -16,6 +16,7 @@
 
 package org.apache.spark.search.reflect;
 
+import org.apache.commons.beanutils.ConstructorUtils;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
@@ -23,6 +24,8 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.spark.search.DocumentConverter;
 import org.apache.spark.search.SearchException;
 import org.apache.spark.search.SearchRecordJava;
+import org.apache.spark.sql.catalyst.encoders.OuterScopes;
+import scala.Function0;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;
@@ -48,6 +51,7 @@ public class DocumentBeanConverter<T> extends DocumentBasePropertyDescriptors im
 
         T source;
         if (isScalaProduct(classTag)) {
+
             Class<?>[] types = new Class[propertyDescriptors.length];
             Object[] values = new Object[propertyDescriptors.length];
             for (int i = 0; i < types.length; i++) {
@@ -63,10 +67,19 @@ public class DocumentBeanConverter<T> extends DocumentBasePropertyDescriptors im
                 }
             }
             try {
-                source = (T) classTag.getDeclaredConstructors()[0].newInstance(values);
+                // Fix for REPL
+                Function0<Object> outerPtr = OuterScopes.getOuterScope(classTag);
+                if (outerPtr != null) {
+                    Object[] valuesWithOuter = new Object[values.length + 1];
+                    System.arraycopy(values, 0, valuesWithOuter, 1, values.length);
+                    values = valuesWithOuter;
+                    values[0] = outerPtr.apply();
+                }
+
+                source = (T) ConstructorUtils.invokeConstructor(classTag, values);
             } catch (Exception e) {
                 throw new SearchException("unable to invoke case class constructor on "
-                        + classTag + " with values '" + Arrays.toString(values) + "'", e);
+                        + classTag + " with values " + Arrays.toString(values) + ", indexes: " + Arrays.stream(values).map(v -> "\n" + v.toString()), e);
             }
         } else {
             source = classTag.newInstance();

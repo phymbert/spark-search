@@ -23,7 +23,7 @@ Have a look and feel free to contribute!
 <dependency>
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.4</version>
+    <version>0.1.5</version>
 </dependency>
 ```
 
@@ -80,6 +80,13 @@ matchesReviewersRDD
   .filter(_.hits.nonEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
   .foreach(println)
+
+// Save then restore onto hdfs
+matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
+val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query-on")
+
+// Drop duplicates (see options)
+restoredSearchRDD.searchDropDuplicates()
 ```
 
 See [Examples](src/test/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
@@ -109,7 +116,28 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
 ```
 See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
+## Benchmark
+
+All [benchmarks](benchmark) run under AWS EMR with 3 Spark workers EC2 m5.xlarge and/or 3 r5.large.elasticsearch data nodes for AWS Elasticsearch.
+The general use cases is to match company names against two data sets (7M vs 600K rows)
+
+| Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
+|---|---|---|---|---|
+| Index + Count matches | 45s | 486s (*)  | 400s | 12s  |
+| Index + Join matches | 127s | 719s (*) | 597s | NA (>1h) |
+
+*DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request.
+ 
+(*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
+
 ## Release notes
+
+##### v0.1.5
+* Fix SearchRDD#searchDropDuplicate method
+* Save/Restore search RDD to/from HDF
+* Yarn support and tested over AWS EMR
+* Adding and running [benchmark](benchmark) examples with alternatives libraries on AWS EMR
+* Support of spark 3.0.0
 
 ##### v0.1.4
 * Optimize searchJoin for small num partition

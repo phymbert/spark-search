@@ -35,6 +35,7 @@ public class DefaultQueryBuilder<T>
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
             PropertyDescriptor[] descriptors = basePropertyDescriptors.getPropertyDescriptors(element.getClass());
             for (PropertyDescriptor propertyDescriptor : descriptors) {
+                // Value cannot be null from above method
                 String value = basePropertyDescriptors.value(propertyDescriptor, element);
                 if (!"".equals(value)) {
                     builder.add(queryBuilder.createBooleanQuery(propertyDescriptor.getName(), value),

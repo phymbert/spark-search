@@ -30,7 +30,7 @@ import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SearchPartitionTest {
+public class SearchPartitionIndexTest {
 
 
     private Runnable cleanupIndexDirectory;
@@ -56,7 +56,7 @@ public class SearchPartitionTest {
         IndexationOptions<PersonJava> options = IndexationOptions.<PersonJava>builder()
                 .indexDirectoryCleanupHandler(handler)
                 .build();
-        SearchPartition<PersonJava> partition = new SearchPartition<>(0, options.getRootIndexDirectory(), null);
+        SearchPartitionIndex<PersonJava> partition = new SearchPartitionIndex<>(0, options.getRootIndexDirectory(), null);
         partition.index(PersonJava.PERSONS.iterator(), options);
 
         File indexDir = new File(partition.indexDir);

@@ -3,7 +3,7 @@
 
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.1.6-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -104,6 +104,7 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.10</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
@@ -231,6 +232,18 @@
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
