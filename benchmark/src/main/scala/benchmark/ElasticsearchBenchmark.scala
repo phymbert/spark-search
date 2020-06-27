@@ -14,19 +14,19 @@
  *    limitations under the License.
  */
 
-package object benchmark {
+package benchmark
 
-  case class SecEdgarCompanyInfo(lineNumber: String, companyName: String, companyCIKKey: String)
+import org.apache.spark.rdd.RDD
 
-  case class Company(name: String,
-                     domain: String,
-                     yearFounded: String,
-                     industry: String,
-                     sizeRange: String,
-                     locality: String,
-                     country: String,
-                     linkedinUrl: String,
-                     currentEmployeeEstimate: String,
-                     totalEmployeeEstimate: String)
+object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
 
+  def main(args: Array[String]): Unit = run()
+
+  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
+    ???
+  }
+
+  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+    ???
+  }
 }
