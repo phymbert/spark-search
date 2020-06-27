@@ -23,10 +23,15 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil)
     with Serializable {
 
+  override val partitioner: Option[Partitioner] = searchRDD.partitioner
+
+  override protected def getPreferredLocations(split: Partition): Seq[String] =
+    firstParent.getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
+
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    // Be sure partitions are indexed
+    // Be sure parent partition is indexed
     parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our

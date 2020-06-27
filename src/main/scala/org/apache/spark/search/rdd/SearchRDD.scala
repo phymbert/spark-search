@@ -40,6 +40,11 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   extends RDD[T](rdd.context, Nil) {
 
   private var searchIndexRDD = new SearchIndexRDD(rdd, options).cache
+  override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
+
+
+  override protected def getPreferredLocations(split: Partition): Seq[String] =
+    firstParent.getPreferredLocations(split.asInstanceOf[SearchPartition].searchIndexPartition)
 
   /**
    * Return the number of indexed elements in the RDD.
@@ -87,7 +92,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    */
   def searchQuery(query: () => Query, topKByPartition: Int = Int.MaxValue, minScore: Double = 0): RDD[SearchRecord[T]] = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
-    mapPartitionsWithIndex((index, _) =>
+    searchIndexRDD.mapPartitionsWithIndex((index, _) =>
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         spr => _partitionReaderSearchList(spr, query, topKByPartition, minScore)
       }.iterator
