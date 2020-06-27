@@ -109,6 +109,8 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
+    count()
+
     val topKReducer = (matches: Iterator[SearchRecord[T]]) => matches.toArray
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)

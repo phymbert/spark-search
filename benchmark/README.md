@@ -45,8 +45,18 @@ hdfs dfs -put *.csv /
 
 * From the AWS master
 ````sh
-
-
+sudo yum install git
+wget https://apache.mediamirrors.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+sudo tar xf apache-maven-3.6.3-bin.tar.gz -C /opt
+sudo ln -s /opt/apache-maven-3.6.3/ /opt/maven
+export M2_HOME=/opt/maven
+export MAVEN_HOME=/opt/maven
+export PATH=${M2_HOME}/bin:${PATH}
+git clone https://github.com/phymbert/spark-search.git
+cd spark-search/
+mvn install -DskipTests=true
+cd benchmark
+mvn package
 ````
 
 # How to submit
@@ -64,7 +74,7 @@ do
  --class benchmark.${bench} \
  --executor-memory 10G \
  --executor-cores 4 \
- /tmp/benchmark/target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+ target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
 done
 ````
 
