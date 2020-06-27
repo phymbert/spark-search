@@ -6,7 +6,7 @@ import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.{SearchException, SearchRecord}
 import org.apache.spark.util.Utils
-import org.apache.spark.{Dependency, NarrowDependency, Partition, TaskContext}
+import org.apache.spark.{Dependency, NarrowDependency, OneToOneDependency, Partition, RangeDependency, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -26,8 +26,9 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    // FIXME Be sure indexation is done
-    //parent[H](0).iterator(matchPartition.searchPartition, context)
+    // Be sure search partition is indexed
+    if (matchPartition.otherPartitionIndex == 0)
+      parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our
     tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index, matchPartition.searchPartition.indexDir)) {
@@ -68,9 +69,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     new NarrowDependency(searchRDD) {
       def getParents(id: Int): Seq[Int] = List(id / numPartitionsInOther)
     },
-    new NarrowDependency(other) {
-      def getParents(id: Int): Seq[Int] = List(id % numPartitionsInOther)
-    }
+    new OneToOneDependency(other)
   )
 
   class MatchRDDPartition(val idx: Int,

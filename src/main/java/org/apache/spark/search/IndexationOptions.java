@@ -26,11 +26,9 @@ import org.apache.spark.util.ShutdownHookManager;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Lucene indexation options.
@@ -74,11 +72,9 @@ public final class IndexationOptions<T> implements Serializable {
 
     /**
      * Root index directory.
+     * We use by default tmpdir,beacuse in yarn spark.local.dirs are per container.
      */
-    private String rootIndexDirectory = Optional.ofNullable(System.getProperty(CONF_SPARK_LOCAL_DIR))
-            .orElse(System.getProperty(PROPS_JAVA_IO_TMPDIR)) + File.separator + "spark-search"; // file.separator not necessary ?
-    private static final String CONF_SPARK_LOCAL_DIR = "spark.local.dir";
-    private static final String PROPS_JAVA_IO_TMPDIR = "java.io.tmpdir";
+    private String rootIndexDirectory = System.getProperty("java.io.tmpdir") + "spark-search";
 
     /**
      * Log indexation progress every 100K docs.
