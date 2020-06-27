@@ -47,7 +47,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       s"name:${"\"" + skipped + "\""}"
     }
 
-    luceneRDD.link(secEdgarCompany, prefixLinker, 1, linkerMethod = "cartesian")
+    luceneRDD.link(secEdgarCompany, prefixLinker, 1)
       .filter(_._2.nonEmpty)
       .map(t => (t._1.companyName, t._2.head.getAs[Double]("__score__"), t._2.head.getAs[String]("name")))
   }

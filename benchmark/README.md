@@ -81,22 +81,68 @@ done
 
 # Output
 
-## Search RDD
+## Search RDD benchmark
 ````
-Count 310 matches in 0.0ms
+Time taken: 128617 ms
+for joined 33372 matches
+(ICB INTERNATIONAL, INC.,8.383696556091309,icb international, inc.)
+...
+Time taken: 95525 ms
+for joined 33372 matches
+Time taken: 95225 ms
+for joined 33372 matches
+Time taken: 99027 ms
+for joined 33372 matches
+Time taken: 93551 ms
+for joined 33372 matches
+Time taken: 41826 ms
+for count 310 matches
 (6.369204521179199,ibm)
 ...
-Joined 33372 matches in 131.072s
-(PLAYDEK, INC.,8.471635818481445,playdek inc.)
-...
+Time taken: 45155 ms
+for count 310 matches
+Time taken: 45238 ms
+for count 310 matches
+Time taken: 41626 ms
+for count 310 matches
+Time taken: 45143 ms
+for count 310 matches
 ````
 
 ### LuceneRDD
 ````
-Count 310 matches in 393216.0ms
+Time taken: 1123398 ms
+for joined 33372 matches
+(FYUSION, INC.,12.636959,fyusion, inc)
+Time taken: 1135545 ms
+for joined 33372 matches
+/!\stopped
+Time taken: 367431 ms
+for count 310 matches
 (11.202088356018066,ibm)
 ...
-Joined 33372 matches in 786.432s
-(BLUE VASE SECURITIES, LLC,16.833273,blue vase securities llc)
+Time taken: 405245 ms
+for count 310 matches
+Time taken: 405559 ms
+for count 310 matches
+Time taken: 413801 ms
+for count 310 matches
+/!\ stopped
 ...
+````
+
+## Regex benchmark
+````
+Time taken: 14400 ms
+for count 494 matches
+(0.0,instituto de biologia molecular do parana - ibmp)
+...
+Time taken: 12991 ms
+for count 494 matches
+Time taken: 12630 ms
+for count 494 matches
+Time taken: 12450 ms
+for count 494 matches
+Time taken: 12524 ms
+for count 494 matches
 ````

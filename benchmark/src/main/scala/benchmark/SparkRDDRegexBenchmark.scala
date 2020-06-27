@@ -33,15 +33,14 @@ object SparkRDDRegexBenchmark extends BaseBenchmark("Spark RDD Regex") {
   }
 
   override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    companies
-      .filter(_.name != null)
-      .zipWithIndex().map(_.swap)
-      .cartesian(secEdgarCompany.filter(_.companyName != null).map(Iterator(_)))
-      .map(t => (t._1._1, (t._1._2, t._2)))
-      // Might be optimized/corrected
-      .filter(t => t._2._1.name.toLowerCase.matches(".*\\Q" +
-        t._2._2.next.companyName.slice(0, 64).toLowerCase.replaceAllLiterally(" ", "\\E\\s+\\Q") + "\\E.*"))
-      .reduceByKey((c1, c2) => (c1._1, c1._2 ++ c2._2))
-      .map(t => (t._2._1.name, 0d, t._2._2.toArray.headOption.map(_.companyName).getOrElse("")))
+    secEdgarCompany
+      .filter(_.companyName != null)
+      .zipWithIndex()
+      .map(_.swap)
+      .cartesian(companies.filter(_.name != null))
+      .map(c => (c._1._1, (c._1._2.companyName, c._2.name)))
+      .filter(t => t._2._2.toLowerCase.matches(s".*\\Q${t._2._1.replaceAllLiterally(" ", "\\E\\s+\\Q")}\\E.*"))
+      .reduceByKey((c1, _) => c1)
+      .map(t => (t._2._1, 0d, t._2._2))
   }
 }
