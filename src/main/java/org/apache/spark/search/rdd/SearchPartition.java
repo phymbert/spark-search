@@ -59,7 +59,7 @@ class SearchPartition<T> implements Partition, Serializable {
     SearchPartition(int index, String rootDir, Partition parent) {
         this.index = index;
         this.parent = parent;
-        this.indexDir = String.format("%s-index%d-%d", rootDir, index, System.nanoTime());
+        this.indexDir = String.format("%s-index-%d", rootDir, index);
     }
 
     /**

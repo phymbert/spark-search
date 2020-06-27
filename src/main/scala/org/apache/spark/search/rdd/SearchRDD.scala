@@ -109,6 +109,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
+    // be sure our RDD is indexed first
     count()
 
     val topKReducer = (matches: Iterator[SearchRecord[T]]) => matches.toArray

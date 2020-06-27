@@ -25,40 +25,40 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
   protected def run(): Unit = {
     import spark.implicits._
 
-    // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
-    val companies = spark.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .csv("hdfs:///companies_sorted.csv")
-      .withColumnRenamed("year founded", "yearFounded")
-      .withColumnRenamed("size range", "sizeRange")
-      .withColumnRenamed("linkedin url", "linkedinUrl")
-      .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
-      .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
-      .withColumnRenamed("_c0", "id")
-      .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country", "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
-      .as[Company]
-      .repartition(7, $"id")
-      .cache
-      .rdd
-    companies.count
+    def loadCompanies = {
+      // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
+      spark.read
+        .option("header", "true")
+        .option("inferSchema", "true")
+        .csv("hdfs:///companies_sorted.csv")
+        .withColumnRenamed("year founded", "yearFounded")
+        .withColumnRenamed("size range", "sizeRange")
+        .withColumnRenamed("linkedin url", "linkedinUrl")
+        .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
+        .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
+        .withColumnRenamed("_c0", "id")
+        .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country", "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
+        .as[Company]
+        .repartition(7, $"id")
+        .rdd
+    }
 
-    // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
-    val secEdgarCompanies = spark.read.option("header", "true")
-      .option("inferSchema", "true")
-      .csv("hdfs:///sec__edgar_company_info.csv")
-      .withColumnRenamed("Line Number", "lineNumber")
-      .withColumnRenamed("Company Name", "companyName")
-      .withColumnRenamed("Company CIK Key", "companyCIKKey")
-      .as[SecEdgarCompanyInfo]
-      .repartition(2, $"lineNumber")
-      .cache
-      .rdd
-    secEdgarCompanies.count
+    def loadSecEdgarCompanies = {
+      // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
+      spark.read.option("header", "true")
+        .option("inferSchema", "true")
+        .csv("hdfs:///sec__edgar_company_info.csv")
+        .withColumnRenamed("Line Number", "lineNumber")
+        .withColumnRenamed("Company Name", "companyName")
+        .withColumnRenamed("Company CIK Key", "companyCIKKey")
+        .as[SecEdgarCompanyInfo]
+        .repartition(2, $"lineNumber")
+        .rdd
+    }
 
     // Count matches
     var startTime = System.currentTimeMillis()
-    val matches = countNameMatches(companies, "IBM").cache
+    val matches = countNameMatches(loadCompanies, "IBM").cache
     var count = matches.count
     var endTime = System.currentTimeMillis()
     println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
@@ -67,7 +67,7 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
 
     // Join matches
     startTime = System.currentTimeMillis()
-    val joinedMatches = joinMatch(companies, secEdgarCompanies).cache
+    val joinedMatches = joinMatch(loadCompanies, loadSecEdgarCompanies).cache
     count = joinedMatches.count
     endTime = System.currentTimeMillis()
     println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
