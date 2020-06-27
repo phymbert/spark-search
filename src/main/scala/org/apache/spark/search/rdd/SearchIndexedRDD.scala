@@ -17,8 +17,13 @@
 package org.apache.spark.search.rdd
 
 import java.io.File
+import java.nio.file.Files
+import java.util.function.Consumer
+import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import org.apache.commons.io.FileUtils
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
@@ -70,7 +75,35 @@ private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
   lazy val _indexDirectoryByPartition: Map[Int, String] =
     partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
 
-  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
+  def save(path: String): Unit = {
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+    mapPartitionsWithIndex((index, _) => {
+      val hadoopConf = new Configuration()
+      val hdfs = FileSystem.get(hadoopConf)
+      val localIndexDirPath = new File(indexDirectoryByPartition(index)).toPath
+      val targetPath = new Path(path, s"${localIndexDirPath.getFileName}.zip")
+      logInfo(s"Saving partition ${localIndexDirPath} to ${targetPath}")
+      val fos = hdfs.create(targetPath)
+      val zip = new ZipOutputStream(fos)
+      Files.list(localIndexDirPath).forEach {
+        new Consumer[java.nio.file.Path] {
+          override def accept(file: java.nio.file.Path): Unit = {
+            zip.putNextEntry(new ZipEntry(file.toFile.getName))
+            Files.copy(file, zip)
+            zip.closeEntry()
+          }
+        }
+      }
+      zip.close()
+      fos.close()
+      logInfo(s"Partition ${localIndexDirPath} saved to ${targetPath}")
+      Iterator()
+    }).collect
+  }
+
+  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type
+
+  = {
     // FIXME support blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
 

@@ -155,6 +155,21 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
       .repartition(numPartitions)
   }
 
+  /**
+   * Save the current indexed RDD in order to be able to reload it later.
+   *
+   * @param path Path on the spark file system to save on
+   */
+  def save(path: String) : Unit = {
+    logInfo(s"Saving index with ${getNumPartitions} partitions to ${path} ...")
+    // Be sure we are indexed
+    count
+
+    searchIndexRDD.save(path)
+
+    logInfo(s"Index with ${getNumPartitions} partitions saved to ${path}")
+  }
+
   override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
   = new SearchRDD[T](firstParent.repartition(numPartitions), options)
 
@@ -204,7 +219,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
   override def persist(newLevel: StorageLevel): SearchRDD.this.type = {
     if (newLevel != StorageLevel.MEMORY_ONLY && newLevel != StorageLevel.NONE) {
-      throw new SearchException("persisting SearchRDD is not supported, saveAsZip(String) to restore it later on")
+      throw new SearchException("persisting SearchRDD is not supported, save(String) to restore it later on")
     }
     super.persist(newLevel)
   }
@@ -216,6 +231,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     searchIndexRDD.unpersist()
     searchIndexRDD = null
   }
+
 }
 
 class SearchPartition[T](val idx: Int,
@@ -229,5 +245,11 @@ class SearchPartition[T](val idx: Int,
     // Update the reference to parent split at the time of task serialization
     searchIndexPartition = searchRDD.partitions(idx).asInstanceOf[SearchPartitionIndex[T]]
     oos.defaultWriteObject()
+  }
+}
+
+object SearchRDD {
+  def load[T](path: String, options: SearchOptions[T] = defaultOpts): SearchRDD[T] = {
+    ???
   }
 }

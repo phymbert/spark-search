@@ -161,4 +161,18 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
     assertResult(3)(deduplicated.length)
   }
+
+  test("Save index to hdfs") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(3).searchRDD
+
+    searchRDD.save("target/test-save")
+  }
 }
