@@ -69,11 +69,11 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
 
     // Join matches
     (0 until 5).foreach(i => {
-      val startTime = System.currentTimeMillis()
-      val joinedMatches = joinMatch(loadCompanies, loadSecEdgarCompanies).cache
-      val count = joinedMatches.count
-      val endTime = System.currentTimeMillis()
-      println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
+      val (count, joinedMatches) = spark.time({
+        val jm = joinMatch(loadCompanies, loadSecEdgarCompanies).cache
+        (jm.count, jm)
+      })
+      println(s"for joined ${count} matches")
       if (i == 0) {
         joinedMatches.take(100).foreach(println(_))
       }
@@ -82,11 +82,11 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
 
     // Count matches
     (0 until 5).foreach(i => {
-      val startTime = System.currentTimeMillis()
-      val matches = countNameMatches(loadCompanies, "IBM").cache
-      val count = matches.count
-      val endTime = System.currentTimeMillis()
-      println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
+      val (count, matches) = spark.time({
+        val m = countNameMatches(loadCompanies, "IBM").cache
+        (m.count, m)
+      })
+      println(s"for count ${count} matches")
       if (i == 0) {
         matches.take(100).foreach(println(_))
       }
