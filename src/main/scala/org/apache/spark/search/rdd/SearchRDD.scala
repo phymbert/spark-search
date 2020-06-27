@@ -109,7 +109,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
 
-    val topKMonoid = (matches: Iterator[SearchRecord[T]]) => matches.toArray
+    val topKReducer = (matches: Iterator[SearchRecord[T]]) => matches.toArray
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)
       .iterator
@@ -117,7 +117,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     val otherZipped = other.zipWithIndex.map(_.swap)
     otherZipped
       .join(new MatchRDD[S, T](this, otherZipped, queryBuilder, topK, minScore))
-      .reduceByKey((d1, d2) => (d1._1, topKMonoid(d1._2 ++ d2._2)))
+      .reduceByKey((d1, d2) => (d1._1, topKReducer(d1._2 ++ d2._2)))
       .map {
         case (_, (doc, matches)) =>
           new Match[S, T](doc, matches.toArray)

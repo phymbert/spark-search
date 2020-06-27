@@ -58,7 +58,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
 
   override protected def getPartitions: Array[Partition] = {
     val parts = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
-    for (s1 <- parent[H](0).partitions; s2 <- parent[(Long, S)](1).partitions) {
+    for (s2 <- parent[(Long, S)](1).partitions; s1 <- parent[H](0).partitions) {
       val idx = s1.index * numPartitionsInOther + s2.index
       parts(idx) = new MatchRDDPartition(idx, s1.index, s2.index, searchRDD, other)
     }
@@ -66,9 +66,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   }
 
   override def getDependencies: Seq[Dependency[_]] = List(
-    new NarrowDependency(searchRDD) {
-      def getParents(id: Int): Seq[Int] = List(id / numPartitionsInOther)
-    },
+    new OneToOneDependency(searchRDD),
     new OneToOneDependency(other)
   )
 
