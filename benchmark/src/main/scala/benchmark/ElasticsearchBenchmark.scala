@@ -62,7 +62,9 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
   }
 
   private def clearES() = {
-    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}:9200/companies,secEdgarCompanies")
+    val deleteIndices = new HttpDelete(s"https://${System.getProperty("es.nodes")}:${System.getProperty("es.port")}/companies,secEdgarCompanies")
+    println(s"Cleaning ES Repository ${deleteIndices}")
     (new DefaultHttpClient).execute(deleteIndices)
+    println(s"Index cleaned")
   }
 }

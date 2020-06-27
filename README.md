@@ -111,8 +111,8 @@ See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.
 
 ## Benchmark
 
-All [benchmarks](benchmark) run under AWS EMR with 3 spark workers EC2 m5.xlarge and/or 3 r5.large.elasticsearch data nodes for ES.
-The general use cases is to match companies names between two data set (7M vs 600K rows)
+All [benchmarks](benchmark) run under AWS EMR with 3 Spark workers EC2 m5.xlarge and/or 3 r5.large.elasticsearch data nodes for AWS Elasticsearch.
+The general use cases is to match company names against two data sets (7M vs 600K rows)
 
 | Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
