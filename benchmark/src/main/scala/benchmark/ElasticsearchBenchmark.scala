@@ -35,6 +35,7 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
     clearES()
     companies.saveToEs("companies", esOpts) // FIXME maybe adjust replica/shard preferences
     spark.read.format(esSQLSource)
+      .option("es.nodes.wan.only", "true")
       .load("companies")
       .filter($"name".equalTo(name))
       .as[Company]
@@ -48,11 +49,14 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
     companies.saveToEs("companies", esOpts)
     secEdgarCompanies.saveToEs("sec_edgar_companies", esOpts)
 
-    val companiesES = spark.read.format(esSQLSource)
+    val companiesES = spark.read
+      .format(esSQLSource)
+      .option("es.nodes.wan.only", "true")
       .load("companies")
       .as[Company]
 
     val secEdgarCompaniesES = spark.read.format(esSQLSource)
+      .option("es.nodes.wan.only", "true")
       .load("sec_edgar_companies")
       .as[SecEdgarCompanyInfo]
 
