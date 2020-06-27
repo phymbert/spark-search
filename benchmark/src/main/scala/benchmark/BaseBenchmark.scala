@@ -25,34 +25,42 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
   protected def run(): Unit = {
     import spark.implicits._
 
+    // Convert CSV to parquet
+    spark.read
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .csv("hdfs:///companies_sorted.csv")
+      .withColumnRenamed("year founded", "yearFounded")
+      .withColumnRenamed("size range", "sizeRange")
+      .withColumnRenamed("linkedin url", "linkedinUrl")
+      .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
+      .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
+      .withColumnRenamed("_c0", "id")
+      .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country", "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
+      .repartition(7, $"id")
+      .write.parquet("hdfs:///companies_sorted.parquet")
+
+    spark.read.option("header", "true")
+      .option("inferSchema", "true")
+      .csv("hdfs:///sec__edgar_company_info.csv")
+      .withColumnRenamed("Line Number", "lineNumber")
+      .withColumnRenamed("Company Name", "companyName")
+      .withColumnRenamed("Company CIK Key", "companyCIKKey")
+      .repartition(2, $"lineNumber")
+      .write.parquet("hdfs:///sec__edgar_company_info.parquet")
+
     def loadCompanies = {
       // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
       spark.read
-        .option("header", "true")
-        .option("inferSchema", "true")
-        .csv("hdfs:///companies_sorted.csv")
-        .withColumnRenamed("year founded", "yearFounded")
-        .withColumnRenamed("size range", "sizeRange")
-        .withColumnRenamed("linkedin url", "linkedinUrl")
-        .withColumnRenamed("current employee estimate", "currentEmployeeEstimate")
-        .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
-        .withColumnRenamed("_c0", "id")
-        .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country", "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
+        .load("hdfs:///companies_sorted.parquet")
         .as[Company]
-        .repartition(7, $"id")
         .rdd
     }
 
     def loadSecEdgarCompanies = {
       // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
-      spark.read.option("header", "true")
-        .option("inferSchema", "true")
-        .csv("hdfs:///sec__edgar_company_info.csv")
-        .withColumnRenamed("Line Number", "lineNumber")
-        .withColumnRenamed("Company Name", "companyName")
-        .withColumnRenamed("Company CIK Key", "companyCIKKey")
+      spark.read.load("hdfs:///sec__edgar_company_info.parquet")
         .as[SecEdgarCompanyInfo]
-        .repartition(2, $"lineNumber")
         .rdd
     }
 
