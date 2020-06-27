@@ -43,8 +43,9 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
 
 
-  override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[T].getPreferredLocations(split.asInstanceOf[SearchPartition].searchIndexPartition)
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    firstParent[T].asInstanceOf[SearchIndexRDD[T]]
+      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
 
   /**
    * Return the number of indexed elements in the RDD.
