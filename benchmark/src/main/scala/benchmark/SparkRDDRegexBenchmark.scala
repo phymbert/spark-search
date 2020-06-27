@@ -32,8 +32,8 @@ object SparkRDDRegexBenchmark extends BaseBenchmark("Spark RDD Regex") {
       .map(c => (0, c.name))
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    secEdgarCompany
+  override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+    secEdgarCompanies
       .filter(_.companyName != null)
       .zipWithIndex()
       .map(_.swap)

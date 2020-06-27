@@ -16,17 +16,54 @@
 
 package benchmark
 
+import com.google.common.collect.ImmutableMap
+import org.apache.http.client.methods.{HttpDelete, HttpPost}
+import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.functions._
+import org.elasticsearch.spark._
 
 object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
+
+  val esSQLSource = "org.elasticsearch.spark.sql"
 
   def main(args: Array[String]): Unit = run()
 
   override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
-    ???
+    import spark.implicits._
+    clearES()
+    companies.saveToEs("companies") // FIXME maybe adjust replica/shard preferences
+    spark.read.format(esSQLSource)
+      .load("companies")
+      .filter($"name".equalTo(name))
+      .as[Company]
+      .map(c => (0d, c.name)) // FIXME no score ?
+      .rdd
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    ???
+  override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+    clearES()
+    import spark.implicits._
+    companies.saveToEs("companies")
+    secEdgarCompanies.saveToEs("secEdgarCompanies")
+
+    val companiesES = spark.read.format(esSQLSource)
+      .load("companies")
+      .as[Company]
+
+    val secEdgarCompaniesES = spark.read.format(esSQLSource)
+      .load("secEdgarCompanies")
+      .as[SecEdgarCompanyInfo]
+
+    companiesES.join(secEdgarCompaniesES, $"name".equalTo($"companyName")) //FIXME check pushdown filters
+      .select($"companyName", lit(0d), $"name")
+      .distinct
+      .as[(String, Double, String)]
+      .rdd
+  }
+
+  private def clearES() = {
+    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}:9200/companies,secEdgarCompanies")
+    (new DefaultHttpClient).execute(deleteIndices)
   }
 }

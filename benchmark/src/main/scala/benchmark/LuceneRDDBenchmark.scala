@@ -34,7 +34,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       .sortBy(_._1, ascending = false) // Not sorted by RDD but by partition
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     import spark.implicits._
 
     val luceneRDD = LuceneRDD(companies.toDF(),
@@ -47,7 +47,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       s"name:${"\"" + skipped + "\""}"
     }
 
-    luceneRDD.link(secEdgarCompany, prefixLinker, 1)
+    luceneRDD.link(secEdgarCompanies, prefixLinker, 1)
       .filter(_._2.nonEmpty)
       .map(t => (t._1.companyName, t._2.head.getAs[Double]("__score__"), t._2.head.getAs[String]("name")))
   }
