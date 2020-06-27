@@ -65,6 +65,7 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
     spark.conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
     spark.conf.set("es.port", spark.conf.get("spark.es.port"))
     spark.conf.set("es.nodes.wan.only", "true")
+    spark.conf.set("es.net.ssl", "true")
 
     val deleteIndices = new HttpDelete(s"https://${spark.conf.get("es.nodes")}:${spark.conf.get("es.port")}/companies,secEdgarCompanies")
     (new DefaultHttpClient).execute(deleteIndices)
