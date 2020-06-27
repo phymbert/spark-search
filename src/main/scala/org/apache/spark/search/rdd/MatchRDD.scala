@@ -50,8 +50,6 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     other = null
   }
 
-  override val partitioner: Option[Partitioner] = searchRDD.partitioner
-
   private val numPartitionsInSearch = searchRDD.partitions.length
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =

@@ -41,7 +41,7 @@ private[search] class SearchIndexRDD[T: ClassTag](rdd: RDD[T],
       .asInstanceOf[java.util.Iterator[T]]
     searchRDDPartition.index(elements, options.getIndexationOptions)
 
-    Iterator.empty // No RDD expected after
+    Iterator.empty
   }
 
   override protected def getPartitions: Array[Partition] = {

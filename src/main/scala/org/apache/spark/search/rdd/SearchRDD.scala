@@ -166,7 +166,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
                                                                        reducer: Iterator[R] => A): A = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
-    val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
+    val ret = sparkContext.runJob(searchIndexRDD, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         r => searchByPartitionWithContext(r, context)
@@ -189,20 +189,14 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
 
+    // Trigger indexation if not done yet
     firstParent.iterator(searchRDDPartition.searchIndexPartition, context)
   }
-
-  override val partitioner: Option[Partitioner] = firstParent.partitioner
 
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
     firstParent.partitions.map(p =>
       new SearchPartition(p.index, searchIndexRDD)).toArray
-  }
-
-  override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
-    parent[T](0).asInstanceOf[SearchIndexRDD[T]]
-      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
   }
 
   override def persist(newLevel: StorageLevel): SearchRDD.this.type = {
