@@ -18,7 +18,6 @@ package benchmark
 
 import org.apache.http.client.methods.HttpDelete
 import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.elasticsearch.spark._
@@ -27,13 +26,14 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
 
   val esSQLSource = "org.elasticsearch.spark.sql"
 
+  val esOpts = Map("es.nodes.wan.only" -> "true")
 
   def main(args: Array[String]): Unit = run()
 
   override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
     import spark.implicits._
-    clearES(companies.sparkContext.getConf)
-    companies.saveToEs("companies") // FIXME maybe adjust replica/shard preferences
+    clearES()
+    companies.saveToEs("companies", esOpts) // FIXME maybe adjust replica/shard preferences
     spark.read.format(esSQLSource)
       .load("companies")
       .filter($"name".equalTo(name))
@@ -43,10 +43,10 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
   }
 
   override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    clearES(companies.sparkContext.getConf)
+    clearES(companies)
     import spark.implicits._
-    companies.saveToEs("companies")
-    secEdgarCompanies.saveToEs("secEdgarCompanies")
+    companies.saveToEs("companies", esOpts)
+    secEdgarCompanies.saveToEs("secEdgarCompanies", esOpts)
 
     val companiesES = spark.read.format(esSQLSource)
       .load("companies")
@@ -63,12 +63,11 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
       .rdd
   }
 
-  private def clearES(conf: SparkConf) = {
-    conf.set("es.nodes", conf.get("spark.es.nodes"))
-    conf.set("es.port", "80")
-    conf.set("es.nodes.wan.only", "true")
+  private def clearES() = {
+    spark.conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
+    spark.conf.set("es.port", "80")
 
-    val deleteIndices = new HttpDelete(s"http://${conf.get("es.nodes")}/companies,secEdgarCompanies")
+    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}/companies,secEdgarCompanies")
     (new DefaultHttpClient).execute(deleteIndices)
   }
 }
