@@ -111,10 +111,21 @@
                 <version>3.2.4</version>
 
                 <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                     <artifactSet>
                         <excludes>
                             <exclude>org.apache.spark:*</exclude>
-                            <exclude>org.scala-lang:*</exclude>
+                            <exclude>org.apache.hadoop:*</exclude>
+                            <exclude>org.scala-lang*</exclude>
                         </excludes>
                     </artifactSet>
                 </configuration>
