@@ -26,7 +26,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
-import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
+import org.apache.spark._
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -38,9 +38,15 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
-                                                    val options: SearchOptions[T])
-  extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
+private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
+                                                    val options: SearchOptions[T],
+                                                    val deps: Seq[Dependency[_]])
+  extends RDD[T](sc, deps) {
+
+  def this(rdd: RDD[T], options: SearchOptions[T]) {
+    this(rdd.context, options, Seq(new OneToOneDependency(rdd)))
+  }
+
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartitionIndex[T]]

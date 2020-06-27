@@ -116,9 +116,9 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 | Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
-| Index + Count matches | 45s |   | 367s | 12s  |
+| Index + Count matches | 45s |   | 400s | 12s  |
 | Index + Search matches |  |   |  |   |
-| Index + Join matches | 127s | | 1123s | NA (>1h) |
+| Index + Join matches | 127s | | 597s | NA (>1h) |
 | Index |  | |  |  |
 | Count matches only |  | |  |  |
 | Search matches only |  | |  |  |

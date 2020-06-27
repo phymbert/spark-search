@@ -111,23 +111,30 @@ for count 310 matches
 
 ### LuceneRDD
 ````
-Time taken: 1123398 ms
+Time taken: 597091 ms
 for joined 33372 matches
-(FYUSION, INC.,12.636959,fyusion, inc)
-Time taken: 1135545 ms
-for joined 33372 matches
-/!\stopped
-Time taken: 367431 ms
+(ICB INTERNATIONAL, INC.,12.414156,icb international, inc.)
+(PROSPECT GLOBAL RESOURCES INC.,13.979308,prospect global resources inc.)
+(CELLFOR INC.,12.640068,cellfor inc.)
+(PLAYDEK, INC.,12.637392,playdek inc.)
+(ASARCO INC,12.635831,asarco inc)
+(VICTORY FUNDS,14.131169,victory funds)
+(HORIZON SOFTWARE INTERNATIONAL LLC,12.751942,horizon software international, llc.)
+(POLUS INC.,12.636959,polus inc.)
+(PEERLESS MANUFACTURING CO,14.21593,peerless manufacturing co.)
+(BELLWETHER INVESTMENT GROUP, LLC,14.327955,bellwether investment group, llc)
+Time taken: 400418 ms
 for count 310 matches
 (11.202088356018066,ibm)
-...
-Time taken: 405245 ms
-for count 310 matches
-Time taken: 405559 ms
-for count 310 matches
-Time taken: 413801 ms
-for count 310 matches
-/!\ stopped
+(11.034196853637695,ibm)
+(11.034196853637695,ibm)
+(11.034196853637695,ibm)
+(11.033937454223633,ibm)
+(11.033937454223633,ibm)
+(10.889117240905762,ibm)
+(10.889117240905762,ibm)
+(10.889117240905762,ibm)
+(7.921072483062744,ibm usa)
 ...
 ````
 

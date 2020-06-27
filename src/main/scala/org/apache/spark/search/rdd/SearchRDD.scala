@@ -40,18 +40,6 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchOptions[T])
   extends RDD[T](rdd.context, Nil) {
 
-  def this(rdd: RDD[T], options: SearchOptions[T]) {
-    this(rdd, new SearchIndexedRDD(rdd, options), options);
-  }
-
-  searchIndexRDD.cache
-  override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
-
-
-  override def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[T].asInstanceOf[SearchIndexedRDD[T]]
-      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
-
   /**
    * Return the number of indexed elements in the RDD.
    */
@@ -174,6 +162,18 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
     logInfo(s"Index with ${getNumPartitions} partitions saved to ${path}")
   }
+
+  def this(rdd: RDD[T], options: SearchOptions[T]) {
+    this(rdd, new SearchIndexedRDD(rdd, options), options)
+  }
+
+  searchIndexRDD.cache
+  override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
+
+
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    firstParent[T].asInstanceOf[SearchIndexedRDD[T]]
+      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
 
   override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
   = new SearchRDD[T](firstParent.repartition(numPartitions), options)
