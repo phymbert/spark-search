@@ -52,10 +52,6 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
 
   private val numPartitionsInSearch = searchRDD.partitions.length
 
-  override protected def getPreferredLocations(split: Partition): Seq[String] =
-    parent[H](0).asInstanceOf[SearchRDD[H]]
-      .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
-
   override protected def getPartitions: Array[Partition] = {
     val parts = new Array[Partition](searchRDD.partitions.length * other.partitions.length)
     for (s1 <- parent[H](0).partitions; s2 <- parent[(Long, S)](1).partitions) {
