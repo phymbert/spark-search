@@ -51,7 +51,7 @@ private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
     val hdfs = FileSystem.get(hadoopConf)
     val his = hdfs.open(new Path(part.zipPath))
     val zis = new ZipInputStream(his)
-    val parentLocalFile = new File(part.rootDir)
+    val parentLocalFile = new File(part.indexDir)
     parentLocalFile.mkdir()
     val buffer = new Array[Byte](8192)
     Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>

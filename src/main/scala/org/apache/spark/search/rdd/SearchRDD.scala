@@ -35,10 +35,11 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
+private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
                                              var searchIndexRDD: SearchIndexedRDD[T],
-                                             val options: SearchOptions[T])
-  extends RDD[T](rdd.context, Nil) {
+                                             val options: SearchOptions[T],
+                                             val deps: Seq[Dependency[_]])
+  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD.cache)) ++ deps) {
 
   /**
    * Return the number of indexed elements in the RDD.
@@ -137,7 +138,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                            topK: Int = Int.MaxValue,
                            minScore: Double = 0,
                            numPartitions: Int = getNumPartitions): RDD[T] = {
-    searchQueryJoin[T](rdd, queryBuilder, topK, minScore) // FIXME add tests
+    searchQueryJoin[T](parent(1), queryBuilder, topK, minScore) // FIXME add tests
       .map(m => {
         val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
         val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
@@ -164,12 +165,10 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   }
 
   def this(rdd: RDD[T], options: SearchOptions[T]) {
-    this(rdd, new SearchIndexedRDD(rdd, options), options)
+    this(rdd.sparkContext, new SearchIndexedRDD(rdd, options), options, Seq(new OneToOneDependency(rdd)))
   }
 
-  searchIndexRDD.cache
   override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
-
 
   override def getPreferredLocations(split: Partition): Seq[String] =
     firstParent[T].asInstanceOf[SearchIndexedRDD[T]]
@@ -229,8 +228,6 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     super.persist(newLevel)
   }
 
-  override def getDependencies: Seq[Dependency[_]] = Seq(new OneToOneDependency(searchIndexRDD))
-
   override def clearDependencies() {
     super.clearDependencies()
     searchIndexRDD.unpersist()
@@ -263,7 +260,6 @@ object SearchRDD {
    * @tparam T Type of beans or case class this RDD is binded to
    * @return Restored RDD
    */
-  def load[T: ClassTag](sc: SparkContext, path: String, options: SearchOptions[T] = defaultOpts): SearchRDD[T] = {
-    new SearchRDD[T](new SearchIndexReloadedRDD[T](sc, path, options), options)
-  }
+  def load[T: ClassTag](sc: SparkContext, path: String, options: SearchOptions[T] = defaultOpts[T]): SearchRDD[T] =
+    new SearchRDD[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
 }

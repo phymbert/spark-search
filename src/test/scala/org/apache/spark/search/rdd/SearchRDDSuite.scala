@@ -170,13 +170,14 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       Person("Agnes", "Bartol", 0),
       Person("Agnec", "Barttol", 0))
 
-    val searchRDD = sc.parallelize(persons2).repartition(3).searchRDD
+    val searchRDD = sc.parallelize(persons2).repartition(1).searchRDD
+    assertResult(6)(searchRDD.count())
 
     searchRDD.save("target/test-save")
 
-    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save",
-      SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
+    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
 
-    assertResult(2)(restoredSearchRDD.count("firstName:Bob"))
+    val c = restoredSearchRDD.count("firstName:Bob~0.5")
+    assertResult(2)(c)
   }
 }
