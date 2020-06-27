@@ -2,9 +2,9 @@ package org.apache.spark.search
 
 import java.io.File
 
+import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents
 import org.apache.lucene.analysis.ngram.NGramTokenizer
-import org.apache.lucene.analysis.{Analyzer, TokenStream}
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 /**
@@ -73,9 +73,7 @@ object TestData {
 
   class TestPersonAnalyzer extends Analyzer {
     override def createComponents(fieldName: String): TokenStreamComponents = {
-      val src = new NGramTokenizer(1, 3)
-      var tok: TokenStream = src
-      new TokenStreamComponents(r => src.setReader(r), tok)
+      new TokenStreamComponents(new NGramTokenizer(1, 3))
     }
   }
 
