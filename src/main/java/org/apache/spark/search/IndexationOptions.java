@@ -75,8 +75,9 @@ public final class IndexationOptions<T> implements Serializable {
     /**
      * Root index directory.
      */
-    private String rootIndexDirectory = new File(Optional.ofNullable(System.getProperty("spark.local.dir"))
-            .orElse(System.getProperty("java.io.tmpdir")), "spark-search").getAbsolutePath();
+    private String rootIndexDirectory = new File(Optional.ofNullable(System.getProperty("yarn.nodemanager.local-dirs"))
+            .orElse(Optional.ofNullable(System.getProperty("spark.local.dir"))
+                    .orElse(System.getProperty("java.io.tmpdir"))), "spark-search").getAbsolutePath();
 
     /**
      * Log indexation progress every 100K docs.
