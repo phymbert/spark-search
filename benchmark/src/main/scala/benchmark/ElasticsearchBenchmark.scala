@@ -18,6 +18,7 @@ package benchmark
 
 import org.apache.http.client.methods.HttpDelete
 import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._
 import org.elasticsearch.spark._
@@ -26,11 +27,12 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
 
   val esSQLSource = "org.elasticsearch.spark.sql"
 
+
   def main(args: Array[String]): Unit = run()
 
   override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
     import spark.implicits._
-    clearES()
+    clearES(companies.sparkContext.getConf)
     companies.saveToEs("companies") // FIXME maybe adjust replica/shard preferences
     spark.read.format(esSQLSource)
       .load("companies")
@@ -41,7 +43,7 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
   }
 
   override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    clearES()
+    clearES(companies.sparkContext.getConf)
     import spark.implicits._
     companies.saveToEs("companies")
     secEdgarCompanies.saveToEs("secEdgarCompanies")
@@ -61,13 +63,12 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
       .rdd
   }
 
-  private def clearES() = {
-    spark.conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
-    spark.conf.set("es.port", spark.conf.get("spark.es.port"))
-    spark.conf.set("es.nodes.wan.only", "true")
-    spark.conf.set("es.net.ssl", "true")
+  private def clearES(conf: SparkConf) = {
+    conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
+    conf.set("es.port", "80")
+    conf.set("es.nodes.wan.only", "true")
 
-    val deleteIndices = new HttpDelete(s"https://${spark.conf.get("es.nodes")}:${spark.conf.get("es.port")}/companies,secEdgarCompanies")
+    val deleteIndices = new HttpDelete(s"http://${spark.conf.get("es.nodes")}/companies,secEdgarCompanies")
     (new DefaultHttpClient).execute(deleteIndices)
   }
 }
