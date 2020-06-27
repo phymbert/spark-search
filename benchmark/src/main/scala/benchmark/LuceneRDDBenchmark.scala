@@ -18,6 +18,7 @@ package benchmark
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 import org.zouzias.spark.lucenerdd.LuceneRDD
 
 object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
@@ -34,7 +35,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       .sortBy(_._1, ascending = false) // Not sorted by RDD but by partition
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     import spark.implicits._
 
     val luceneRDD = LuceneRDD(companies.toDF(),
@@ -42,7 +43,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       classOf[StandardAnalyzer].getName,
       "classic")
 
-    val prefixLinker = (company: SecEdgarCompanyInfo) => {
+    val prefixLinker = (spark: SparkSession, company: SecEdgarCompanyInfo) => {
       val skipped = company.companyName.slice(0, 64).replaceAll("([+\\-=&|<>!(){}\\[\\]^\"~*?:/])", "\\\\$1")
       s"name:${"\"" + skipped + "\""}"
     }

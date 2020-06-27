@@ -17,14 +17,14 @@
 package benchmark
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.util.StringUtils
+import org.apache.spark.sql.SparkSession
 
 
 object SparkRDDRegexBenchmark extends BaseBenchmark("Spark RDD Regex") {
 
   def main(args: Array[String]): Unit = run()
 
-  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
+  override def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)] = {
     val re = s".*\\Q${name.toLowerCase}\\E.*"
     companies
       .filter(_.name != null)
@@ -32,7 +32,7 @@ object SparkRDDRegexBenchmark extends BaseBenchmark("Spark RDD Regex") {
       .map(c => (0, c.name))
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     companies
       .filter(_.name != null)
       .zipWithIndex().map(_.swap)

@@ -21,12 +21,13 @@ import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.rdd._
 import org.apache.spark.search.{SearchOptions, _}
+import org.apache.spark.sql.SparkSession
 
 object SearchRDDBenchmark extends BaseBenchmark("SearchRDD") {
 
   def main(args: Array[String]): Unit = run()
 
-  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
+  override def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)] = {
     val opts = SearchOptions
       .builder[Company]
       .analyzer(classOf[StandardAnalyzer]).build
@@ -34,7 +35,7 @@ object SearchRDDBenchmark extends BaseBenchmark("SearchRDD") {
     companies.searchRDD(opts).search(s"name:${name}").map(sr => (sr.score, sr.source.name))
   }
 
-  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     val opts = SearchOptions
       .builder[Company]
       .analyzer(classOf[StandardAnalyzer]).build
