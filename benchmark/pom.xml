@@ -113,13 +113,7 @@
                 <configuration>
                     <artifactSet>
                         <includes>
-                            <include>io.github.phymbert:*</include>
-                            <include>org.apache.lucene:*</include>
-                            <include>org.elasticsearch:*</include>
-                            <include>org.zouzias:*</include>
-                            <include>com.typesafe:*</include>
-                            <include>com.twitter:*</include>
-                            <include>org.typelevel:*</include>
+                            <exclude>org.apache.spark:*</exclude>
                         </includes>
                     </artifactSet>
                 </configuration>

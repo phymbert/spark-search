@@ -16,8 +16,7 @@
 
 package benchmark
 
-import com.google.common.collect.ImmutableMap
-import org.apache.http.client.methods.{HttpDelete, HttpPost}
+import org.apache.http.client.methods.HttpDelete
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions._

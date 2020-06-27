@@ -118,21 +118,21 @@ The general use cases is to match companies names between two data set (7M vs 60
 |---|---|---|---|---|
 | Index + Count matches | 42s |   | 367s | 12s  |
 | Index + Search matches |  |   |  |   |
-| Index + Join matches | 94s | | 1123s |  |
+| Index + Join matches | 94s | | 1123s | NA (>1h) |
 | Index |  | |  |  |
 | Count matches only |  | |  |  |
 | Search matches only |  | |  |  |
 | Join matches only |  | |  |  |
 
-*DISCLAIMER* If you are the author of one the above library, please fill free to update results by a pull request. 
+*DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request. 
 
 ## Release notes
 
 ##### v0.1.5
-* Yarn support and tested over AWS EMR
-* Support of spark 3.0.0
-* Adding and running benchmark examples with alternatives libraries on AWS EMR
 * Fix SearchRDD#searchDropDuplicate method
+* Yarn support and tested over AWS EMR
+* Adding and running [benchmark](benchmark) examples with alternatives libraries on AWS EMR
+* Support of spark 3.0.0
 
 ##### v0.1.4
 * Optimize searchJoin for small num partition
