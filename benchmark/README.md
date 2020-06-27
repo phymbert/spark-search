@@ -109,6 +109,14 @@ for count 310 matches
 (5.75221061706543,viện ibm (ibm institute))
 ````
 
+### Elastic hadoop
+````
+Time taken: 719285 ms
+for joined 0 matches
+Time taken: 486119 ms
+for count 0 matches
+````
+
 ### LuceneRDD
 ````
 Time taken: 597091 ms
@@ -143,13 +151,4 @@ for count 310 matches
 Time taken: 14400 ms
 for count 494 matches
 (0.0,instituto de biologia molecular do parana - ibmp)
-...
-Time taken: 12991 ms
-for count 494 matches
-Time taken: 12630 ms
-for count 494 matches
-Time taken: 12450 ms
-for count 494 matches
-Time taken: 12524 ms
-for count 494 matches
 ````

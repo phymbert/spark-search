@@ -116,15 +116,12 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 | Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
-| Index + Count matches | 45s |   | 400s | 12s  |
-| Index + Search matches |  |   |  |   |
-| Index + Join matches | 127s | | 597s | NA (>1h) |
-| Index |  | |  |  |
-| Count matches only |  | |  |  |
-| Search matches only |  | |  |  |
-| Join matches only |  | |  |  |
+| Index + Count matches | 45s | 486s (*)  | 400s | 12s  |
+| Index + Join matches | 127s | 719s (*) | 597s | NA (>1h) |
 
-*DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request. 
+*DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request.
+ 
+(*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
 
