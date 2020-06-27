@@ -39,8 +39,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchOptions[T])
   extends RDD[T](rdd.context, Nil) {
 
-  private var searchIndexRDD = new SearchIndexRDD(rdd, options)
-  searchIndexRDD.cache
+  private var searchIndexRDD = new SearchIndexRDD(rdd, options).cache
 
   /**
    * Return the number of indexed elements in the RDD.
