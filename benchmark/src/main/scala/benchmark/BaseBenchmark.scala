@@ -75,7 +75,7 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
       })
       println(s"for joined ${count} matches")
       if (i == 0) {
-        joinedMatches.take(100).foreach(println(_))
+        joinedMatches.take(10).foreach(println(_))
       }
       joinedMatches.unpersist()
     })
@@ -88,7 +88,7 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
       })
       println(s"for count ${count} matches")
       if (i == 0) {
-        matches.take(100).foreach(println(_))
+        matches.take(10).foreach(println(_))
       }
       matches.unpersist()
     })
