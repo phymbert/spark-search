@@ -43,7 +43,7 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
   }
 
   override def joinMatch(companies: RDD[Company], secEdgarCompanies: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
-    clearES(companies)
+    clearES()
     import spark.implicits._
     companies.saveToEs("companies", esOpts)
     secEdgarCompanies.saveToEs("secEdgarCompanies", esOpts)
