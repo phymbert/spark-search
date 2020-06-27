@@ -44,7 +44,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent.getPreferredLocations(split.asInstanceOf[SearchPartition].searchIndexPartition)
+    firstParent[T].getPreferredLocations(split.asInstanceOf[SearchPartition].searchIndexPartition)
 
   /**
    * Return the number of indexed elements in the RDD.
