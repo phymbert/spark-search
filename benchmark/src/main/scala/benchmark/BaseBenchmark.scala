@@ -41,28 +41,28 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
 
     // Count matches
     {
-      val startTime = System.currentTimeMillis()
       val spark = SparkSession.builder().appName(appName).getOrCreate()
+      val startTime = System.currentTimeMillis()
       val matches = countNameMatches(spark, loadCompanies(spark), "IBM").cache
       val count = matches.count
-      spark.stop()
       val endTime = System.currentTimeMillis()
       println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
       matches.take(100).foreach(println(_))
       matches.unpersist()
+      spark.stop()
     }
 
     // Join matches
     {
-      val startTime = System.currentTimeMillis()
       val spark = SparkSession.builder().appName(appName).getOrCreate()
+      val startTime = System.currentTimeMillis()
       val joinedMatches = joinMatch(spark, loadCompanies(spark), loadSecEdgarCompanies(spark)).cache
       val count = joinedMatches.count
-      spark.stop()
       val endTime = System.currentTimeMillis()
       println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
       joinedMatches.take(100).foreach(println(_))
       joinedMatches.unpersist()
+      spark.stop()
     }
 
   }
