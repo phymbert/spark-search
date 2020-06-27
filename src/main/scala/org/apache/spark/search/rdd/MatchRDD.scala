@@ -27,7 +27,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partitions are indexed
-    firstParent.iterator(matchPartition.searchPartition, context)
+    parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our
     tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
