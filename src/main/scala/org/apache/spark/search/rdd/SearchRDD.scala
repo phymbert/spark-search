@@ -140,18 +140,18 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   /**
    * Drop duplicates records by applying lookup for matching hits of the query against this RDD.
    */
-  def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(),
+  def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(options),
                            topK: Int = Int.MaxValue,
                            minScore: Double = 0,
                            numPartitions: Int = getNumPartitions): RDD[T] = {
     searchQueryJoin[T](rdd, queryBuilder, topK, minScore) // FIXME add tests
       .map(m => {
-        val matchHashes = m.hits.filter(_.hashCode != m.hashCode).map(_.source.hashCode)
-        val allHashes = (Seq(m.hashCode) ++ matchHashes).sorted
-        (Objects.hash(allHashes), m)
+        val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
+        val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
+        (Objects.hash(allHashes), m.doc)
       })
       .reduceByKey((m1, _) => m1)
-      .map(_._2.doc)
+      .map(_._2)
       .repartition(numPartitions)
   }
 

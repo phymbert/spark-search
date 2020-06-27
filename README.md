@@ -111,22 +111,28 @@ See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.
 
 ## Benchmark
 
-All [benchmarks](benchmark/src/main/scala/benchmark) run under AWS EMR with 3 spark workers EC2 m5.xlarge and/or 3 r5.large.elasticsearch data nodes for ES.
+All [benchmarks](benchmark) run under AWS EMR with 3 spark workers EC2 m5.xlarge and/or 3 r5.large.elasticsearch data nodes for ES.
 The general use cases is to match companies names between two data set (7M vs 600K rows)
 
-| Feature | SearchRDD  | Elasticsearch Hadoop  |  LuceneRDD | Spark regex matches (no score) |
+| Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
-| Count matches | 131s |   | 393s | 0s  |
-| Join matches | 131s | | 786s |   |
+| Index + Count matches | 42s |   | 367s | 12s  |
+| Index + Search matches |  |   |  |   |
+| Index + Join matches | 94s | | 1123s |  |
+| Index |  | |  |  |
+| Count matches only |  | |  |  |
+| Search matches only |  | |  |  |
+| Join matches only |  | |  |  |
 
 *DISCLAIMER* If you are the author of one the above library, please fill free to update results by a pull request. 
 
 ## Release notes
 
 ##### v0.1.5
-* Yarn support w/ AWS EMR
+* Yarn support and tested over AWS EMR
 * Support of spark 3.0.0
 * Adding and running benchmark examples with alternatives libraries on AWS EMR
+* Fix SearchRDD#searchDropDuplicate method
 
 ##### v0.1.4
 * Optimize searchJoin for small num partition

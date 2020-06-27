@@ -18,6 +18,7 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
 import org.apache.lucene.search.BooleanClause.Occur
+import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.search.TestData._
@@ -128,5 +129,36 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(10003)(matchRDD.count)
 
     spark.stop
+  }
+
+  test("Distinct with no minimum score test RDD") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(1).searchRDD
+
+    val deduplicated = searchRDD.distinct().collect
+    assertResult(1)(deduplicated.length)
+  }
+
+  test("Drop duplicate with min score test RDD") {
+    val persons2 = Seq(
+      Person("George", "Michal", 0),
+      Person("Georgee", "Michall", 0),
+      Person("Bobb", "Marley", 0),
+      Person("Bob", "Marlley", 0),
+      Person("Agnes", "Bartol", 0),
+      Person("Agnec", "Barttol", 0))
+
+    val searchRDD = sc.parallelize(persons2).repartition(1)
+      .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
+
+    val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
+    assertResult(3)(deduplicated.length)
   }
 }
