@@ -68,7 +68,7 @@ private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
   }
 
   lazy val _indexDirectoryByPartition: Map[Int, String] =
-    partitions.map(_.asInstanceOf[SearchPartition[T]]).map(t => (t.index, t.searchIndexPartition.indexDir)).toMap
+    partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
 
   override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
     // FIXME support blocking

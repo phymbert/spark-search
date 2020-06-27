@@ -24,7 +24,7 @@ import org.zouzias.spark.lucenerdd.LuceneRDD
 object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
   def main(args: Array[String]): Unit = run()
 
-  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
+  override def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)] = {
     import spark.implicits._
     val luceneRDD = LuceneRDD(companies.toDF(),
       classOf[StandardAnalyzer].getName,
@@ -43,7 +43,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       classOf[StandardAnalyzer].getName,
       "classic")
 
-    val prefixLinker = (spark: SparkSession, company: SecEdgarCompanyInfo) => {
+    val prefixLinker = (company: SecEdgarCompanyInfo) => {
       val skipped = company.companyName.slice(0, 64).replaceAll("([+\\-=&|<>!(){}\\[\\]^\"~*?:/])", "\\\\$1")
       s"name:${"\"" + skipped + "\""}"
     }

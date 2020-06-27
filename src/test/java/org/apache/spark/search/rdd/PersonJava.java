@@ -22,7 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-class PersonJava implements Serializable {
+public class PersonJava implements Serializable {
     public static final List<PersonJava> PERSONS = Arrays.asList(
             new PersonJava("André", null, 5, null, null, null),
             new PersonJava(null, "Yulia", 2, null, null, null),
