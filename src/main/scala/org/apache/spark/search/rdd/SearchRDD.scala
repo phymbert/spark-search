@@ -39,12 +39,12 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchOptions[T])
   extends RDD[T](rdd.context, Nil) {
 
-  private var searchIndexRDD = new SearchIndexRDD(rdd, options).cache
+  private var searchIndexRDD = new SearchIndexedRDD(rdd, options).cache
   override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
 
 
   override def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[T].asInstanceOf[SearchIndexRDD[T]]
+    firstParent[T].asInstanceOf[SearchIndexedRDD[T]]
       .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
 
   /**
@@ -92,7 +92,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    * Finds the top topK hits per partition for query.
    */
   def searchQuery(query: () => Query, topKByPartition: Int = Int.MaxValue, minScore: Double = 0): RDD[SearchRecord[T]] = {
-    val indexDirectoryByPartition = _indexDirectoryByPartition
+    val indexDirectoryByPartition = searchIndexRDD._indexDirectoryByPartition
     searchIndexRDD.mapPartitionsWithIndex((index, _) =>
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         spr => _partitionReaderSearchList(spr, query, topKByPartition, minScore)
@@ -171,7 +171,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
   protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
                                                                        reducer: Iterator[R] => A): A = {
-    val indexDirectoryByPartition = _indexDirectoryByPartition
+    val indexDirectoryByPartition = searchIndexRDD._indexDirectoryByPartition
     val ret = sparkContext.runJob(searchIndexRDD, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
       tryAndClose(reader(indexDirectoryByPartition, index)) {
@@ -188,9 +188,6 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     new SearchPartitionReader[T](index, indexDirectory,
       elementClassTag.runtimeClass.asInstanceOf[Class[T]],
       options.getReaderOptions)
-
-  lazy val _indexDirectoryByPartition: Map[Int, String] =
-    partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex.map(t => (t._2, t._1.searchIndexPartition.indexDir)).toMap
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
@@ -222,7 +219,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 }
 
 class SearchPartition[T](val idx: Int,
-                         @transient private val searchRDD: SearchIndexRDD[T]) extends Partition {
+                         @transient private val searchRDD: SearchIndexedRDD[T]) extends Partition {
   override def index: Int = idx
 
   var searchIndexPartition: SearchPartitionIndex[T] = searchRDD.partitions(idx).asInstanceOf[SearchPartitionIndex[T]]

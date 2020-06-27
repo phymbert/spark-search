@@ -16,6 +16,9 @@
 
 package org.apache.spark.search.rdd
 
+import java.io.File
+
+import org.apache.commons.io.FileUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
 import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
@@ -30,8 +33,8 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchIndexRDD[T: ClassTag](rdd: RDD[T],
-                                                  val options: SearchOptions[T])
+private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
+                                                    val options: SearchOptions[T])
   extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
@@ -64,10 +67,15 @@ private[search] class SearchIndexRDD[T: ClassTag](rdd: RDD[T],
     }
   }
 
-  override def unpersist(blocking: Boolean): SearchIndexRDD.this.type = {
+  lazy val _indexDirectoryByPartition: Map[Int, String] =
+    partitions.map(_.asInstanceOf[SearchPartition[T]]).map(t => (t.index, t.searchIndexPartition.indexDir)).toMap
+
+  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
     // FIXME support blocking
+    val indexDirectoryByPartition = _indexDirectoryByPartition
+
     sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
-      // FIXME delete
+      FileUtils.deleteDirectory(new File(indexDirectoryByPartition(context.partitionId())))
     })
     super.unpersist(blocking)
   }
