@@ -125,6 +125,7 @@ The general use cases is to match companies names between two data set (7M vs 60
 
 ##### v0.1.5
 * Yarn support w/ AWS EMR
+* Support of spark 3.0.0
 * Adding and running benchmark examples with alternatives libraries on AWS EMR
 
 ##### v0.1.4
