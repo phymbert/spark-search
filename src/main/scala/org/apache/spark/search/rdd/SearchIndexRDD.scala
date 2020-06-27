@@ -63,5 +63,13 @@ private[search] class SearchIndexRDD[T: ClassTag](rdd: RDD[T],
       super.getPreferredLocations(split)
     }
   }
+
+  override def unpersist(blocking: Boolean): SearchIndexRDD.this.type = {
+    // FIXME support blocking
+    sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
+      // FIXME delete
+    })
+    super.unpersist(blocking)
+  }
 }
 

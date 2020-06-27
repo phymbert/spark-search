@@ -3,10 +3,10 @@ package org.apache.spark.search.rdd
 import java.io.{IOException, ObjectOutputStream}
 
 import org.apache.lucene.search.Query
+import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.{SearchException, SearchRecord}
 import org.apache.spark.util.Utils
-import org.apache.spark.{Dependency, Partition, Partitioner, RangeDependency, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -25,6 +25,9 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
+
+    // Be sure partitions are indexed
+    firstParent.iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our
     tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,

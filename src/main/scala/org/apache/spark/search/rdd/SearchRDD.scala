@@ -40,6 +40,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   extends RDD[T](rdd.context, Nil) {
 
   private var searchIndexRDD = new SearchIndexRDD(rdd, options)
+  searchIndexRDD.cache
 
   /**
    * Return the number of indexed elements in the RDD.
@@ -110,10 +111,6 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                    queryBuilder: S => Query,
                                    topK: Int = Int.MaxValue,
                                    minScore: Double = 0): RDD[Match[S, T]] = {
-
-    // be sure our RDD is indexed first
-    count()
-
     val topKReducer = (matches: Iterator[SearchRecord[T]]) => matches.toArray
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)
@@ -220,9 +217,9 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
 
   override def clearDependencies() {
     super.clearDependencies()
+    searchIndexRDD.unpersist()
     searchIndexRDD = null
   }
-
 }
 
 class SearchPartition[T](val idx: Int,
