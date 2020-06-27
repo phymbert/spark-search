@@ -46,14 +46,14 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
     clearES()
     import spark.implicits._
     companies.saveToEs("companies", esOpts)
-    secEdgarCompanies.saveToEs("secEdgarCompanies", esOpts)
+    secEdgarCompanies.saveToEs("sec_edgar_companies", esOpts)
 
     val companiesES = spark.read.format(esSQLSource)
       .load("companies")
       .as[Company]
 
     val secEdgarCompaniesES = spark.read.format(esSQLSource)
-      .load("secEdgarCompanies")
+      .load("sec_edgar_companies")
       .as[SecEdgarCompanyInfo]
 
     companiesES.join(secEdgarCompaniesES, $"name".equalTo($"companyName")) //FIXME check pushdown filters
