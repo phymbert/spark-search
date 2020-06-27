@@ -64,7 +64,7 @@ object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
   }
 
   private def clearES(conf: SparkConf) = {
-    conf.set("es.nodes", spark.conf.get("spark.es.nodes"))
+    conf.set("es.nodes", conf.get("spark.es.nodes"))
     conf.set("es.port", "80")
     conf.set("es.nodes.wan.only", "true")
 
