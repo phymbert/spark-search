@@ -83,30 +83,30 @@ done
 
 ## Search RDD benchmark
 ````
-Time taken: 128617 ms
+Time taken: 127011 ms
 for joined 33372 matches
 (ICB INTERNATIONAL, INC.,8.383696556091309,icb international, inc.)
-...
-Time taken: 95525 ms
-for joined 33372 matches
-Time taken: 95225 ms
-for joined 33372 matches
-Time taken: 99027 ms
-for joined 33372 matches
-Time taken: 93551 ms
-for joined 33372 matches
-Time taken: 41826 ms
+(PROSPECT GLOBAL RESOURCES INC.,9.529265403747559,prospect global resources inc.)
+(CELLFOR INC.,8.472620964050293,cellfor inc.)
+(PLAYDEK, INC.,8.471635818481445,playdek inc.)
+(ASARCO INC,8.469249725341797,asarco inc)
+(VICTORY FUNDS,9.432478904724121,victory funds)
+(HORIZON SOFTWARE INTERNATIONAL LLC,8.548381805419922,horizon software international, llc.)
+(POLUS INC.,8.469675064086914,polus inc.)
+(PEERLESS MANUFACTURING CO,9.787846565246582,peerless manufacturing co.)
+(BELLWETHER INVESTMENT GROUP, LLC,9.817503929138184,bellwether investment group, llc)
+Time taken: 44668 ms
 for count 310 matches
 (6.369204521179199,ibm)
-...
-Time taken: 45155 ms
-for count 310 matches
-Time taken: 45238 ms
-for count 310 matches
-Time taken: 41626 ms
-for count 310 matches
-Time taken: 45143 ms
-for count 310 matches
+(6.263510704040527,ibm)
+(6.263510704040527,ibm)
+(6.263186454772949,ibm)
+(6.263186454772949,ibm)
+(6.263186454772949,ibm)
+(6.171557426452637,ibm)
+(6.171557426452637,ibm)
+(6.171557426452637,ibm)
+(5.75221061706543,viện ibm (ibm institute))
 ````
 
 ### LuceneRDD

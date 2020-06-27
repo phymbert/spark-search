@@ -56,10 +56,11 @@ private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
     // One-2-One partition
     firstParent.partitions.map(p =>
       new SearchPartitionIndex[T](p.index,
-        s"${
-          options.getIndexationOptions.getRootIndexDirectory
-        }-rdd${id}", p)).toArray
+        rootDir, p)).toArray
   }
+
+  def rootDir: String =
+    s"${options.getIndexationOptions.getRootIndexDirectory}-rdd${id}"
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
@@ -101,12 +102,9 @@ private[search] class SearchIndexedRDD[T: ClassTag](rdd: RDD[T],
     }).collect
   }
 
-  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type
-
-  = {
-    // FIXME support blocking
+  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
+    // TODO support non blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
-
     sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       FileUtils.deleteDirectory(new File(indexDirectoryByPartition(context.partitionId())))
     })

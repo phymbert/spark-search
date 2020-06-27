@@ -18,7 +18,6 @@ package org.apache.spark.search.rdd
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper
 import org.apache.lucene.search.BooleanClause.Occur
-import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.search.TestData._
@@ -162,7 +161,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(3)(deduplicated.length)
   }
 
-  test("Save index to hdfs") {
+  test("Save and restor index from/to hdfs") {
     val persons2 = Seq(
       Person("George", "Michal", 0),
       Person("Georgee", "Michall", 0),
@@ -174,5 +173,10 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(persons2).repartition(3).searchRDD
 
     searchRDD.save("target/test-save")
+
+    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save",
+      SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
+
+    assertResult(2)(restoredSearchRDD.count("bobby"))
   }
 }

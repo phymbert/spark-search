@@ -58,8 +58,8 @@ class SearchPartitionIndex<T> implements Partition, Serializable {
 
     SearchPartitionIndex(int index, String rootDir, Partition parent) {
         this.index = index;
-        this.parent = parent;
         this.indexDir = String.format("%s-index-%d", rootDir, index);
+        this.parent = parent;
     }
 
     /**

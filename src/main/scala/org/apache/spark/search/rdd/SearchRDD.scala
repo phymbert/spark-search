@@ -36,10 +36,15 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
+                                             var searchIndexRDD: SearchIndexedRDD[T],
                                              val options: SearchOptions[T])
   extends RDD[T](rdd.context, Nil) {
 
-  private var searchIndexRDD = new SearchIndexedRDD(rdd, options).cache
+  def this(rdd: RDD[T], options: SearchOptions[T]) {
+    this(rdd, new SearchIndexedRDD(rdd, options), options);
+  }
+
+  searchIndexRDD.cache
   override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
 
 
@@ -160,7 +165,7 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
    *
    * @param path Path on the spark file system to save on
    */
-  def save(path: String) : Unit = {
+  def save(path: String): Unit = {
     logInfo(s"Saving index with ${getNumPartitions} partitions to ${path} ...")
     // Be sure we are indexed
     count
@@ -249,7 +254,16 @@ class SearchPartition[T](val idx: Int,
 }
 
 object SearchRDD {
-  def load[T](path: String, options: SearchOptions[T] = defaultOpts): SearchRDD[T] = {
-    ???
+  /**
+   * Reload an indexed RDD from spark FS.
+   *
+   * @param sc      current spark context
+   * @param path    Path where the index were saved
+   * @param options Search option
+   * @tparam T Type of beans or case class this RDD is binded to
+   * @return Restored RDD
+   */
+  def load[T: ClassTag](sc: SparkContext, path: String, options: SearchOptions[T] = defaultOpts): SearchRDD[T] = {
+    new SearchRDD[T](new SearchIndexReloadedRDD[T](sc, path, options), options)
   }
 }
