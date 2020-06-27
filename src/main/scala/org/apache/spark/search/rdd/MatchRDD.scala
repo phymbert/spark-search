@@ -6,7 +6,7 @@ import org.apache.lucene.search.Query
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.{SearchException, SearchRecord}
 import org.apache.spark.util.Utils
-import org.apache.spark._
+import org.apache.spark.{Dependency, Partition, Partitioner, RangeDependency, TaskContext}
 
 import scala.reflect.ClassTag
 
@@ -64,8 +64,8 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   }
 
   override def getDependencies: Seq[Dependency[_]] = List(
-    new OneToOneDependency(searchRDD),
-    new OneToOneDependency(other)
+    new RangeDependency(searchRDD, 0, 0, numPartitionsInSearch),
+    new RangeDependency(other, 0, 0, numPartitionsInSearch)
   )
 
   class MatchRDDPartition(val idx: Int,

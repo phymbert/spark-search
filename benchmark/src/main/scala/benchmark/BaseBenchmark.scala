@@ -17,7 +17,7 @@
 package benchmark
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
 abstract class BaseBenchmark(appName: String) extends Serializable {
   val spark: SparkSession = SparkSession.builder().appName(appName).getOrCreate()
@@ -26,6 +26,8 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
     import spark.implicits._
 
     // Convert CSV to parquet
+
+    // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
     spark.read
       .option("header", "true")
       .option("inferSchema", "true")
@@ -37,20 +39,22 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
       .withColumnRenamed("total employee estimate", "totalEmployeeEstimate")
       .withColumnRenamed("_c0", "id")
       .na.fill("", Seq("domain", "yearFounded", "industry", "sizeRange", "locality", "country", "linkedinUrl", "currentEmployeeEstimate", "totalEmployeeEstimate"))
-      .repartition(7, $"id")
-      .write.parquet("hdfs:///companies_sorted.parquet")
+      .write
+      .mode(SaveMode.Ignore)
+      .parquet("hdfs:///companies_sorted.parquet")
 
+    // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
     spark.read.option("header", "true")
       .option("inferSchema", "true")
       .csv("hdfs:///sec__edgar_company_info.csv")
       .withColumnRenamed("Line Number", "lineNumber")
       .withColumnRenamed("Company Name", "companyName")
       .withColumnRenamed("Company CIK Key", "companyCIKKey")
-      .repartition(2, $"lineNumber")
-      .write.parquet("hdfs:///sec__edgar_company_info.parquet")
+      .write
+      .mode(SaveMode.Ignore)
+      .parquet("hdfs:///sec__edgar_company_info.parquet")
 
     def loadCompanies = {
-      // https://www.kaggle.com/peopledatalabssf/free-7-million-company-dataset
       spark.read
         .load("hdfs:///companies_sorted.parquet")
         .as[Company]
@@ -58,7 +62,6 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
     }
 
     def loadSecEdgarCompanies = {
-      // https://www.kaggle.com/dattapiy/sec-edgar-companies-list
       spark.read.load("hdfs:///sec__edgar_company_info.parquet")
         .as[SecEdgarCompanyInfo]
         .rdd
