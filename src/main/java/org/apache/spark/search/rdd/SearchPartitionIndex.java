@@ -44,9 +44,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Pierrick HYMBERT
  */
-class SearchPartition<T> implements Partition, Serializable {
+class SearchPartitionIndex<T> implements Partition, Serializable {
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(SearchPartition.class);
+    private static final Logger logger = LoggerFactory.getLogger(SearchPartitionIndex.class);
 
     final int index;
     final Partition parent;
@@ -56,7 +56,7 @@ class SearchPartition<T> implements Partition, Serializable {
      */
     final String indexDir;
 
-    SearchPartition(int index, String rootDir, Partition parent) {
+    SearchPartitionIndex(int index, String rootDir, Partition parent) {
         this.index = index;
         this.parent = parent;
         this.indexDir = String.format("%s-index-%d", rootDir, index);
@@ -163,7 +163,7 @@ class SearchPartition<T> implements Partition, Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SearchPartition that = (SearchPartition) o;
+        SearchPartitionIndex that = (SearchPartitionIndex) o;
         return index == that.index;
     }
 

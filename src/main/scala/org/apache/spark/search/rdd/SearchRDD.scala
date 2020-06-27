@@ -16,17 +16,17 @@
 
 package org.apache.spark.search.rdd
 
+import java.io.{IOException, ObjectOutputStream}
 import java.util.Objects
 
 import org.apache.lucene.search.Query
+import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{OneToOneDependency, Partition, TaskContext}
+import org.apache.spark.util.Utils
 
-import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
-import scala.util.Random
 
 /**
  * A search RDD indexes parent RDD partitions to lucene indexes.
@@ -37,7 +37,9 @@ import scala.util.Random
  */
 private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
                                              val options: SearchOptions[T])
-  extends RDD[T](rdd.context, Seq(new OneToOneDependency(rdd))) {
+  extends RDD[T](rdd.context, Nil) {
+
+  private var searchIndexRDD = new SearchIndexRDD(rdd, options)
 
   /**
    * Return the number of indexed elements in the RDD.
@@ -154,19 +156,19 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
   override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
   = new SearchRDD[T](firstParent.repartition(numPartitions), options)
 
- def _partitionReaderSearchList(r: SearchPartitionReader[T],
-                                         query: () => Query, topK: Int, minScore: Double): Array[SearchRecord[T]] =
+  def _partitionReaderSearchList(r: SearchPartitionReader[T],
+                                 query: () => Query, topK: Int, minScore: Double): Array[SearchRecord[T]] =
     r.search(query(), topK, minScore).map(searchRecordJavaToProduct)
 
   protected[rdd] def reduceSearchRecordsByTopK(topK: Int): Iterator[Array[SearchRecord[T]]] => Array[SearchRecord[T]] =
     _.reduce(_ ++ _).sortBy(_.score)(Ordering[Double].reverse).take(topK)
 
   protected[rdd] def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: SearchPartitionReader[T] => R,
-                                                       reducer: Iterator[R] => A): A =
+                                                            reducer: Iterator[R] => A): A =
     runSearchJobWithContext((_searchByPartition, _) => searchByPartition(_searchByPartition), reducer)
 
   protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
-                                                                  reducer: Iterator[R] => A): A = {
+                                                                       reducer: Iterator[R] => A): A = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     val ret = sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
       val index = context.partitionId()
@@ -177,45 +179,34 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     reducer(ret.toIterator)
   }
 
- def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[T] =
+  def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[T] =
     reader(index, indexDirectoryByPartition(index))
 
- def reader(index: Int, indexDirectory: String): SearchPartitionReader[T] =
+  def reader(index: Int, indexDirectory: String): SearchPartitionReader[T] =
     new SearchPartitionReader[T](index, indexDirectory,
       elementClassTag.runtimeClass.asInstanceOf[Class[T]],
       options.getReaderOptions)
 
- lazy val _indexDirectoryByPartition: Map[Int, String] =
-    partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex.map(t => (t._2, t._1.indexDir)).toMap
+  lazy val _indexDirectoryByPartition: Map[Int, String] =
+    partitions.map(_.asInstanceOf[SearchPartition[T]]).zipWithIndex.map(t => (t._2, t._1.searchIndexPartition.indexDir)).toMap
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
 
-    val elements = firstParent.iterator(searchRDDPartition.parent, context).asJava
-      .asInstanceOf[java.util.Iterator[T]]
-    searchRDDPartition.index(elements, options.getIndexationOptions)
-
-    Iterator.empty // No RDD expected after
+    firstParent.iterator(searchRDDPartition.searchIndexPartition, context)
   }
+
+  override val partitioner: Option[Partitioner] = firstParent.partitioner
 
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
     firstParent.partitions.map(p =>
-      new SearchPartition[T](p.index,
-        s"${
-          options.getIndexationOptions.getRootIndexDirectory
-        }-rdd${id}", p)).toArray
+      new SearchPartition(p.index, searchIndexRDD)).toArray
   }
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
-    // Try to balance partitions across executors
-    val allIds = context.getExecutorIds()
-    if (allIds.nonEmpty) {
-      val ids = allIds.sliding(getNumPartitions).toList
-      ids(split.index % ids.length)
-    } else {
-      super.getPreferredLocations(split)
-    }
+    parent[T](0).asInstanceOf[SearchIndexRDD[T]]
+      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
   }
 
   override def persist(newLevel: StorageLevel): SearchRDD.this.type = {
@@ -224,5 +215,26 @@ private[search] class SearchRDD[T: ClassTag](rdd: RDD[T],
     }
     super.persist(newLevel)
   }
+
+  override def getDependencies: Seq[Dependency[_]] = Seq(new OneToOneDependency(searchIndexRDD))
+
+  override def clearDependencies() {
+    super.clearDependencies()
+    searchIndexRDD = null
+  }
+
 }
 
+class SearchPartition[T](val idx: Int,
+                         @transient private val searchRDD: SearchIndexRDD[T]) extends Partition {
+  override def index: Int = idx
+
+  var searchIndexPartition: SearchPartitionIndex[T] = searchRDD.partitions(idx).asInstanceOf[SearchPartitionIndex[T]]
+
+  @throws(classOf[IOException])
+  private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
+    // Update the reference to parent split at the time of task serialization
+    searchIndexPartition = searchRDD.partitions(idx).asInstanceOf[SearchPartitionIndex[T]]
+    oos.defaultWriteObject()
+  }
+}
