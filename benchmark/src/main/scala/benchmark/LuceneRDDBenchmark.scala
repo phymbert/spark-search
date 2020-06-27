@@ -18,13 +18,12 @@ package benchmark
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 import org.zouzias.spark.lucenerdd.LuceneRDD
 
 object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
   def main(args: Array[String]): Unit = run()
 
-  override def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)] = {
+  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
     import spark.implicits._
     val luceneRDD = LuceneRDD(companies.toDF(),
       classOf[StandardAnalyzer].getName,
@@ -35,7 +34,7 @@ object LuceneRDDBenchmark extends BaseBenchmark("LuceneRDD") {
       .sortBy(_._1, ascending = false) // Not sorted by RDD but by partition
   }
 
-  override def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     import spark.implicits._
 
     val luceneRDD = LuceneRDD(companies.toDF(),

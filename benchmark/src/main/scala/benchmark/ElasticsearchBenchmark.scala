@@ -17,17 +17,16 @@
 package benchmark
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 
 object ElasticsearchBenchmark extends BaseBenchmark("Elasticsearch") {
 
   def main(args: Array[String]): Unit = run()
 
-  override def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)] = {
+  override def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)] = {
     ???
   }
 
-  override def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
+  override def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)] = {
     ???
   }
 }

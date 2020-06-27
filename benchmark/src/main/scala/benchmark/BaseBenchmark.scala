@@ -20,59 +20,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 abstract class BaseBenchmark(appName: String) extends Serializable {
+  val spark: SparkSession = SparkSession.builder().appName(appName).getOrCreate()
 
   protected def run(): Unit = {
-    prepareData
-
-    def loadCompanies(spark: SparkSession) = {
-      import spark.implicits._
-      spark.read
-        .load("hdfs:///companies_sorted.parquet")
-        .as[Company]
-        .rdd
-    }
-
-    def loadSecEdgarCompanies(spark: SparkSession) = {
-      import spark.implicits._
-      spark.read.load("hdfs:///sec__edgar_company_info.parquet")
-        .as[SecEdgarCompanyInfo]
-        .rdd
-    }
-
-    // Count matches
-    {
-      val spark = SparkSession.builder().appName(appName).getOrCreate()
-      val startTime = System.currentTimeMillis()
-      val matches = countNameMatches(spark, loadCompanies(spark), "IBM").cache
-      val count = matches.count
-      val endTime = System.currentTimeMillis()
-      println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
-      matches.take(100).foreach(println(_))
-      matches.unpersist()
-      spark.stop()
-    }
-
-    // Join matches
-    {
-      val spark = SparkSession.builder().appName(appName).getOrCreate()
-      val startTime = System.currentTimeMillis()
-      val joinedMatches = joinMatch(spark, loadCompanies(spark), loadSecEdgarCompanies(spark)).cache
-      val count = joinedMatches.count
-      val endTime = System.currentTimeMillis()
-      println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
-      joinedMatches.take(100).foreach(println(_))
-      joinedMatches.unpersist()
-      spark.stop()
-    }
-
-  }
-
-  def countNameMatches(spark: SparkSession, companies: RDD[Company], name: String): RDD[(Double, String)]
-
-  def joinMatch(spark: SparkSession, companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)]
-
-  private def prepareData = {
-    val spark: SparkSession = SparkSession.builder().appName(appName).getOrCreate()
+    import spark.implicits._
 
     // Convert CSV to parquet
 
@@ -103,6 +54,49 @@ abstract class BaseBenchmark(appName: String) extends Serializable {
       .mode(SaveMode.Ignore)
       .parquet("hdfs:///sec__edgar_company_info.parquet")
 
+    def loadCompanies = {
+      spark.read
+        .load("hdfs:///companies_sorted.parquet")
+        .as[Company]
+        .rdd
+    }
+
+    def loadSecEdgarCompanies = {
+      spark.read.load("hdfs:///sec__edgar_company_info.parquet")
+        .as[SecEdgarCompanyInfo]
+        .rdd
+    }
+
+    // Join matches
+    (0 until 5).foreach(i => {
+      val startTime = System.currentTimeMillis()
+      val joinedMatches = joinMatch(loadCompanies, loadSecEdgarCompanies).cache
+      val count = joinedMatches.count
+      val endTime = System.currentTimeMillis()
+      println(s"Joined ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
+      if (i == 0) {
+        joinedMatches.take(100).foreach(println(_))
+      }
+      joinedMatches.unpersist()
+    })
+
+    // Count matches
+    (0 until 5).foreach(i => {
+      val startTime = System.currentTimeMillis()
+      val matches = countNameMatches(loadCompanies, "IBM").cache
+      val count = matches.count
+      val endTime = System.currentTimeMillis()
+      println(s"Count ${count} matches in ${(endTime.toFloat - startTime.toFloat) / 1000f}s")
+      if (i == 0) {
+        matches.take(100).foreach(println(_))
+      }
+      matches.unpersist()
+    })
+
     spark.stop()
   }
+
+  def countNameMatches(companies: RDD[Company], name: String): RDD[(Double, String)]
+
+  def joinMatch(companies: RDD[Company], secEdgarCompany: RDD[SecEdgarCompanyInfo]): RDD[(String, Double, String)]
 }
