@@ -41,6 +41,14 @@ unzip sec__edgar_company_info.csv.zip
 hdfs dfs -put *.csv /
 ```
 
+# Build benchmark project
+
+* From the AWS master
+````sh
+
+
+````
+
 # How to submit
 
  * connect to AWS EMR Master
