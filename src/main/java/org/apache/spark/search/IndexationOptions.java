@@ -26,6 +26,7 @@ import org.apache.spark.util.ShutdownHookManager;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.BoxedUnit;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
@@ -72,9 +73,9 @@ public final class IndexationOptions<T> implements Serializable {
 
     /**
      * Root index directory.
-     * We use by default tmpdir,beacuse in yarn spark.local.dirs are per container.
+     * We use by default tmpdir, because in yarn spark.local.dirs are per container.
      */
-    private String rootIndexDirectory = System.getProperty("java.io.tmpdir") + "spark-search";
+    private String rootIndexDirectory = new File(System.getProperty("java.io.tmpdir"), "spark-search").getAbsolutePath();
 
     /**
      * Log indexation progress every 100K docs.

@@ -38,29 +38,7 @@ curl -L -o sec__edgar_company_info.csv.zip  'https://storage.googleapis.com/kagg
   --compressed
 unzip sec__edgar_company_info.csv.zip
 
-sudo hdfs
-hdfs dfs -chown zeppelin /
-```
-
-Copy to hdfs from zeppelin
-```scala
-import org.apache.hadoop.conf.Configuration
-
-import org.apache.hadoop.fs.FileSystem
-
-import org.apache.hadoop.fs.Path
-
-val hadoopConf = new Configuration()
-
-val hdfs = FileSystem.get(hadoopConf)
-
-val srcCompaniesPath = new Path("companies_sorted.csv")
-val destCompaniesPath = new Path("hdfs:///companies_sorted.csv")
-hdfs.copyFromLocalFile(srcCompaniesPath, destCompaniesPath)
-
-val srcEdgarCompaniesPath = new Path("sec__edgar_company_info.csv")
-val destEdgarCompaniesPath = new Path("hdfs:///sec__edgar_company_info.csv")
-hdfs.copyFromLocalFile(srcEdgarCompaniesPath, destEdgarCompaniesPath)
+hdfs dfs -put *.csv /
 ```
 
 # How to submit
