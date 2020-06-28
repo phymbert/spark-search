@@ -95,23 +95,38 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
+                            <excludes>
+                                <exclude>**/README</exclude>
+                                <exclude>**/LICENCE</exclude>
+                                <exclude>**/__pycache__/**</exclude>
+                                <exclude>**/.egg*/**</exclude>
+                                <exclude>**/build/**</exclude>
+                                <exclude>**/*.cfg</exclude>
+                                <exclude>**/*.env</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.py</exclude><!-- FIXME Header python -->
+                                <exclude>src/test/resources/**</exclude>
+                                <exclude>src/main/resources/**</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
+                    <properties>
+                        <owner>Spark Search</owner>
+                    </properties>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>process-sources</phase>
                         <goals>
-                            <goal>check-file-header</goal>
+                            <goal>check</goal>
                         </goals>
-                        <configuration>
-                            <licenseName>apache_v2</licenseName>
-                            <failOnMissingHeader>true</failOnMissingHeader>
-                            <includes>
-                                <include>**/*.java</include>
-                                <include>**/*.scala</include>
-                                <include>**/*.py</include>
-                            </includes>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -179,9 +194,9 @@
                     <version>3.1.0</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
+                    <groupId>com.mycila</groupId>
                     <artifactId>license-maven-plugin</artifactId>
-                    <version>2.0.0</version>
+                    <version>4.0.rc1</version>
                 </plugin>
             </plugins>
         </pluginManagement>

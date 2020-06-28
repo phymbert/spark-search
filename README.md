@@ -1,5 +1,6 @@
 ## [Spark Search](https://github.com/phymbert/spark-search)
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.phymbert/spark-search.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:io.github.phymbert%20%20a:spark-search)
 [![CI](https://github.com/phymbert/spark-search/workflows/CI/badge.svg)](https://github.com/phymbert/spark-search/actions)
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
@@ -17,25 +18,6 @@ Strongly typed, Spark Search API plans to support Java, Scala and Python Spark S
 Have a look and feel free to contribute!
 
 ## Getting started
-
-### Maven dependency
-
-```xml
-<dependency>
-    <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search</artifactId>
-    <version>0.1.6</version>
-    <classifier>${scala.binary.version}</classifier>
-</dependency>
-
-<!--  To enable SQL Search -->
-<dependency>
-    <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search-sql</artifactId>
-    <version>0.1.6</version>
-    <classifier>${scala.binary.version}</classifier>
-</dependency>
-```
 
 ### Dataset/DataFrame API (In progress)
 * Scala
