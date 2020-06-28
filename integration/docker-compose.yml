@@ -1,7 +1,7 @@
 version: '2.4'
 services:
   namenode:
-    image: bde2020/hadoop-namenode:1.1.0-hadoop2.8-java8
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
     container_name: namenode
     environment:
       - CLUSTER_NAME=spark-search-test
@@ -12,7 +12,7 @@ services:
     networks:
       - hadoop_net
   datanode:
-    image: bde2020/hadoop-datanode:1.1.0-hadoop2.8-java8
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
     depends_on:
       - namenode
     env_file:
