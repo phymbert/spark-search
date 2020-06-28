@@ -38,7 +38,7 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
                                              var searchIndexRDD: SearchIndexedRDD[T],
                                              val options: SearchOptions[T],
                                              val deps: Seq[Dependency[_]])
-  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD.cache)) ++ deps) {
+  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD)) ++ deps) {
 
   /**
    * Return the number of indexed elements in the RDD.
