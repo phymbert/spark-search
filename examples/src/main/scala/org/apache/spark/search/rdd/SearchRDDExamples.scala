@@ -30,6 +30,7 @@ object SearchRDDExamples {
 
   def main(args: Array[String]): Unit = {
     val sc = new SparkContext()
+    sc.setLogLevel("WARN")
 
     // Amazon computers reviews
     val computersReviewsRDD = sc.parallelize(Seq(Review("AAAAA", Array(3, 3), 3.0, "Ok, this is a good computer to play Civilization IV or World of Warcraft", "11 29, 2010", "XXXXX", "Patrick H.", "Ok for an average user, but not much else.", 1290988800)))
