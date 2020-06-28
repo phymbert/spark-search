@@ -56,6 +56,7 @@ export MAVEN_HOME=/opt/maven
 export PATH=${M2_HOME}/bin:${PATH}
 git clone https://github.com/phymbert/spark-search.git
 cd spark-search/
+# Add -Pscala-2.11 to support luceneRDD benchmark
 mvn install -DskipTests=true
 ````
 
