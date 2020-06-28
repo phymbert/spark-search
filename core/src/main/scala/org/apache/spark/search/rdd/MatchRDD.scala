@@ -82,8 +82,8 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   }
 
   override def getDependencies: Seq[Dependency[_]] = Seq(
-    new OneToOneDependency(searchRDD),
-    new OneToOneDependency(other)
+    new OneToOneDependency(searchRDD)
+    //,new OneToOneDependency(other)
   )
 
   class MatchRDDPartition(val idx: Int,
