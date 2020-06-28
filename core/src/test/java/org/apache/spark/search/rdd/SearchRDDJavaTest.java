@@ -26,6 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SearchRDDJavaTest {
     private static final JavaSparkContext sc =
             new JavaSparkContext(new SparkContext("local[*]", "SearchRDDJavaTest"));
+    static {
+        sc.setLogLevel("WARN");
+    }
 
     @Test
     public void searchRDDShouldBeUsableInJava() {
