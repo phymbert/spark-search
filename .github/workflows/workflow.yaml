@@ -39,7 +39,7 @@ jobs:
         run: |
           export MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=512m -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN"
           export MAVEN_CLI_OPTS="-B --no-transfer-progress"
-          mvn $MAVEN_CLI_OPTS -Pscala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} clean site
+          mvn $MAVEN_CLI_OPTS -P CI,scala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} clean site
           rm -rf ~/.m2/repository/io/github/phymbert
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
