@@ -70,6 +70,6 @@ jobs:
       - name: Run examples
         run: |
           docker cp examples/target/spark-search-examples_*.jar spark-master:/spark-search-examples.jar
-          docker exec -it spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
-          docker exec -it spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
+          docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
+          docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
 
