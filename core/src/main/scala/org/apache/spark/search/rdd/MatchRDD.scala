@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
-                                         var other: RDD[(Long, S)],
+                                         @transient var other: RDD[(Long, S)],
                                          queryBuilder: S => Query,
                                          topK: Int = Int.MaxValue,
                                          minScore: Double = 0)
@@ -41,7 +41,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override val partitioner: Option[Partitioner] = searchRDD.partitioner
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[H].asInstanceOf[SearchRDD[H]]
+    firstParent[H].firstParent.asInstanceOf[SearchIndexedRDD[H]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
@@ -56,7 +56,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
       spr =>
         matchPartition.otherPartitions.flatMap(op =>
-          other.iterator(op, context)
+          parent[(Long, S)](1).iterator(op, context)
             .map(docIndex => (docIndex._1,
               try {
                 spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
@@ -76,14 +76,14 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override protected def getPartitions: Array[Partition] = {
     val parts = new Array[Partition](searchRDD.partitions.length)
     for (s1 <- parent[H](0).partitions) {
-      parts(s1.index) = new MatchRDDPartition(s1.index, other.partitions.map(_.index), searchRDD, other)
+      parts(s1.index) = new MatchRDDPartition(s1.index, parent[S](1).partitions.map(_.index), searchRDD, other)
     }
     parts
   }
 
   override def getDependencies: Seq[Dependency[_]] = Seq(
-    new OneToOneDependency(searchRDD)
-    //,new OneToOneDependency(other)
+    new OneToOneDependency(searchRDD),
+    new OneToOneDependency(other)
   )
 
   class MatchRDDPartition(val idx: Int,
