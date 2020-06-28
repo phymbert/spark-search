@@ -44,8 +44,8 @@ trait LocalSparkContext extends BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def beforeEach(): Unit = {
     sc = new SparkContext("local[2]", "test")
+    sc.setLogLevel("WARN")
   }
-
 }
 
 object LocalSparkContext {
