@@ -48,7 +48,7 @@ jobs:
           flags: unittests-spark_${{ matrix.spark }}_${{ matrix.scala }}
       - name: Start spark stack
         run: |
-          docker-compose up -d -f integration/docker-compose.yml
+          docker-compose -f integration/docker-compose.yml up -d
           curl -s --retry 10 --retry-connrefused http://localhost:8080/
           curl -s --retry 10 --retry-connrefused http://localhost:8081/
           curl -s --retry 10 --retry-connrefused http://localhost:8082/
