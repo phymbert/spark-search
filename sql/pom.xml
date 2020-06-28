@@ -20,7 +20,6 @@
             <groupId>io.github.phymbert</groupId>
             <artifactId>spark-search</artifactId>
             <version>${project.version}</version>
-            <classifier>${scala.binary.version}</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
