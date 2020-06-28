@@ -41,7 +41,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override val partitioner: Option[Partitioner] = searchRDD.partitioner
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[H].firstParent.asInstanceOf[SearchIndexedRDD[H]]
+    firstParent[H].firstParent[H].asInstanceOf[SearchIndexedRDD[H]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
