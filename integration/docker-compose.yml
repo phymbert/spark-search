@@ -1,4 +1,4 @@
-version: '2'
+version: '2.4'
 services:
   namenode:
     image: bde2020/hadoop-namenode:1.1.0-hadoop2.8-java8
