@@ -38,5 +38,12 @@ jobs:
       - name: Start spark stack
         run: |
           docker-compose -f integration/docker-compose.yml up -d
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7077
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8080
-          curl -v --retry 10 --retry-connrefused http://localhost:8080/
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8081
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8082
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8083
+          curl -v --retry 10 http://localhost:8080/
+          curl -v --retry 10 http://localhost:8081/
+          curl -v --retry 10 http://localhost:8082/
+          curl -v --retry 10 http://localhost:8083/
