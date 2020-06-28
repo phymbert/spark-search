@@ -103,7 +103,7 @@
                             <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
                             <excludes>
                                 <exclude>**/README</exclude>
-                                <exclude>**/LICENCE</exclude>
+                                <exclude>**/LICENSE</exclude>
                                 <exclude>**/__pycache__/**</exclude>
                                 <exclude>**/.egg*/**</exclude>
                                 <exclude>**/build/**</exclude>
