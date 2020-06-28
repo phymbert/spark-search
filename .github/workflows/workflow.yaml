@@ -8,13 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [ '2.10', '2.11', '2.12' ]
+        scala: [ '2.11', '2.12' ]
         spark: [ '2.4.5', '3.0.0' ]
         include:
           - scala: '2.11'
-            spark: '3.0.0'
-            skip: true
-          - scala: '2.10'
             spark: '3.0.0'
             skip: true
     name: Scala ${{ matrix.scala }} / Spark ${{ matrix.spark }}, skipped=${{ matrix.skip }}
