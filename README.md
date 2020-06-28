@@ -4,6 +4,7 @@
 [![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
+[![codecov](https://codecov.io/gh/phymbert/spark-search/branch/master/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
 
 [Spark](https://spark.apache.org/) Search brings advanced full text search features to your Dataframe, Dataset and RDD. Powered by [Apache Lucene](https://lucene.apache.org/).
 
