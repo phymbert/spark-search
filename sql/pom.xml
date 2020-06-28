@@ -158,28 +158,9 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>default-jar</id>
-                        <phase>none</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>scala-version-jar</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>${scala.binary.version}</classifier>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
-                        <configuration>
-                            <classifier>${scala.binary.version}</classifier>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
