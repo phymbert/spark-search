@@ -3,8 +3,7 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
+  build-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -14,8 +13,7 @@ jobs:
           - scala: '2.11'
             spark: '3.0.0'
             skip: true
-    name: Scala ${{ matrix.scala }} / Spark ${{ matrix.spark }}, skipped=${{ matrix.skip }}
-
+    name: Build ${{ matrix.spark }}_${{ matrix.scala }}
     steps:
       - uses: actions/cache@v1
         with:
@@ -35,6 +33,27 @@ jobs:
       #    export MAVEN_CLI_OPTS="-B --no-transfer-progress"
       #    mvn $MAVEN_CLI_OPTS -P CI,scala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} clean site
       #    rm -rf ~/.m2/repository/io/github/phymbert
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        if: '!matrix.skip'
+        with:
+          flags: unittests-spark_${{ matrix.spark }}_${{ matrix.scala }}
+  run-examples:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    name: Run examples
+    steps:
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository/
+          key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ matrix.scala }}-${{ matrix.spark }}-maven-
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - name: Start spark stack
         run: |
           docker-compose -f integration/docker-compose.yml up -d
@@ -43,6 +62,8 @@ jobs:
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8081
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8082
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8083
+          netstat -a | greep LISTEN | grep 7077
+          netstat -a | greep LISTEN | grep 8080
           curl -v --retry 10 http://localhost:8080/
           curl -v --retry 10 http://localhost:8081/
           curl -v --retry 10 http://localhost:8082/
