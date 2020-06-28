@@ -23,8 +23,17 @@ Have a look and feel free to contribute!
 ```xml
 <dependency>
     <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.5</version>
+    <artifactId>spark-search</artifactId>
+    <version>0.1.6</version>
+    <classifier>${scala.binary.version}</classifier>
+</dependency>
+
+<!--  To enable SQL Search -->
+<dependency>
+    <groupId>io.github.phymbert</groupId>
+    <artifactId>spark-search-sql</artifactId>
+    <version>0.1.6</version>
+    <classifier>${scala.binary.version}</classifier>
 </dependency>
 ```
 
@@ -90,7 +99,7 @@ val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query
 restoredSearchRDD.searchDropDuplicates()
 ```
 
-See [Examples](src/test/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
+See [Examples](examples/src/main/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
 
 * Java
 ```java
@@ -115,7 +124,7 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
         .map(Review::getReviewerName)
         .forEach(System.out::println);
 ```
-See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
+See [Examples](examples/src/main/java/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Benchmark
 
