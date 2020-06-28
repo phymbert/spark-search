@@ -31,7 +31,7 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
-                                         @transient var other: RDD[(Long, S)],
+                                         var other: RDD[(Long, S)],
                                          queryBuilder: S => Query,
                                          topK: Int = Int.MaxValue,
                                          minScore: Double = 0)
@@ -56,7 +56,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
       spr =>
         matchPartition.otherPartitions.flatMap(op =>
-          parent[(Long, S)](1).iterator(op, context)
+          other.iterator(op, context)
             .map(docIndex => (docIndex._1,
               try {
                 spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
@@ -76,7 +76,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override protected def getPartitions: Array[Partition] = {
     val parts = new Array[Partition](searchRDD.partitions.length)
     for (s1 <- parent[H](0).partitions) {
-      parts(s1.index) = new MatchRDDPartition(s1.index, parent[S](1).partitions.map(_.index), searchRDD, other)
+      parts(s1.index) = new MatchRDDPartition(s1.index, other.partitions.map(_.index), searchRDD, other)
     }
     parts
   }

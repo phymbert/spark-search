@@ -67,7 +67,6 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
   def rootDir: String =
     s"${options.getIndexationOptions.getRootIndexDirectory}-rdd${id}"
 
-  override protected lazy val isBarrier_ : Boolean = true
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
