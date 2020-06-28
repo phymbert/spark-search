@@ -15,6 +15,7 @@ For Spark+ES: 3 data nodes allocated.
 
 # Prepare data from master
 ```sh
+# You need your kaggle auth token to download datasets
 curl -L -o companies.zip 'https://storage.googleapis.com/kaggle-data-sets/189687%2F423331%2Fcompressed%2Fcompanies_sorted.csv.zip?GoogleAccessId=XXX' \
   -H 'authority: storage.googleapis.com' \
   -H 'upgrade-insecure-requests: 1' \
@@ -71,6 +72,7 @@ do
  --master yarn \
  --deploy-mode cluster \
  --class benchmark.${bench} \
+ --num-executors 3 \
  --executor-memory 10G \
  --executor-cores 4 \
  target/spark-search-benchmark-0.1.5-SNAPSHOT.jar

@@ -60,12 +60,12 @@ object SearchRDDExamples {
 
     // Fuzzy matching
     println("Some typo in names:")
-    computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:Patrik~0.4 or reviewerName:jonh~0.2", 100)
+    computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:\"Patrik\"~0.4 or reviewerName:jonh~0.2", 100)
       .map(doc => (doc.source.reviewerName, doc.score))
       .foreach(println)
 
     // Amazon software reviews
-    val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
+    val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
 
     // Match software and computer reviewers
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD,
