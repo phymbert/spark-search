@@ -111,7 +111,6 @@
                                 <exclude>**/*.env</exclude>
                                 <exclude>**/*.xml</exclude>
                                 <exclude>**/*.yml</exclude>
-                                <exclude>**/*.py</exclude><!-- FIXME Header python -->
                                 <exclude>src/test/resources/**</exclude>
                                 <exclude>src/main/resources/**</exclude>
                             </excludes>
@@ -119,6 +118,7 @@
                     </licenseSets>
                     <properties>
                         <owner>Spark Search</owner>
+                        <email>The Spark Search Contributors</email>
                     </properties>
                 </configuration>
                 <executions>
