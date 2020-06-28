@@ -55,12 +55,6 @@
             <version>${lucene.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.zouzias</groupId>
-            <artifactId>spark-lucenerdd_${scala.binary.version}</artifactId>
-            <version>0.3.7</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.12</version>
@@ -133,4 +127,39 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>scala-2.11</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.zouzias</groupId>
+                    <artifactId>spark-lucenerdd_${scala.binary.version}</artifactId>
+                    <version>0.3.7</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <!-- Add lucene rdd benchmark only for scala 2.11 -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/scala-2.11</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
