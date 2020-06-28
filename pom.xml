@@ -301,12 +301,10 @@
                 </reportSets>
             </plugin>
             <plugin>
+                <!-- FIXME - https://github.com/jacoco/jacoco/issues/965 -->
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.plugin.version}</version>
-                <configuration>
-                    <cl
-                </configuration>
                 <reportSets>
                     <reportSet>
                         <reports>
