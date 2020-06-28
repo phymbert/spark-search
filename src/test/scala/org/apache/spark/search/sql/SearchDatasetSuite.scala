@@ -4,7 +4,7 @@ import org.apache.spark.search._
 import org.scalatest.funsuite.AnyFunSuite
 
 class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
-
+/*
   test("A column can be searchable") {
     val spark = _spark
     import spark.sqlContext.implicits._
@@ -17,5 +17,5 @@ class SearchDatasetSuite extends AnyFunSuite with LocalSparkSession {
     prosegurCompany.show
 
     assertResult(1)(prosegurCompany.count)
-  }
+  }*/
 }

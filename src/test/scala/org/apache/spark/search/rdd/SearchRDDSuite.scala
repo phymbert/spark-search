@@ -103,7 +103,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       opts = SearchOptions.builder().analyzer(classOf[ShingleAnalyzerWrapper]).build())
       .filter(m => m.hits.count(h => h.source.name.equals(m.doc.name)) == 1)
       .cache
-    searchRDD.map(m => (m.doc.name, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
+    //searchRDD.map(m => (m.doc.name, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
     assertResult(1000)(searchRDD.count)
 
     spark.stop
@@ -124,7 +124,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       minScore = 0,
       opts = SearchOptions.builder().analyzer(classOf[ShingleAnalyzerWrapper]).build())
       .cache
-    matchRDD.map(m => (m.doc.companyName, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
+    //matchRDD.map(m => (m.doc.companyName, m.hits.map(h => (h.score, h.source.name)).mkString(", "))).foreach(println)
     assertResult(10003)(matchRDD.count)
 
     spark.stop
