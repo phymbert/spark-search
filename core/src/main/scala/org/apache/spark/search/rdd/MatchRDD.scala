@@ -48,7 +48,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure parent partition is indexed
-    // It is cached so it is safe to do it multiple time
+    // FIXME, supposed to be cached in parent RDD but does not work on standalone mode
     parent[H](0).iterator(matchPartition.searchPartition, context)
 
     // Match other partitions against our

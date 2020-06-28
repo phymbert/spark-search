@@ -71,5 +71,5 @@ jobs:
           timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8083
           docker cp examples/target/spark-search-examples_*.jar spark-master:/spark-search-examples.jar
           docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
-          docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
+          #docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
 

@@ -36,7 +36,6 @@ import java.util.Arrays;
 public class SearchRDDJavaExamples {
 
     public static void main(String[] args) throws Exception {
-
         System.out.println("Downloading reviews...");
         File reviews = File.createTempFile("reviews", "json.gz");
         reviews.deleteOnExit();
@@ -47,9 +46,7 @@ public class SearchRDDJavaExamples {
             }
         }
 
-        SparkSession spark = SparkSession.builder()
-                .master("local[*]")
-                .getOrCreate();
+        SparkSession spark = SparkSession.builder().getOrCreate();
 
         System.out.println("Loading reviews...");
         JavaRDD<Review> reviewRDD = spark.read().json(reviews.getAbsolutePath()).as(Encoders.bean(Review.class)).repartition(2).javaRDD().cache();
@@ -61,6 +58,7 @@ public class SearchRDDJavaExamples {
         System.out.println("Reviews with good recommendations: " + searchRDDJava.count("reviewText:good AND reviewText:quality"));
 
         // List matching docs
+        // FIXME does not work: had a not serializable result: java.lang.Object
         System.out.println("Reviews with good recommendations: ");
         SearchRecordJava<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
         Arrays.stream(goodReviews).forEach(System.out::println);
