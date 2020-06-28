@@ -8,7 +8,7 @@
         <version>0.1.6-SNAPSHOT</version>
     </parent>
 
-    <artifactId>spark-search-benchmark</artifactId>
+    <artifactId>spark-search-benchmark_${scala.binary.version}</artifactId>
 
     <packaging>jar</packaging>
     <name>Spark Project Search Benchmark</name>
@@ -41,14 +41,13 @@
         </dependency>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search</artifactId>
+            <artifactId>spark-search_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search-sql</artifactId>
+            <artifactId>spark-search-sql_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
-            <classifier>${scala.binary.version}</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>

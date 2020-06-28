@@ -9,7 +9,7 @@
         <version>0.1.6-SNAPSHOT</version>
     </parent>
 
-    <artifactId>spark-search</artifactId>
+    <artifactId>spark-search_${scala.binary.version}</artifactId>
 
     <packaging>jar</packaging>
     <name>Spark Project Search</name>

@@ -9,7 +9,7 @@
         <version>0.1.6-SNAPSHOT</version>
     </parent>
 
-    <artifactId>spark-search-sql</artifactId>
+    <artifactId>spark-search-sql_${scala.binary.version}</artifactId>
 
     <packaging>jar</packaging>
     <name>Spark Project Search SQL</name>
@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search</artifactId>
+            <artifactId>spark-search_${scala.binary.version}</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
