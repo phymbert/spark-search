@@ -56,8 +56,6 @@ export PATH=${M2_HOME}/bin:${PATH}
 git clone https://github.com/phymbert/spark-search.git
 cd spark-search/
 mvn install -DskipTests=true
-cd benchmark
-mvn package
 ````
 
 # How to submit
@@ -67,7 +65,7 @@ mvn package
  * submit the benchmark job
  
 ````sh
-for bench in SearchRDDBenchmark LuceneRDDBenchmark SparkRDDRegexBenchmark
+for bench in SearchRDDBenchmark ElasticsearchBenchmark LuceneRDDBenchmark SparkRDDRegexBenchmark
 do
  spark-submit \
  --master yarn \
