@@ -37,7 +37,7 @@ jobs:
         uses: codecov/codecov-action@v1
         if: '!matrix.skip'
         with:
-          flags: unittests-spark_${{ matrix.spark }}_${{ matrix.scala }}
+          flags: unit-tests-spark_${{ matrix.spark }}_${{ matrix.scala }}
   run-examples:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -62,8 +62,10 @@ jobs:
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8081
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8082
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8083
-          netstat -a | greep LISTEN | grep 7077
-          netstat -a | greep LISTEN | grep 8080
+          netstat -a | grep LISTEN
+          netstat -a | grep LISTEN | grep 7077
+          netstat -a | grep LISTEN | grep 8080
+          netstat -a | grep LISTEN | grep 8081
           curl -v --retry 10 http://localhost:8080/
           curl -v --retry 10 http://localhost:8081/
           curl -v --retry 10 http://localhost:8082/
