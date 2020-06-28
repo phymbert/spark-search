@@ -58,6 +58,7 @@
             <groupId>org.zouzias</groupId>
             <artifactId>spark-lucenerdd_${scala.binary.version}</artifactId>
             <version>0.3.7</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
