@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 package org.apache.spark.search.rdd
-
-import java.io.{File, FileOutputStream}
-import java.util.zip.ZipInputStream
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path, PathFilter}
@@ -44,24 +41,12 @@ private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
       .map(p => new SearchIndexReloadedPartition(p._2, rootDir, p._1.getPath.toUri.toString))
   }
 
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
     val part = split.asInstanceOf[SearchIndexReloadedPartition]
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
-    val his = hdfs.open(new Path(part.zipPath))
-    val zis = new ZipInputStream(his)
-    val parentLocalFile = new File(part.indexDir)
-    parentLocalFile.mkdir()
-    val buffer = new Array[Byte](8192)
-    Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
-      val fout = new FileOutputStream(new File(parentLocalFile, file.getName))
-      Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
-      fout.close()
-    }
-    zis.close()
-    his.close()
-
-    Iterator()
+    SearchIndexedRDD.unzipPartition(part.indexDir, hdfs.open(new Path(part.zipPath)))
+    streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[T]])
   }
 }
 

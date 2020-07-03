@@ -15,17 +15,18 @@
  */
 package org.apache.spark.search.rdd
 
-import java.io.File
+import java.io._
 import java.nio.file.Files
+import java.util
 import java.util.function.Consumer
-import java.util.zip.{ZipEntry, ZipOutputStream}
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
-import org.apache.spark._
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -40,21 +41,53 @@ import scala.reflect.ClassTag
 private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
                                                     val options: SearchOptions[T],
                                                     val deps: Seq[Dependency[_]])
-  extends RDD[T](sc, deps) {
+  extends RDD[Array[Byte]](sc, deps) {
 
   def this(rdd: RDD[T], options: SearchOptions[T]) {
     this(rdd.context, options, Seq(new OneToOneDependency(rdd)))
   }
 
-
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
     val searchRDDPartition = split.asInstanceOf[SearchPartitionIndex[T]]
 
     val elements = firstParent.iterator(searchRDDPartition.parent, context).asJava
-      .asInstanceOf[java.util.Iterator[T]]
+      .asInstanceOf[util.Iterator[T]]
     searchRDDPartition.index(elements, options.getIndexationOptions)
 
-    Iterator.empty
+    streamPartitionIndexZip(context, searchRDDPartition)
+  }
+
+  protected def streamPartitionIndexZip(context: TaskContext, searchRDDPartition: SearchPartitionIndex[T]): Iterator[Array[Byte]] = {
+    val localIndexDirPath = new File(searchRDDPartition.indexDir)
+    val targetPath = new File(localIndexDirPath.getParent, s"${localIndexDirPath.getName}.zip")
+    zipPartition(localIndexDirPath.toPath, new FileOutputStream(targetPath))
+
+    new InterruptibleIterator[Array[Byte]](context, new Iterator[Array[Byte]] {
+      override def hasNext: Boolean = {
+        if (!finished) {
+          if (is == null) {
+            is = new FileInputStream(targetPath)
+          }
+
+          read = is.read(_next)
+          finished = read < 0
+
+          if (finished) {
+            is.close()
+          }
+        }
+        !finished
+      }
+
+      var is: InputStream = _
+      var read: Int = -1
+      val _next: Array[Byte] = new Array[Byte](8192)
+      var finished = false
+
+      override def next(): Array[Byte] = {
+        _next.slice(0, read)
+      }
+    })
   }
 
   override protected def getPartitions: Array[Partition] = {
@@ -91,30 +124,50 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
       val targetPath = new Path(path, s"${localIndexDirPath.getFileName}.zip")
       logInfo(s"Saving partition ${localIndexDirPath} to ${targetPath}")
       val fos = hdfs.create(targetPath)
-      val zip = new ZipOutputStream(fos)
-      Files.list(localIndexDirPath).forEach {
-        new Consumer[java.nio.file.Path] {
-          override def accept(file: java.nio.file.Path): Unit = {
-            zip.putNextEntry(new ZipEntry(file.toFile.getName))
-            Files.copy(file, zip)
-            zip.closeEntry()
-          }
-        }
-      }
-      zip.close()
-      fos.close()
+      zipPartition(localIndexDirPath, fos)
       logInfo(s"Partition ${localIndexDirPath} saved to ${targetPath}")
       Iterator()
     }).collect
   }
 
+  private def zipPartition(localIndexDirPath: java.nio.file.Path, fos: OutputStream): Unit = {
+    val zip = new ZipOutputStream(fos)
+    Files.list(localIndexDirPath).forEach {
+      new Consumer[java.nio.file.Path] {
+        override def accept(file: java.nio.file.Path): Unit = {
+          zip.putNextEntry(new ZipEntry(file.toFile.getName))
+          Files.copy(file, zip)
+          zip.closeEntry()
+        }
+      }
+    }
+    zip.close()
+    fos.close()
+  }
+
   override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
     // TODO support non blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
-    sparkContext.runJob(this, (context: TaskContext, _: Iterator[T]) => {
+    sparkContext.runJob(this, (context: TaskContext, _: Iterator[Array[Byte]]) => {
       FileUtils.deleteDirectory(new File(indexDirectoryByPartition(context.partitionId())))
     })
     super.unpersist(blocking)
   }
 }
 
+object SearchIndexedRDD {
+  private[rdd] def unzipPartition(indexDir: String, his: InputStream): Unit = {
+    val parentLocalFile = new File(indexDir)
+    if (parentLocalFile.mkdir()) { // do not extract twice
+      val zis = new ZipInputStream(his)
+      val buffer = new Array[Byte](8192)
+      Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+        val fout = new FileOutputStream(new File(parentLocalFile, file.getName))
+        Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+        fout.close()
+      }
+      zis.close()
+    }
+    his.close()
+  }
+}
