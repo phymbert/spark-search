@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,12 +47,14 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
-    // Be sure parent partition is indexed
-    // FIXME, supposed to be cached in parent RDD but does not work on standalone mode
-    parent[H](0).iterator(matchPartition.searchPartition, context)
+    // Be sure partition is indexed in our worker
+    val it = firstParent[H].firstParent[Array[Byte]].iterator(matchPartition.searchPartition.searchIndexPartition, context)
+
+    // Unzip if needed
+    SearchIndexedRDD.unzipPartition(matchPartition.searchPartition.searchIndexPartition.indexDir, it)
 
     // Match other partitions against our
-    tryAndClose(parent[H](0).asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
+    tryAndClose(firstParent[H].asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
       spr =>
         matchPartition.otherPartitions.flatMap(op =>

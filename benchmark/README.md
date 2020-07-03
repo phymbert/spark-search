@@ -76,7 +76,7 @@ do
  --num-executors 3 \
  --executor-memory 10G \
  --executor-cores 4 \
- target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+ benchmark/target/spark-search-benchmark_*.jar
 done
 ````
 

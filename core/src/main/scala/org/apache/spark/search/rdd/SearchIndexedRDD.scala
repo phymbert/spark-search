@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -155,11 +155,34 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
   }
 }
 
-object SearchIndexedRDD {
-  private[rdd] def unzipPartition(indexDir: String, his: InputStream): Unit = {
+private[rdd] class InputStreamIterator(it: Iterator[Array[Byte]]) extends InputStream {
+  var offset: Int = 0
+  var buff: Array[Byte] = _
+
+  override def read(): Int = {
+    if (offset < buff.length) {
+      val b = buff(offset)
+      offset = offset + 1
+      b
+    } else if (it.hasNext) {
+      offset = 1
+      buff = it.next
+      buff(0)
+    } else {
+      -1
+    }
+  }
+}
+
+private[rdd] object SearchIndexedRDD {
+  private[rdd] def unzipPartition(indexDir: String, it: Iterator[Array[Byte]]): Unit = {
+    unzipPartition(indexDir, new InputStreamIterator(it))
+  }
+
+  private[rdd] def unzipPartition(indexDir: String, is: InputStream): Unit = {
     val parentLocalFile = new File(indexDir)
     if (parentLocalFile.mkdir()) { // do not extract twice
-      val zis = new ZipInputStream(his)
+      val zis = new ZipInputStream(is)
       val buffer = new Array[Byte](8192)
       Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
         val fout = new FileOutputStream(new File(parentLocalFile, file.getName))
@@ -168,6 +191,5 @@ object SearchIndexedRDD {
       }
       zis.close()
     }
-    his.close()
   }
 }

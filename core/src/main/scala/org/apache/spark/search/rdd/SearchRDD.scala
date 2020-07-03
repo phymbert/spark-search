@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  */
 package org.apache.spark.search.rdd
 
-import java.io.{IOException, InputStream, ObjectOutputStream}
+import java.io.{IOException, ObjectOutputStream}
 import java.util.Objects
 
 import org.apache.lucene.search.Query
@@ -190,10 +190,8 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
   protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
                                                                        reducer: Iterator[R] => A): A = {
     val indexDirectoryByPartition = searchIndexRDD._indexDirectoryByPartition
-    val ret = sparkContext.runJob(searchIndexRDD, (context: TaskContext, partitionZipped: Iterator[Array[Byte]]) => {
+    val ret = sparkContext.runJob(this, (context: TaskContext, partitionZipped: Iterator[T]) => {
       val index = context.partitionId()
-
-      SearchIndexedRDD.unzipPartition(indexDirectoryByPartition(index), new ZippedInputStream(partitionZipped))
 
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         r => searchByPartitionWithContext(r, context)
@@ -214,7 +212,12 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
 
     // Trigger indexation if not done yet
-    firstParent.iterator(searchRDDPartition.searchIndexPartition, context)
+    val it = firstParent[Array[Byte]].iterator(searchRDDPartition.searchIndexPartition, context)
+
+    // Unzip if needed
+    SearchIndexedRDD.unzipPartition(searchRDDPartition.searchIndexPartition.indexDir, it)
+
+    Iterator()
   }
 
   override protected def getPartitions: Array[Partition] = {
@@ -235,26 +238,6 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
     searchIndexRDD.unpersist()
     searchIndexRDD = null
   }
-
-  class ZippedInputStream(it: Iterator[Array[Byte]]) extends InputStream {
-    var offset: Int = 0
-    var buff: Array[Byte] = _
-
-    override def read(): Int = {
-      if (offset < buff.length) {
-        val b = buff(offset)
-        offset = offset + 1
-        b
-      } else if (it.hasNext) {
-        offset = 1
-        buff = it.next
-        buff(0)
-      } else {
-        -1
-      }
-    }
-  }
-
 }
 
 class SearchPartition[T](val idx: Int,
