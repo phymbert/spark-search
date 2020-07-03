@@ -157,7 +157,7 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
 
 private[rdd] class InputStreamIterator(it: Iterator[Array[Byte]]) extends InputStream {
   var offset: Int = 0
-  var buff: Array[Byte] = _
+  var buff: Array[Byte] = Array(0)
 
   override def read(): Int = {
     if (offset < buff.length) {
