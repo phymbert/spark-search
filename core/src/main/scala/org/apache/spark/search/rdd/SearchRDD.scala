@@ -100,7 +100,7 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
                               queryBuilder: S => String,
                               topK: Int = Int.MaxValue,
                               minScore: Double = 0): RDD[Match[S, T]] =
-    searchQueryJoin(rdd, queryStringBuilder(queryBuilder), topK, minScore)
+    searchQueryJoin(rdd, queryStringBuilder(queryBuilder, options), topK, minScore)
 
   /**
    * Joins the input RDD against this one and returns matching hits.
