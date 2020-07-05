@@ -1,0 +1,45 @@
+version: "3.3"
+services:
+  node-master:
+    build:
+      context: .
+    container_name: node-master
+    hostname: node-master
+    ports:
+      - "50070:50070"
+      - "50030:50030"
+      - "8080:8080"
+      - "8042:8042"
+      - "8888:8888"
+    networks:
+      cluster-network:
+    depends_on:
+      - node-slave1
+      - node-slave2
+      - node-slave3
+  node-slave1:
+    build:
+      context: .
+    container_name: node-slave1
+    ports:
+      - "7042:8042"
+    networks:
+      cluster-network:
+  node-slave2:
+    build:
+      context: .
+    container_name: node-slave2
+    ports:
+      - "7043:8042"
+    networks:
+      cluster-network:
+  node-slave3:
+    build:
+      context: .
+    container_name: node-slave3
+    ports:
+      - "7044:8042"
+    networks:
+      cluster-network:
+networks:
+  cluster-network:

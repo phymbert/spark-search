@@ -15,6 +15,7 @@ For Spark+ES: 3 data nodes allocated.
 
 # Prepare data from master
 ```sh
+# You need your kaggle auth token to download datasets
 curl -L -o companies.zip 'https://storage.googleapis.com/kaggle-data-sets/189687%2F423331%2Fcompressed%2Fcompanies_sorted.csv.zip?GoogleAccessId=XXX' \
   -H 'authority: storage.googleapis.com' \
   -H 'upgrade-insecure-requests: 1' \
@@ -45,7 +46,7 @@ hdfs dfs -put *.csv /
 
 * From the AWS master
 ````sh
-sudo yum install git
+sudo yum install git openjdk-8-jdk java-devel
 wget https://apache.mediamirrors.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 sudo tar xf apache-maven-3.6.3-bin.tar.gz -C /opt
 sudo ln -s /opt/apache-maven-3.6.3/ /opt/maven
@@ -55,9 +56,8 @@ export MAVEN_HOME=/opt/maven
 export PATH=${M2_HOME}/bin:${PATH}
 git clone https://github.com/phymbert/spark-search.git
 cd spark-search/
-mvn install -DskipTests=true
-cd benchmark
-mvn package
+# Add -Pscala-2.11 to support luceneRDD benchmark
+mvn clean install -DskipTests=true
 ````
 
 # How to submit
@@ -67,15 +67,16 @@ mvn package
  * submit the benchmark job
  
 ````sh
-for bench in SearchRDDBenchmark LuceneRDDBenchmark SparkRDDRegexBenchmark
+for bench in SearchRDDBenchmark ElasticsearchBenchmark LuceneRDDBenchmark SparkRDDRegexBenchmark
 do
  spark-submit \
  --master yarn \
  --deploy-mode cluster \
  --class benchmark.${bench} \
+ --num-executors 3 \
  --executor-memory 10G \
  --executor-cores 4 \
- target/spark-search-benchmark-0.1.5-SNAPSHOT.jar
+ benchmark/target/spark-search-benchmark_*.jar
 done
 ````
 
@@ -83,30 +84,30 @@ done
 
 ## Search RDD benchmark
 ````
-Time taken: 127011 ms
+Time taken: 128036 ms
 for joined 33372 matches
-(ICB INTERNATIONAL, INC.,8.383696556091309,icb international, inc.)
-(PROSPECT GLOBAL RESOURCES INC.,9.529265403747559,prospect global resources inc.)
-(CELLFOR INC.,8.472620964050293,cellfor inc.)
-(PLAYDEK, INC.,8.471635818481445,playdek inc.)
-(ASARCO INC,8.469249725341797,asarco inc)
-(VICTORY FUNDS,9.432478904724121,victory funds)
-(HORIZON SOFTWARE INTERNATIONAL LLC,8.548381805419922,horizon software international, llc.)
-(POLUS INC.,8.469675064086914,polus inc.)
-(PEERLESS MANUFACTURING CO,9.787846565246582,peerless manufacturing co.)
-(BELLWETHER INVESTMENT GROUP, LLC,9.817503929138184,bellwether investment group, llc)
-Time taken: 44668 ms
+(WOOD RECYCLING INC,7.345818519592285,florida wood recycling inc)
+(VORTEX SURGICAL, INC.,9.436065673828125,vortex surgical inc.)
+(SHARESQUARE INC.,8.400321960449219,sharesquare inc)
+(XAMBALA   INC,8.447469711303711,xambala inc.)
+(HELIUM SYSTEMS, INC.,8.639790534973145,helium systems inc)
+(BEACON FINANCIAL GROUP,8.157413482666016,beacon financial group)
+(PROMETRIC INC,6.795645713806152,thomson prometric  inc)
+(KOLL REAL ESTATE SERVICES,10.817365646362305,koll real estate services)
+(HAWKER ENERGY, INC.,8.728139877319336,hawker energy inc)
+(THINKECO INC.,8.447469711303711,thinkeco inc.)
+Time taken: 51056 ms
 for count 310 matches
-(6.369204521179199,ibm)
-(6.263510704040527,ibm)
-(6.263510704040527,ibm)
-(6.263186454772949,ibm)
-(6.263186454772949,ibm)
-(6.263186454772949,ibm)
-(6.171557426452637,ibm)
-(6.171557426452637,ibm)
-(6.171557426452637,ibm)
-(5.75221061706543,viện ibm (ibm institute))
+(6.837677478790283,ibm)
+(6.54212760925293,ibm)
+(6.54212760925293,ibm)
+(6.166845321655273,ibm)
+(6.166845321655273,ibm)
+(6.148458480834961,ibm)
+(6.106055736541748,ibm)
+(5.976968765258789,viện ibm (ibm institute))
+(5.7436842918396,ibm - india)
+(5.7436842918396,ibm uruguay)
 ````
 
 ### Elastic hadoop

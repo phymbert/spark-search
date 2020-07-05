@@ -1,38 +1,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <relativePath>../pom.xml</relativePath>
+        <groupId>io.github.phymbert</groupId>
+        <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
+        <version>0.1.7-SNAPSHOT</version>
+    </parent>
 
-    <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search-benchmark</artifactId>
-    <version>0.1.5-SNAPSHOT</version>
+    <artifactId>spark-search-benchmark_${scala.binary.version}</artifactId>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <sbt.project.name>spark-search-benchmark</sbt.project.name>
-        <java.version>1.8</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <spark.version>2.4.5</spark.version>
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-        <lucene.version>8.5.2</lucene.version>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+    <packaging>jar</packaging>
+    <name>Spark Project Search Benchmark</name>
+    <description>Spark Search Benchmark</description>
 
     <dependencies>
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
             <version>${scala.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -54,14 +45,14 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.github.phymbert</groupId>
+            <artifactId>spark-search-sql_${scala.binary.version}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
             <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.zouzias</groupId>
-            <artifactId>spark-lucenerdd_${scala.binary.version}</artifactId>
-            <version>0.3.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -80,7 +71,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -91,10 +81,8 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.4.0</version>
                 <configuration>
                     <scalaVersion>${scala.version}</scalaVersion>
-                    <compileOrder>JavaThenScala</compileOrder>
                 </configuration>
                 <executions>
                     <execution>
@@ -109,7 +97,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.4</version>
-
                 <configuration>
                     <filters>
                         <filter>
@@ -138,6 +125,55 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>scala-2.11</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.zouzias</groupId>
+                    <artifactId>spark-lucenerdd_${scala.binary.version}</artifactId>
+                    <version>0.3.7</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <!-- Add lucene rdd benchmark only for scala 2.11 -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>src/main/scala-2.11</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

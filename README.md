@@ -1,9 +1,10 @@
 ## [Spark Search](https://github.com/phymbert/spark-search)
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.phymbert/spark-search_2.12.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:io.github.phymbert%20%20a:spark-search_2.12)
 [![CI](https://github.com/phymbert/spark-search/workflows/CI/badge.svg)](https://github.com/phymbert/spark-search/actions)
-[![version](https://img.shields.io/github/tag/phymbert/spark-search.svg)](https://github.com/phymbert/spark-search/releases/latest)
 [![license](https://img.shields.io/github/license/phymbert/spark-search.svg)](LICENSE)
 [![LoC](https://tokei.rs/b1/github/phymbert/spark-search?category=lines)](https://github.com/phymbert/spark-search)
+[![codecov](https://codecov.io/gh/phymbert/spark-search/branch/master/graph/badge.svg)](https://codecov.io/gh/phymbert/spark-search)
 
 [Spark](https://spark.apache.org/) Search brings advanced full text search features to your Dataframe, Dataset and RDD. Powered by [Apache Lucene](https://lucene.apache.org/).
 
@@ -16,16 +17,6 @@ Strongly typed, Spark Search API plans to support Java, Scala and Python Spark S
 Have a look and feel free to contribute!
 
 ## Getting started
-
-### Maven dependency
-
-```xml
-<dependency>
-    <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search_${scala.binary.version}</artifactId>
-    <version>0.1.5</version>
-</dependency>
-```
 
 ### Dataset/DataFrame API (In progress)
 * Scala
@@ -89,7 +80,7 @@ val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query
 restoredSearchRDD.searchDropDuplicates()
 ```
 
-See [Examples](src/test/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
+See [Examples](examples/src/main/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
 
 * Java
 ```java
@@ -114,7 +105,7 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
         .map(Review::getReviewerName)
         .forEach(System.out::println);
 ```
-See [Examples](src/test/java//org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
+See [Examples](examples/src/main/java/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Benchmark
 
@@ -123,14 +114,22 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 | Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
-| Index + Count matches | 45s | 486s (*)  | 400s | 12s  |
-| Index + Join matches | 127s | 719s (*) | 597s | NA (>1h) |
+| Index + Count matches | 51s | 486s (*)  | 400s | 12s  |
+| Index + Entity matching | 128s | 719s (*) | 597s | NA (>1h) |
 
 *DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request.
  
 (*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
+
+##### v0.1.6
+* Switch to multi modules build: core, sql, examples, benchmark
+* Improve the github build with running examples against a spark cluster in docker
+* Improve licence header checking
+* RDD lineage works the same on all DAG Scheduler (Yarn/Standalone): SearchIndexRDD computes zipped index per partition for the next rdd
+* CI tests examples under Yarn and Standalone cluster mode
+* Fix default field where not used under certain circumstances
 
 ##### v0.1.5
 * Fix SearchRDD#searchDropDuplicate method
