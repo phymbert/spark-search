@@ -45,7 +45,7 @@ private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
     val part = split.asInstanceOf[SearchIndexReloadedPartition]
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
-    SearchIndexedRDD.unzipPartition(part.indexDir, hdfs.open(new Path(part.zipPath)))
+    ZipUtils.unzipPartition(part.indexDir, hdfs.open(new Path(part.zipPath)))
     streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[T]])
   }
 }

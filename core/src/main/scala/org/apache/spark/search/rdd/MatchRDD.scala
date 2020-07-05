@@ -48,17 +48,17 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
-    val it = firstParent[H].firstParent[Array[Byte]].iterator(matchPartition.searchPartition.searchIndexPartition, context)
+    val it = parent[Array[Byte]](1).iterator(matchPartition.searchPartition.searchIndexPartition, context)
 
     // Unzip if needed
-    SearchIndexedRDD.unzipPartition(matchPartition.searchPartition.searchIndexPartition.indexDir, it)
+    ZipUtils.unzipPartition(matchPartition.searchPartition.searchIndexPartition.indexDir, it)
 
     // Match other partitions against our
     tryAndClose(firstParent[H].asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
       spr =>
         matchPartition.otherPartitions.flatMap(op =>
-          parent[(Long, S)](1).iterator(op, context)
+          parent[(Long, S)](2).iterator(op, context)
             .map(docIndex => (docIndex._1,
               try {
                 spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
@@ -78,13 +78,14 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
   override protected def getPartitions: Array[Partition] = {
     val parts = new Array[Partition](searchRDD.partitions.length)
     for (s1 <- parent[H](0).partitions) {
-      parts(s1.index) = new MatchRDDPartition(s1.index, parent[S](1).partitions.map(_.index), searchRDD, other)
+      parts(s1.index) = new MatchRDDPartition(s1.index, parent[S](2).partitions.map(_.index), searchRDD, other)
     }
     parts
   }
 
   override def getDependencies: Seq[Dependency[_]] = Seq(
     new OneToOneDependency(searchRDD),
+    new OneToOneDependency(searchRDD.searchIndexRDD),
     new OneToOneDependency(other)
   )
 
