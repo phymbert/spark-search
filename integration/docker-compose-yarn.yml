@@ -2,7 +2,8 @@ version: '2.4'
 services:
 
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    build:
+      context: Dockerfile.namenode
     container_name: namenode
     environment:
       - CLUSTER_NAME=spark-search-test
@@ -14,9 +15,8 @@ services:
       - hadoop_net
 
   spark-hadoop-1:
-    container_name: spark-hadoop-1
     build:
-      context: .
+      context: Dockerfile.worker
     depends_on:
       - namenode
     env_file:
