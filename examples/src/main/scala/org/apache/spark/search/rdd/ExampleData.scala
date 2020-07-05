@@ -46,7 +46,7 @@ object ExampleData {
 
     hdfs.copyFromLocalFile(new Path(computersReviewFile.getAbsolutePath), new Path("/tmp/reviews_Computers.json.gz"))
 
-    val computersReviewsRDD = spark.read.json("/reviews_Computers.json.gz").as[Review].rdd.repartition(4)
+    val computersReviewsRDD = spark.read.json("/tmp/reviews_Computers.json.gz").as[Review].rdd.repartition(4)
 
     // Amazon software reviews
     println("Downloading amazon software reviews...")
@@ -56,7 +56,7 @@ object ExampleData {
 
     hdfs.copyFromLocalFile(new Path(softwareReviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
 
-    val softwareReviewsRDD = spark.read.json("/reviews_Software.json.gz").as[Review].rdd.repartition(4)
+    val softwareReviewsRDD = spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
 
     (computersReviewsRDD, softwareReviewsRDD)
   }
