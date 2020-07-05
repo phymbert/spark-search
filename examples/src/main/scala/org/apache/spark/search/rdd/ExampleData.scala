@@ -15,13 +15,9 @@
  */
 package org.apache.spark.search.rdd
 
-import java.io.File
-import java.net.URL
-
+import org.apache.spark.SparkFiles
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-
-import scala.sys.process._
 
 object ExampleData {
 
@@ -34,22 +30,13 @@ object ExampleData {
 
     // Amazon computers reviews
     println("Downloading amazon computers reviews file...")
-    val computersReviewFile = File.createTempFile("reviews_Computers", ".json.gz")
-    computersReviewFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz") #> computersReviewFile !!
+    spark.sparkContext.addFile("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
+    val computersReviewsRDD = spark.read.json(SparkFiles.get("reviews_Computers.json.gz")).as[Review].rdd.repartition(4)
 
     // Amazon software reviews
     println("Downloading amazon software reviews file...")
-    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
-    softwareReviewsFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
-
-    println("Amazon computers reviews file downloaded, loading...")
-
-    val computersReviewsRDD = spark.read.json(computersReviewFile.getAbsolutePath).as[Review].rdd
-      .repartition(4)
-
-    val softwareReviewsRDD = spark.read.json(softwareReviewsFile.getAbsolutePath).as[Review].rdd.cache.filter(_.reviewerName != null)
+    spark.sparkContext.addFile("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
+    val softwareReviewsRDD = spark.read.json(SparkFiles.get("reviews_Software_10.json.gz")).as[Review].rdd.repartition(4)
 
     (computersReviewsRDD, softwareReviewsRDD)
   }

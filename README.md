@@ -127,7 +127,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Switch to multi modules build: core, sql, examples, benchmark
 * Improve the github build with running examples against a spark cluster in docker
 * Improve licence header checking
-* Lineage works the same on all DAG Scheduler: SearchIndexRDD computes zipped index per partition for the next consumer
+* RDD lineage works the same on all DAG Scheduler (Yarn/Standalone): SearchIndexRDD computes zipped index per partition for the next rdd
 
 ##### v0.1.5
 * Fix SearchRDD#searchDropDuplicate method

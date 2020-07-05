@@ -85,7 +85,7 @@ jobs:
           restore-keys: |
             ${{ matrix.scala }}-${{ matrix.spark }}-maven-
       - uses: actions/checkout@v2
-      - name: Start spark stack
+      - name: Start spark hadoop stack
         run: |
           docker-compose -f integration/docker-compose-yarn.yml up -d
       - name: Set up JDK 1.8
