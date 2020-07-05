@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.apache.spark.search.rdd
 import java.io.File
 
 import org.apache.commons.io.FileUtils
+import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.search.BooleanClause.Occur
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
@@ -47,6 +48,15 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   test("search RDD hits matching query") {
     assertResult(Array(new SearchRecord[Person](0, 1, 0.3150668740272522f, 0,
       Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
+  }
+
+  test("search RDD query must use default field") {
+    assertResult(Array(new SearchRecord[Person](0, 1, 0.3150668740272522f, 0,
+      Person("Bob", "Marley", 37))))(sc.parallelize(persons).searchRDD(
+      SearchOptions.builder[Person]()
+        .read((r: ReaderOptions.Builder[Person]) => r.defaultFieldName("firstName"))
+        .analyzer(classOf[EnglishAnalyzer])
+        .build()).search("bob", 10).take(10))
   }
 
   test("Matching RDD") {

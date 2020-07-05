@@ -42,11 +42,11 @@ object SearchRDDExamples {
 
     // Search for key words
     println(s"Full text search results:")
-    computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+    computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 10)
       .foreach(println)
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
-    // if you do multiple operations on the same parent RDD, you might a variable in the driver:
+    // if you do multiple operations on the same parent RDD, you might have a variable in the driver:
     val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
       SearchOptions.builder[Review]() // See all other options SearchRDDOptions, IndexationOptions and ReaderOptions
         .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
@@ -57,13 +57,14 @@ object SearchRDDExamples {
 
     // Fuzzy matching
     println("Some typo in names:")
-    computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:\"Patrik\"~0.4 or reviewerName:jonh~0.2", 100)
+    computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:\"Patrik\"~0.4 or reviewerName:jonh~0.2", 10)
       .map(doc => (doc.source.reviewerName, doc.score))
       .foreach(println)
 
     // Match software and computer reviewers
+    println("Joined software and computer reviews by reviewer names:")
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD.filter(_.reviewerName != null),
-      (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
+      (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~0.4", 10)
     matchesReviewersRDD
       .filter(_.hits.nonEmpty)
       .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))

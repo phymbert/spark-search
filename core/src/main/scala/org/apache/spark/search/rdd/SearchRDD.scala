@@ -48,7 +48,7 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
   /**
    * Count how many documents match the given query.
    */
-  def count(query: String): Long = countQuery(parseQueryString(query))
+  def count(query: String): Long = countQuery(parseQueryString(query, options))
 
   /**
    * Count how many documents match the given query.
@@ -62,7 +62,7 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
    *       all the data is loaded into the driver's memory.
    */
   def searchList(query: String, topK: Int = Int.MaxValue, minScore: Double = 0): Array[SearchRecord[T]] =
-    searchQueryList(parseQueryString(query), topK, minScore)
+    searchQueryList(parseQueryString(query, options), topK, minScore)
 
   /**
    * Finds the top topK hits for this query.
@@ -79,7 +79,7 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
    * Finds the top topK hits per partition for query.
    */
   def search(query: String, topKByPartition: Int = Int.MaxValue, minScore: Double = 0): RDD[SearchRecord[T]] =
-    searchQuery(parseQueryString(query), topKByPartition, minScore)
+    searchQuery(parseQueryString(query, options), topKByPartition, minScore)
 
   /**
    * Finds the top topK hits per partition for query.

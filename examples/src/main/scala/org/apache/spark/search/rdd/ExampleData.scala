@@ -29,12 +29,12 @@ object ExampleData {
     import spark.implicits._
 
     // Amazon computers reviews
-    println("Downloading amazon computers reviews file...")
+    println("Downloading amazon computers reviews...")
     spark.sparkContext.addFile("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
     val computersReviewsRDD = spark.read.json(SparkFiles.get("reviews_Computers.json.gz")).as[Review].rdd.repartition(4)
 
     // Amazon software reviews
-    println("Downloading amazon software reviews file...")
+    println("Downloading amazon software reviews...")
     spark.sparkContext.addFile("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
     val softwareReviewsRDD = spark.read.json(SparkFiles.get("reviews_Software_10.json.gz")).as[Review].rdd.repartition(4)
 
