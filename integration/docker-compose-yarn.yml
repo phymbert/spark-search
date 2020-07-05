@@ -3,7 +3,8 @@ services:
 
   namenode:
     build:
-      context: ./Dockerfile.namenode
+      context: .
+      target: spark-namenode-yarn
     container_name: namenode
     environment:
       - CLUSTER_NAME=spark-search-test
@@ -16,7 +17,8 @@ services:
 
   spark-hadoop-1:
     build:
-      context: ./Dockerfile.worker
+      context: .
+      target: spark-worker-yarn
     depends_on:
       - namenode
     env_file:
@@ -26,28 +28,5 @@ services:
     networks:
       - hadoop_net
 
-  spark-hadoop-2:
-    build:
-      context: .
-    depends_on:
-      - namenode
-    env_file:
-      - ./hadoop.env
-    ports:
-      - 50076:50075
-    networks:
-      - hadoop_net
-
-  spark-hadoop-3:
-    build:
-      context: .
-    depends_on:
-      - namenode
-    env_file:
-      - ./hadoop.env
-    ports:
-      - 50077:50075
-    networks:
-      - hadoop_net
 networks:
   hadoop_net:
