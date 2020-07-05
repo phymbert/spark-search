@@ -17,6 +17,7 @@ services:
     depends_on:
       - node-slave1
       - node-slave2
+      - node-slave3
   node-slave1:
     build:
       context: .
@@ -35,5 +36,13 @@ services:
       - "7043:8042"
     networks:
       cluster-network:
+  node-slave3:
+    build:
+      context: .
+    container_name: node-slave3
+    tty: true
+    ports:
+      - "7043:8042"
+    networks:
 networks:
   cluster-network:

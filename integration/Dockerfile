@@ -43,7 +43,7 @@ RUN chmod 600 /root/.ssh/config
 
 COPY /confs/*.xml /opt/hadoop/etc/hadoop/
 COPY /confs/slaves /opt/hadoop/etc/hadoop/
-COPY /entrypoint.sh /
+COPY /entrypoint-yarn.sh /
 COPY /confs/spark-defaults.conf ${SPARK_HOME}/conf
 RUN echo "export JAVA_HOME=${JAVA_HOME}" >> /etc/environment
 
