@@ -28,11 +28,11 @@ RUN apt-get update && \
     apt-get install -y wget nano openjdk-8-jdk ssh openssh-server
 
 RUN wget -P /tmp/ https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
-RUN tar xvf /tmp/hadoop-${HADOOP_VERSION}.tar.gz -C /tmp && \
+RUN tar xf /tmp/hadoop-${HADOOP_VERSION}.tar.gz -C /tmp && \
 	mv /tmp/hadoop-${HADOOP_VERSION} /opt/hadoop
 
 RUN wget -P /tmp/ https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
-RUN tar xvf /tmp/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz -C /tmp && \
+RUN tar xf /tmp/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz -C /tmp && \
     mv /tmp/spark-${SPARK_VERSION}-bin-hadoop2.7 ${SPARK_HOME}
 
 RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
