@@ -6,7 +6,6 @@ services:
     container_name: node-master
     hostname: node-master
     ports:
-      - "8088:8088"
       - "50070:50070"
       - "50030:50030"
       - "8080:8080"
@@ -18,40 +17,29 @@ services:
       - node-slave1
       - node-slave2
       - node-slave3
-    volumes:
-      - /tmp:/tmp:rw
   node-slave1:
     build:
       context: .
     container_name: node-slave1
-    tty: true
     ports:
       - "7042:8042"
     networks:
       cluster-network:
-    volumes:
-      - /tmp:/tmp:rw
   node-slave2:
     build:
       context: .
     container_name: node-slave2
-    tty: true
     ports:
       - "7043:8042"
     networks:
       cluster-network:
-    volumes:
-      - /tmp:/tmp:rw
   node-slave3:
     build:
       context: .
     container_name: node-slave3
-    tty: true
     ports:
       - "7044:8042"
     networks:
       cluster-network:
-    volumes:
-      - /tmp:/tmp:rw
 networks:
   cluster-network:
