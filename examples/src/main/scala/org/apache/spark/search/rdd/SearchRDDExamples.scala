@@ -70,6 +70,13 @@ object SearchRDDExamples {
       .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
       .foreach(println)
 
+    // Save & restore example
+    println(s"Restoring from previous indexation:")
+    softwareReviewsRDD.searchRDD.save("/save-path")
+    val restoredSearchRDD = SearchRDD.load[Review](sc, "/save-path")
+    val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
+    println(s"${happyReview2} positive reviews after restoration ^^")
+
     spark.stop()
   }
 }
