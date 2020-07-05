@@ -20,6 +20,8 @@
     <modules>
         <module>core</module>
         <module>sql</module>
+        <module>examples</module>
+        <module>benchmark</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -214,36 +216,11 @@
             </properties>
         </profile>
         <profile>
-            <id>CI</id>
-            <modules>
-                <module>examples</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>benchmark</id>
-            <modules>
-                <module>benchmark</module>
-            </modules>
-        </profile>
-        <profile>
             <id>deploy</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <modules>
+                <module>core</module>
+                <module>sql</module>
+            </modules>
         </profile>
     </profiles>
 </project>
