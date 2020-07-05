@@ -9,7 +9,7 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/home/spark:rw
+      - /tmp:/tmp:rw
   spark-worker-1:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -21,7 +21,7 @@ services:
     networks:
       - spark_net
     volumes:
-    - /tmp:/home/spark:rw
+    - /tmp:/tmp:rw
   spark-worker-2:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -33,7 +33,7 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/home/spark:rw
+      - /tmp:/tmp:rw
   spark-worker-3:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -45,6 +45,6 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/home/spark:rw
+      - /tmp:/tmp:rw
 networks:
   spark_net:
