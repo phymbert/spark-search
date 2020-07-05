@@ -1,32 +1,31 @@
-version: '2.4'
+version: "3.3"
 services:
-
-  namenode:
+  node-master:
     build:
       context: .
-      target: spark-namenode-yarn
-    container_name: namenode
-    environment:
-      - CLUSTER_NAME=spark-search-test
-    env_file:
-      - ./hadoop.env
+    container_name: node-master
+    hostname: node-master
     ports:
-      - 50070:50070
+      - "8088:8088"
+      - "50070:50070"
+      - "50030:50030"
+      - "8080:8080"
+      - "8042:8042"
+      - "8888:8888"
     networks:
-      - hadoop_net
-
-  spark-hadoop-1:
-    build:
-      context: .
-      target: spark-worker-yarn
+      cluster-network:
     depends_on:
-      - namenode
-    env_file:
-      - ./hadoop.env
+      - node-slave1
+      - node-slave2
+  node-slave1:
+    build:
+      context: .
+    container_name: node-slave1
+    hostname: node-slave1
+    tty: true
     ports:
-      - 50075:50075
+      - "7042:8042"
     networks:
-      - hadoop_net
-
+      cluster-network:
 networks:
-  hadoop_net:
+  cluster-network:

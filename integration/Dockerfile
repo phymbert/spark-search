@@ -14,16 +14,37 @@
 # limitations under the License.
 #
 
-FROM bde2020/spark-worker:2.4.5-hadoop2.7 as spark
+FROM ubuntu:bionic
 
-FROM bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8 as spark-worker-yarn
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64/jre
+ENV HADOOP_HOME /opt/hadoop
+ENV HADOOP_CONF_DIR /opt/hadoop/etc/hadoop
+ENV SPARK_HOME /opt/spark
+ENV PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}"
+ENV HADOOP_VERSION 2.7.0
+ENV SPARK_VERSION 2.4.5
 
-COPY --from=spark /spark /spark
+RUN apt-get update && \
+    apt-get install -y wget nano openjdk-8-jdk ssh openssh-server
 
-ADD spark-defaults.conf /spark/conf
+RUN wget -P /tmp/ https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
+RUN tar xvf /tmp/hadoop-${HADOOP_VERSION}.tar.gz -C /tmp && \
+	mv /tmp/hadoop-${HADOOP_VERSION} /opt/hadoop
 
-FROM bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8 as spark-namenode-yarn
+RUN wget -P /tmp/ https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz
+RUN tar xvf /tmp/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz -C /tmp && \
+    mv /tmp/spark-${SPARK_VERSION}-bin-hadoop2.7 ${SPARK_HOME}
 
-COPY --from=spark /spark /spark
+RUN ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
+	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
+	chmod 600 ~/.ssh/authorized_keys
+COPY /confs/config /root/.ssh
+RUN chmod 600 /root/.ssh/config
 
-ADD spark-defaults.conf /spark/conf
+COPY /confs/*.xml /opt/hadoop/etc/hadoop/
+COPY /confs/slaves /opt/hadoop/etc/hadoop/
+COPY /entrypoint.sh /
+COPY /confs/spark-defaults.conf ${SPARK_HOME}/conf
+RUN echo "export JAVA_HOME=${JAVA_HOME}" >> /etc/environment
+
+ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
