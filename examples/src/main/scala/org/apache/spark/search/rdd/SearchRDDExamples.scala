@@ -62,7 +62,7 @@ object SearchRDDExamples {
       .foreach(println)
 
     // Match software and computer reviewers
-    val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD,
+    val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD.filter(_.reviewerName != null),
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
     matchesReviewersRDD
       .filter(_.hits.nonEmpty)
