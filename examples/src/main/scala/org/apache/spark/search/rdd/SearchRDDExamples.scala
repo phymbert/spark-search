@@ -16,26 +16,22 @@
 package org.apache.spark.search.rdd
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
-import org.apache.spark.SparkContext
+import org.apache.spark.search.rdd.ExampleData._
 import org.apache.spark.search.{ReaderOptions, SearchOptions}
+import org.apache.spark.sql.SparkSession
 
 /**
  * Spark Search RDD examples.
  */
 object SearchRDDExamples {
 
-  case class Review(asin: String, helpful: Array[Long], overall: Double,
-                    reviewText: String, reviewTime: String, reviewerID: String,
-                    reviewerName: String, summary: String, unixReviewTime: Long)
-
   def main(args: Array[String]): Unit = {
-    val sc = new SparkContext()
+    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
+    val sc = spark.sparkContext
     sc.setLogLevel("WARN")
 
-    // Amazon computers reviews
-    val computersReviewsRDD = sc.parallelize(Seq(Review("AAAAA", Array(3, 3), 3.0, "Ok, this is a good computer to play Civilization IV or World of Warcraft", "11 29, 2010", "XXXXX", "Patrick H.", "Ok for an average user, but not much else.", 1290988800)))
-      // Number of partition is the number of Lucene index which will be created across your cluster
-      .repartition(4)
+    // Amazon computers and software customer reviews
+    val (computersReviewsRDD, softwareReviewsRDD) = loadComputerReviews(spark)
 
     // Search RDD API
     // import org.apache.spark.search.rdd._ to implicitly enhance RDD with search features
@@ -65,9 +61,6 @@ object SearchRDDExamples {
       .map(doc => (doc.source.reviewerName, doc.score))
       .foreach(println)
 
-    // Amazon software reviews
-    val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
-
     // Match software and computer reviewers
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD,
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~8", 10)
@@ -76,6 +69,6 @@ object SearchRDDExamples {
       .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
       .foreach(println)
 
-    sc.stop()
+    spark.stop()
   }
 }

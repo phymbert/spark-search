@@ -44,5 +44,6 @@ services:
     ports:
       - "7043:8042"
     networks:
+      cluster-network:
 networks:
   cluster-network:
