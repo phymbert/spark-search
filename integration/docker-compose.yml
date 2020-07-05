@@ -8,6 +8,8 @@ services:
       - 7077:7077
     networks:
       - spark_net
+    volumes:
+      - /tmp:/tmp:rw
   spark-worker-1:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
