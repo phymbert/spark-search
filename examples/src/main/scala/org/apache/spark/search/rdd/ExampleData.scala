@@ -21,6 +21,8 @@ import java.net.URL
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
+import scala.sys.process._
+
 object ExampleData {
 
   case class Review(asin: String, helpful: Array[Long], overall: Double,
