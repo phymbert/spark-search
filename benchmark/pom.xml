@@ -4,8 +4,8 @@
     <parent>
         <relativePath>../pom.xml</relativePath>
         <groupId>io.github.phymbert</groupId>
-        <artifactId>spark-search-parent</artifactId>
-        <version>0.1.6-SNAPSHOT</version>
+        <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
+        <version>0.1.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>spark-search-benchmark_${scala.binary.version}</artifactId>
@@ -124,6 +124,20 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
