@@ -42,7 +42,7 @@ services:
     container_name: node-slave3
     tty: true
     ports:
-      - "7043:8042"
+      - "7044:8042"
     networks:
       cluster-network:
 networks:
