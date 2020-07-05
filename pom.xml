@@ -193,11 +193,11 @@
                     <artifactId>license-maven-plugin</artifactId>
                     <version>4.0.rc1</version>
                 </plugin>
-                <dependency>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>2.8.2</version>
-                </dependency>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
