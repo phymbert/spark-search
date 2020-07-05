@@ -3,7 +3,7 @@
 
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search-parent</artifactId>
-    <version>0.1.6</version>
+    <version>0.1.7-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -49,7 +49,7 @@
         <connection>scm:git:git@github.com:phymbert/spark-search.git</connection>
         <developerConnection>scm:git:git@github.com:phymbert/spark-search.git</developerConnection>
         <url>scm:git:git@github.com:phymbert/spark-search.git</url>
-        <tag>v0.1.6</tag>
+        <tag>HEAD</tag>
     </scm>
     <inceptionYear>2020</inceptionYear>
 
