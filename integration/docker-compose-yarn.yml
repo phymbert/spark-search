@@ -21,7 +21,6 @@ services:
     build:
       context: .
     container_name: node-slave1
-    hostname: node-slave1
     tty: true
     ports:
       - "7042:8042"
@@ -31,10 +30,9 @@ services:
     build:
       context: .
     container_name: node-slave2
-    hostname: node-slave2
     tty: true
     ports:
-      - "7042:8042"
+      - "7043:8042"
     networks:
       cluster-network:
 networks:
