@@ -65,10 +65,6 @@
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
-        <site>
-            <id>github</id>
-            <url>https://github.com/phymbert/spark-search</url>
-        </site>
     </distributionManagement>
 
     <issueManagement>
