@@ -99,9 +99,9 @@ jobs:
           mvn $MAVEN_CLI_OPTS clean package -DskipTests=true
       - name: Run examples
         run: |
-          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50075
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50076
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50077
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7042
+          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7043
+          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7044
           docker cp examples/target/spark-search-examples_*.jar node-master:/spark-search-examples.jar
           docker exec node-master /opt/spark/bin/spark-submit --master yarn --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
           #docker exec node-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
