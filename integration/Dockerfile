@@ -48,4 +48,4 @@ COPY /entrypoint-yarn.sh /
 COPY /confs/spark-defaults.conf ${SPARK_HOME}/conf
 RUN echo "export JAVA_HOME=${JAVA_HOME}" >> /etc/environment
 
-ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "entrypoint-yarn.sh"]
