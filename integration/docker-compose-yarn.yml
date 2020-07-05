@@ -3,7 +3,7 @@ services:
 
   namenode:
     build:
-      context: Dockerfile.namenode
+      context: ./Dockerfile.namenode
     container_name: namenode
     environment:
       - CLUSTER_NAME=spark-search-test
@@ -16,7 +16,7 @@ services:
 
   spark-hadoop-1:
     build:
-      context: Dockerfile.worker
+      context: ./Dockerfile.worker
     depends_on:
       - namenode
     env_file:
