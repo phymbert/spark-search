@@ -114,8 +114,8 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 | Feature | SearchRDD | Elasticsearch Hadoop |  LuceneRDD | Spark regex matches (no score) |
 |---|---|---|---|---|
-| Index + Count matches | 50s | 486s (*)  | 400s | 12s  |
-| Index + Join matches | 137s | 719s (*) | 597s | NA (>1h) |
+| Index + Count matches | 51s | 486s (*)  | 400s | 12s  |
+| Index + Join matches | 128s | 719s (*) | 597s | NA (>1h) |
 
 *DISCLAIMER* Benchmarks methodology or related results may improve, feel free to submit a pull request.
  
@@ -127,6 +127,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Switch to multi modules build: core, sql, examples, benchmark
 * Improve the github build with running examples against a spark cluster in docker
 * Improve licence header checking
+* Lineage works the same on all DAG Scheduler: SearchIndexRDD computes zipped index per partition for the next consumer
 
 ##### v0.1.5
 * Fix SearchRDD#searchDropDuplicate method

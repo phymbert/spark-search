@@ -1,5 +1,6 @@
 version: '2.4'
 services:
+
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
     container_name: namenode
@@ -11,8 +12,11 @@ services:
       - 50070:50070
     networks:
       - hadoop_net
-  datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+
+  spark-hadoop-1:
+    container_name: spark-hadoop-1
+    build:
+      context: .
     depends_on:
       - namenode
     env_file:
@@ -21,50 +25,28 @@ services:
       - 50075:50075
     networks:
       - hadoop_net
-  spark-master:
-    image: bde2020/spark-master:2.4.5-hadoop2.7
-    container_name: spark-master
-    ports:
-      - 8080:8080
-      - 7077:7077
+
+  spark-hadoop-2:
+    build:
+      context: .
+    depends_on:
+      - namenode
     env_file:
       - ./hadoop.env
+    ports:
+      - 50076:50075
     networks:
       - hadoop_net
-  spark-worker-1:
-    image: bde2020/spark-worker:2.4.5-hadoop2.7
+
+  spark-hadoop-3:
+    build:
+      context: .
     depends_on:
-      - spark-master
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-    ports:
-      - 8081:8081
+      - namenode
     env_file:
       - ./hadoop.env
-    networks:
-      - hadoop_net
-  spark-worker-2:
-    image: bde2020/spark-worker:2.4.5-hadoop2.7
-    depends_on:
-      - spark-master
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
     ports:
-      - 8082:8081
-    env_file:
-      - ./hadoop.env
-    networks:
-      - hadoop_net
-  spark-worker-3:
-    image: bde2020/spark-worker:2.4.5-hadoop2.7
-    depends_on:
-      - spark-master
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-    ports:
-      - 8083:8081
-    env_file:
-      - ./hadoop.env
+      - 50077:50075
     networks:
       - hadoop_net
 networks:

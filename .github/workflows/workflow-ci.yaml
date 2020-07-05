@@ -98,12 +98,10 @@ jobs:
           mvn $MAVEN_CLI_OPTS clean package -DskipTests=true
       - name: Run examples
         run: |
-          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7077
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8080
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8081
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8082
-          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 8083
-          docker cp examples/target/spark-search-examples_*.jar spark-master:/spark-search-examples.jar
-          docker exec spark-master /spark/bin/spark-submit --master yarn --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
-          #docker exec spark-master /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
+          timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50075
+          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50076
+          timeout 10 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50077
+          docker cp examples/target/spark-search-examples_*.jar spark-hadoop-1:/spark-search-examples.jar
+          docker exec spark-hadoop-1 /spark/bin/spark-submit --master yarn --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
+          #docker exec spark-hadoop-1 /spark/bin/spark-submit --master spark://spark-master:7077 --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar
 
