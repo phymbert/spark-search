@@ -72,8 +72,8 @@ object SearchRDDExamples {
 
     // Save & restore example
     println(s"Restoring from previous indexation:")
-    softwareReviewsRDD.searchRDD.save("/save-path")
-    val restoredSearchRDD = SearchRDD.load[Review](sc, "/save-path")
+    softwareReviewsRDD.searchRDD.save("/tmp/save-path")
+    val restoredSearchRDD = SearchRDD.load[Review](sc, "/tmp/save-path")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
     println(s"${happyReview2} positive reviews after restoration ^^")
 
