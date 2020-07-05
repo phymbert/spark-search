@@ -99,9 +99,6 @@ jobs:
           mvn $MAVEN_CLI_OPTS clean package -DskipTests=true
       - name: Run examples
         run: |
-          docker ps -a
-          docker logs node-master
-          docker logs node-slave1
           docker cp examples/target/spark-search-examples_*.jar node-master:/spark-search-examples.jar
           docker exec node-master /opt/spark/bin/spark-submit --master yarn --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDExamples /spark-search-examples.jar
           #docker exec node-master /opt/spark/bin/spark-submit --master yarn --deploy-mode client --conf spark.hadoop.yarn.timeline-service.enabled=false --class org.apache.spark.search.rdd.SearchRDDJavaExamples /spark-search-examples.jar

@@ -18,6 +18,8 @@ services:
       - node-slave1
       - node-slave2
       - node-slave3
+    volumes:
+      - /tmp:/tmp:rw
   node-slave1:
     build:
       context: .
@@ -27,6 +29,8 @@ services:
       - "7042:8042"
     networks:
       cluster-network:
+    volumes:
+      - /tmp:/tmp:rw
   node-slave2:
     build:
       context: .
@@ -36,6 +40,8 @@ services:
       - "7043:8042"
     networks:
       cluster-network:
+    volumes:
+      - /tmp:/tmp:rw
   node-slave3:
     build:
       context: .
@@ -45,5 +51,7 @@ services:
       - "7044:8042"
     networks:
       cluster-network:
+    volumes:
+      - /tmp:/tmp:rw
 networks:
   cluster-network:
