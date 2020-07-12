@@ -30,7 +30,7 @@ object SearchStrategy extends SparkStrategy {
     plan match {
       case SearchJoin(left, right, searchExpression) => SearchJoinExec(planLater(left), planLater(right), searchExpression):: Nil
       case p: SearchIndexPlan =>
-        SearchRDDExec(planLater(p.child), p.output) :: Nil
+        SearchRDDExec(planLater(p.child), p.searchExpression) :: Nil
       case _ => Seq.empty
     }
   }

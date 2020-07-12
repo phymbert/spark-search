@@ -37,8 +37,9 @@ case class ScoreExpression() extends LeafExpression
   }
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    /*
     if (ctx.currentVars != null && ctx.currentVars.last != null) {
-      val oev = ctx.currentVars.last
+      val oev = ctx.currentVars.head
       ev.isNull = oev.isNull
       ev.value = oev.value
       ev.copy(code = oev.code)
@@ -46,7 +47,10 @@ case class ScoreExpression() extends LeafExpression
       assert(ctx.INPUT_ROW != null, "INPUT_ROW and currentVars cannot both be null.")
       val javaType = JavaCode.javaType(dataType)
       ev.copy(code = code"$javaType ${ev.value} = ${ctx.INPUT_ROW}.getDouble(i.numFields() - 1);", isNull = FalseLiteral)
-    }
+    }*/
+    ev.copy(code =
+      code"""
+      final ${CodeGenerator.javaType(dataType)} ${ev.value} = 10000d;""", isNull = FalseLiteral)
   }
 }
 
