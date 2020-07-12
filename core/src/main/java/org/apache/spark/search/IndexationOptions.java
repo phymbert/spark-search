@@ -79,6 +79,14 @@ public final class IndexationOptions<T> implements Serializable {
                     .orElse(System.getProperty("java.io.tmpdir"))), "spark-search").getAbsolutePath();
 
     /**
+     * Is search index rdd cached, default to true in yarn cluster manager.
+     * Caching partitions avoid reindexing parent rdd partition if the search computation occurs on
+     * different node than the indexation one.
+     */
+    private boolean cacheSearchIndexRDD = Optional.ofNullable(System.getProperty("spark.master"))
+            .filter("yarn"::equals).isPresent();
+
+    /**
      * Log indexation progress every 100K docs.
      */
     public static final long DEFAULT_LOG_INDEXATION_PROGRESS = -1;
@@ -162,6 +170,10 @@ public final class IndexationOptions<T> implements Serializable {
 
     public IndexOptions getFieldIndexOptions() {
         return fieldIndexOptions;
+    }
+
+    public boolean isCacheSearchIndexRDD() {
+        return cacheSearchIndexRDD;
     }
 
     /**
@@ -296,6 +308,19 @@ public final class IndexationOptions<T> implements Serializable {
         public Builder<T> fieldIndexOptions(IndexOptions fieldIndexOptions) {
             requireNotNull(fieldIndexOptions, "field index options");
             options.fieldIndexOptions = fieldIndexOptions;
+            return this;
+        }
+
+        /**
+         * Caching partitions avoid reindexing parent rdd partition if the search computation occurs on
+         * different node than the indexation one.
+         * It can leads to OOM on small heap executors JVM.
+         *
+         * @param cacheSearchIndexRDD true to cache search index RDD
+         * @return builder
+         */
+        public Builder<T> cacheSearchIndexRDD(boolean cacheSearchIndexRDD) {
+            options.cacheSearchIndexRDD = cacheSearchIndexRDD;
             return this;
         }
 
