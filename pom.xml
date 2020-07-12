@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
+    <artifactId>spark-search-parent</artifactId>
     <version>0.1.7-SNAPSHOT</version>
 
     <properties>

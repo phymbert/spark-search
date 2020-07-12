@@ -38,7 +38,11 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
                                              var searchIndexRDD: SearchIndexedRDD[T],
                                              val options: SearchOptions[T],
                                              val deps: Seq[Dependency[_]])
-  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD.persist(StorageLevel.DISK_ONLY))) ++ deps) {
+  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD)) ++ deps) {
+
+  if (options.getIndexationOptions.isCacheSearchIndexRDD) {
+    searchIndexRDD.persist(StorageLevel.DISK_ONLY)
+  }
 
   /**
    * Return the number of indexed elements in the RDD.
@@ -235,7 +239,9 @@ private[search] class SearchRDD[T: ClassTag](sc: SparkContext,
 
   override def clearDependencies() {
     super.clearDependencies()
-    searchIndexRDD.unpersist()
+    if (options.getIndexationOptions.isCacheSearchIndexRDD) {
+      searchIndexRDD.unpersist()
+    }
     searchIndexRDD = null
   }
 }

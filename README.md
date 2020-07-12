@@ -123,6 +123,11 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 ## Release notes
 
+##### v0.1.7
+
+* Enable caching of search index rdd only for yarn cluster, and as an option.
+* Remove scala binary version in parent module artifact name
+
 ##### v0.1.6
 * Switch to multi modules build: core, sql, examples, benchmark
 * Improve the github build with running examples against a spark cluster in docker

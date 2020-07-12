@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +20,14 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.search.rdd.SearchRDD
 import org.apache.spark.search.{IndexationOptions, ReaderOptions, SearchOptions, _}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, GenericInternalRow, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, Literal, UnsafeRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types.{DataTypes, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
 
 case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: Expression)
   extends BinaryExecNode {
-
 
   override protected def doExecute(): RDD[InternalRow] = {
     val leftRDD = left.execute()
@@ -42,7 +41,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
             case StringType => left match {
               case a: AttributeReference =>
                 queryBuilder[InternalRow]((_: InternalRow, lqb: QueryBuilder) =>
-                  lqb.createPhraseQuery(a.name, value.asInstanceOf[UTF8String].toString), opts)
+                  lqb.createBooleanQuery(a.name, value.asInstanceOf[UTF8String].toString), opts)
               case _ => throw new UnsupportedOperationException
             }
             case _ => throw new UnsupportedOperationException
@@ -54,28 +53,45 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
 
     searchRDD.searchQueryJoin(leftRDD, qb, 1)
       .filter(_.hits.nonEmpty) // TODO move this filter at partition level
-      .map(m => InternalRow.fromSeq(m.doc.asInstanceOf[GenericInternalRow].values ++ Seq(m.hits.head.score)))
+      .map(m => toRow(m.doc.asInstanceOf[UnsafeRow], m.hits.head.score))
   }
 
-  override def output: Seq[Attribute] = left.output ++ right.output
+  private def toRow(doc: UnsafeRow, score: Double): InternalRow = {
+    val row = new UnsafeRow(doc.numFields + 1)
+    val bs = new Array[Byte](row.getSizeInBytes)
+    row.pointTo(bs, bs.length)
+    row.copyFrom(doc)
+    row.setDouble(doc.numFields, score)
+    row
+  }
+
+  override def output: Seq[Attribute] = left.output ++ Seq(scoreAttribute)
 }
 
-case class SearchRDDExec(child: SparkPlan, indexedAttributes: Seq[Attribute])
+case class SearchRDDExec(child: SparkPlan, searchExpression: Expression)
   extends UnaryExecNode {
 
   override protected def doExecute(): RDD[InternalRow] = {
-    val inputRDDs = child.asInstanceOf[WholeStageCodegenExec].child.asInstanceOf[CodegenSupport].inputRDDs()
+    val inputRDDs = child match {
+      case wsce: WholeStageCodegenExec => wsce.child.asInstanceOf[CodegenSupport].inputRDDs()
+      case cs: CodegenSupport => cs.inputRDDs()
+      case _ => throw new UnsupportedOperationException("no input rdd supported")
+    }
 
-    if (inputRDDs.length > 1) {
-      throw new UnsupportedOperationException("multiple RDDs not supported")
+    if (inputRDDs.length != 1) {
+      throw new UnsupportedOperationException("one input RDD expected")
     }
 
     val rdd = inputRDDs.head
 
-
-    val schema = StructType(indexedAttributes
-      .filter(_.name != SCORE)
-      .map(a => StructField(a.name, a.dataType, a.nullable)))
+    val schema = StructType(Seq(searchExpression match { // FIXME support AND / OR
+      case MatchesExpression(left, _) => left match {
+        case a: AttributeReference =>
+          StructField(a.name, DataTypes.StringType)
+        case _ => throw new UnsupportedOperationException
+      }
+      case _ => throw new IllegalArgumentException
+    }))
 
     val opts = SearchOptions.builder[InternalRow]()
       .read((readOptsBuilder: ReaderOptions.Builder[InternalRow]) => readOptsBuilder.documentConverter(new DocumentRowConverter(schema)))
@@ -85,6 +101,5 @@ case class SearchRDDExec(child: SparkPlan, indexedAttributes: Seq[Attribute])
     new SearchRDD[InternalRow](rdd, opts)
   }
 
-  override def output: Seq[Attribute] = indexedAttributes
-    .filter(_.name == SCORE)
+  override def output: Seq[Attribute] = Seq()
 }
