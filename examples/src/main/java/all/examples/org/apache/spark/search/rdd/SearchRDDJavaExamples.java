@@ -27,10 +27,7 @@ import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -111,11 +108,13 @@ public class SearchRDDJavaExamples {
 
     private static File loadReview(String reviewURL) throws IOException {
         File reviews = File.createTempFile("reviews", "json.gz");
-        reviews.deleteOnExit();
+        //reviews.deleteOnExit();
         URL reviewsURL = new URL(reviewURL);
-        try (ReadableByteChannel rbc = Channels.newChannel(reviewsURL.openStream())) {
-            try (FileOutputStream fos = new FileOutputStream(reviews)) {
-                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        try (InputStream is = reviewsURL.openStream()){
+            try (ReadableByteChannel rbc = Channels.newChannel(is)) {
+                try (FileOutputStream fos = new FileOutputStream(reviews)) {
+                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                }
             }
         }
         return reviews;

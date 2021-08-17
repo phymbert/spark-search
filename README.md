@@ -67,7 +67,7 @@ val restoredSearchRDD = loadSearchRDD[Review](sc, "hdfs:///path-for-later-query-
 restoredSearchRDD.searchDropDuplicates()
 ```
 
-See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
+See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala) and [Documentation](core/src/main/scala/org/apache/spark/search/rdd/SearchRDD.scala) for more details.
 
 * Java
 ```java
@@ -110,7 +110,7 @@ computerReviews.searchJoin(softwareReviews,
 
 
 ```
-See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
+See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)  and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.
 
 * Python
 ```python
@@ -197,6 +197,21 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Support of `SearchRDD#count(String)` -  count matching hits
 * Support of `SearchRDD#searchList(String)` - search matching records as list
 * Support of `SearchRDD#search(String)` - search matching records as RDD
+
+## Installation Spark Search
+** Maven
+```xml
+<dependency>
+  <groupId>io.github.phymbert</groupId>
+  <artifactId>spark-search_2.12</artifactId>
+  <version>0.1.7</version>
+</dependency>
+```
+
+*** Gradle
+```groovy
+implementation 'io.github.phymbert:spark-search_2.12:0.1.7'
+```
 
 ## Building Spark Search
 ```shell script
