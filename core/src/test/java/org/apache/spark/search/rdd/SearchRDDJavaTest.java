@@ -34,7 +34,7 @@ public class SearchRDDJavaTest {
     public void searchRDDShouldBeUsableInJava() {
         JavaRDD<PersonJava> persons = sc.parallelize(PersonJava.PERSONS);
 
-        SearchRDDJava<PersonJava> searchRDD = new SearchRDDJava<>(persons);
+        SearchRDDJava<PersonJava> searchRDD = new SearchRDDJava<>(persons, PersonJava.class);
 
         assertEquals(5, searchRDD.count());
 

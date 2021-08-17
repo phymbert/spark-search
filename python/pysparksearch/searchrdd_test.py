@@ -23,12 +23,12 @@ from pyspark import SparkContext
 class RDDTestCase(unittest.TestCase):
     def setUp(self):
         self.sc = SparkContext()
-        self.data = [{"Geoorge", "Michael", 53},
-                     {"Bob", "Marley", 37},
-                     {"Agnès", "Bartoll", -1}]
+        self.data = [{"firstName": "Geoorge", "lastName": "Michael"},
+                     {"firstName": "Bob", "lastName": "Marley"},
+                     {"firstName": "Agnès", "lastName": "Bartoll"}]
 
     def test_count(self):
-        self.assertEqual(2, self.sc.parallelize(self.data).searchcount("firstName:bob"))
+        self.assertEqual(1, self.sc.parallelize(self.data).searchcount("firstName:agnes~"))
 
         if __name__ == '__main__':
             unittest.main()

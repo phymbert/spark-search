@@ -21,19 +21,18 @@ import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
 /**
- * Java friendly version of {@link SearchRDD}.
  */
 public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     private static final long serialVersionUID = 1L;
 
     private final ISearchRDDJava<T> searchRDDJava;
 
-    public SearchRDDJava(JavaRDD<T> rdd) {
-        this(rdd, SearchOptions.defaultOptions());
+    public SearchRDDJava(JavaRDD<T> rdd, Class<T> clazz) {
+        this(rdd, SearchOptions.defaultOptions(), clazz);
     }
 
-    public SearchRDDJava(JavaRDD<T> rdd, SearchOptions<T> options) {
-        super(rdd.rdd(), scala.reflect.ClassTag$.MODULE$.apply(Object.class));
+    public SearchRDDJava(JavaRDD<T> rdd, SearchOptions<T> options, Class<T> clazz) {
+        super(rdd.rdd(), scala.reflect.ClassTag$.MODULE$.apply(clazz));
         try {
             // Yes, what a mess: JavaFirst was maybe not a good choice
             this.searchRDDJava
@@ -71,7 +70,7 @@ public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
         return searchRDDJava.search(query, topK, minScore);
     }
 
-    public static <T> SearchRDDJava<T> create(JavaRDD<T> rdd) {
-        return new SearchRDDJava<>(rdd);
+    public static <T> SearchRDDJava<T> create(JavaRDD<T> rdd, Class<T> clazz) {
+        return new SearchRDDJava<>(rdd, clazz);
     }
 }

@@ -18,18 +18,6 @@ Have a look and feel free to contribute!
 
 ## Getting started
 
-### Dataset/DataFrame API (In progress)
-* Scala
-```scala
-import org.apache.spark.search.sql._
-
-val sentences = spark.read.csv("...")
-sentences.count("sentence:happy OR sentence:best or sentence:good")
-
-// coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
-sentences.where($"sentence".matches($"searchKeyword" ))
-```
-
 ### RDD API
 * Scala
 
@@ -63,10 +51,9 @@ computersReviewsSearchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wil
   .map(doc => (doc.getSource.reviewerName, doc.getScore))
   .foreach(println)
 
-// RDD full text joining
+// RDD full text joining - example here searches for persons who did both computer and software reviews with fuzzy matching on reviewer name
 val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
-val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
-val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
+val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~0.4", 10)
 matchesReviewersRDD
   .filter(_.hits.nonEmpty)
   .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
@@ -106,6 +93,34 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
         .forEach(System.out::println);
 ```
 See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
+
+* Python
+```python
+from pyspark import SparkContext
+import pysparksearch
+
+data = [{"firstName": "Geoorge", "lastName": "Michael"},
+         {"firstName": "Bob", "lastName": "Marley"},
+         {"firstName": "Agnès", "lastName": "Bartoll"}]
+
+sc = SparkContext()
+
+sc.parallelize(data).count("firstName:agnes~")
+```
+
+
+### Dataset/DataFrame API (In progress)
+* Scala
+```scala
+import org.apache.spark.search.sql._
+
+val sentences = spark.read.csv("...")
+sentences.count("sentence:happy OR sentence:best or sentence:good")
+
+// coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
+sentences.where($"sentence".matches($"searchKeyword" ))
+```
+
 
 ## Benchmark
 
