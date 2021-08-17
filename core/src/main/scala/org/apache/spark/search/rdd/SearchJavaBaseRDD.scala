@@ -29,16 +29,16 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
   protected val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
 
   override def count(query: String): Long =
-    searchRDD.countQuery(parseQueryString(query))
+    searchRDD.count(parseQueryString(query))
 
   override def searchList(query: String, topK: Int): Array[SearchRecordJava[T]] =
-    searchRDD.searchQueryList(parseQueryString(query), topK).map(searchRecordAsJava)
+    searchRDD.searchListQuery(parseQueryString(query), topK).map(searchRecordAsJava(_))
 
   override def searchList(query: String, topK: Int, minScore: Double): Array[SearchRecordJava[T]] =
-    searchRDD.searchQueryList(parseQueryString(query), topK, minScore).map(searchRecordAsJava)
+    searchRDD.searchListQuery(parseQueryString(query), topK, minScore).map(searchRecordAsJava)
 
   override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
-    searchRDD.search(query, topK).map(searchRecordAsJava).toJavaRDD()
+    searchRDD.search(query, topK).map(searchRecordAsJava(_)).toJavaRDD()
 
   private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
     new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))

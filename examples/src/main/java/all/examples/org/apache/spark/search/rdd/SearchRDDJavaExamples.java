@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.rdd;
+package all.examples.org.apache.spark.search.rdd;
 
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
+import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
 

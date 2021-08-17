@@ -74,13 +74,13 @@ matchesReviewersRDD
 
 // Save then restore onto hdfs
 matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
-val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query-on")
+val restoredSearchRDD = loadSearchRDD[Review](sc, "hdfs:///path-for-later-query-on")
 
 // Drop duplicates (see options)
 restoredSearchRDD.searchDropDuplicates()
 ```
 
-See [Examples](examples/src/main/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
+See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
 
 * Java
 ```java
@@ -105,7 +105,7 @@ searchRDDJava.searchList("reviewerName:Patrik", 100)
         .map(Review::getReviewerName)
         .forEach(System.out::println);
 ```
-See [Examples](examples/src/main/java/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
+See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Benchmark
 
@@ -127,6 +127,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 * Enable caching of search index rdd only for yarn cluster, and as an option.
 * Remove scala binary version in parent module artifact name
+* Expose SearchRDD as a public API to ease Dataset binding and hdfs reloading
 
 ##### v0.1.6
 * Switch to multi modules build: core, sql, examples, benchmark

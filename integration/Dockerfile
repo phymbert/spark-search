@@ -22,7 +22,7 @@ ENV HADOOP_CONF_DIR /opt/hadoop/etc/hadoop
 ENV SPARK_HOME /opt/spark
 ENV PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}"
 ENV HADOOP_VERSION 2.7.0
-ENV SPARK_VERSION 2.4.5
+ENV SPARK_VERSION 2.4.8
 
 RUN apt-get -qq update && \
     apt-get -y -qq upgrade && \
