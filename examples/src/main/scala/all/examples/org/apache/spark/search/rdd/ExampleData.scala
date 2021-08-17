@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright © 2020 Spark Search (The Spark Search Contributors)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package all.examples.org.apache.spark.search.rdd
 
 import java.io.File
