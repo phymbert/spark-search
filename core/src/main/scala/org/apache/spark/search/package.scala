@@ -100,9 +100,9 @@ package object search {
   def queryStringBuilder[T](builder: T => String, opts: SearchOptions[_] = defaultOpts): T => Query =
     new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName)
 
-  def parseQueryString[T](queryString: String, opts: SearchOptions[_] = defaultOpts): () => Query =
+  def parseQueryString[T](queryString: String, opts: SearchOptions[_] = defaultOpts): Query =
   // Query parser is not thread safe
-    () => new QueryParser(opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer.newInstance())
+    new QueryParser(opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer.newInstance())
       .parse(queryString)
 
   implicit def indexOptions[T](optionsBuilderFunc: Function[IndexationOptions.Builder[T], IndexationOptions.Builder[T]]): JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] =

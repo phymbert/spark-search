@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@ package org.apache.spark.search.sql
 
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.search.rdd.SearchRDD
+import org.apache.spark.search.rdd.SearchRDDLucene
 import org.apache.spark.search.{IndexationOptions, ReaderOptions, SearchOptions, _}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, Literal, UnsafeRow}
@@ -31,7 +31,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
 
   override protected def doExecute(): RDD[InternalRow] = {
     val leftRDD = left.execute()
-    val searchRDD = right.execute().asInstanceOf[SearchRDD[InternalRow]]
+    val searchRDD = right.execute().asInstanceOf[SearchRDDLucene[InternalRow]]
     val opts = searchRDD.options
 
     val qb = searchExpression match { // FIXME support AND / OR
@@ -51,7 +51,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
       case _ => throw new IllegalArgumentException
     }
 
-    searchRDD.searchQueryJoin(leftRDD, qb, 1)
+    searchRDD.searchJoinQuery(leftRDD, qb, 1)
       .filter(_.hits.nonEmpty) // TODO move this filter at partition level
       .map(m => toRow(m.doc.asInstanceOf[UnsafeRow], m.hits.head.score))
   }
@@ -98,7 +98,7 @@ case class SearchRDDExec(child: SparkPlan, searchExpression: Expression)
       .index((indexOptsBuilder: IndexationOptions.Builder[InternalRow]) => indexOptsBuilder.documentUpdater(new DocumentRowUpdater(schema)))
       .build()
 
-    new SearchRDD[InternalRow](rdd, opts)
+    new SearchRDDLucene[InternalRow](rdd, opts)
   }
 
   override def output: Seq[Attribute] = Seq()

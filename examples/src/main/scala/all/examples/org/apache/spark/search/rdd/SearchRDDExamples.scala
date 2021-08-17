@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2020 Spark Search (The Spark Search Contributors)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.rdd
+package all.examples.org.apache.spark.search.rdd
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
-import org.apache.spark.search.rdd.ExampleData._
-import org.apache.spark.search.{ReaderOptions, SearchOptions}
+import org.apache.spark.search._
+import org.apache.spark.search.rdd._
 import org.apache.spark.sql.SparkSession
+
+import ExampleData._
 
 /**
  * Spark Search RDD examples.
@@ -72,8 +74,8 @@ object SearchRDDExamples {
 
     // Save & restore example
     println(s"Restoring from previous indexation:")
-    softwareReviewsRDD.searchRDD.save("/tmp/save-path")
-    val restoredSearchRDD = SearchRDD.load[Review](sc, "/tmp/save-path")
+    softwareReviewsRDD.searchRDD().save("/tmp/save-path")
+    val restoredSearchRDD = loadSearchRDD[Review](sc, "/tmp/save-path")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
     println(s"${happyReview2} positive reviews after restoration ^^")
 

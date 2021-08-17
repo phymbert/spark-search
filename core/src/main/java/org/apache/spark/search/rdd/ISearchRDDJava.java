@@ -36,17 +36,17 @@ public interface ISearchRDDJava<T> {
     long count(String query);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchListQuery(org.apache.lucene.search.Query, int, double)}
      */
     SearchRecordJava<T>[] searchList(String query, int topK);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(org.apache.lucene.search.Query, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchListQuery(org.apache.lucene.search.Query, int, double)}
      */
     SearchRecordJava<T>[] searchList(String query, int topK, double minScore);
 
     /**
-     * {@link org.apache.spark.search.rdd.SearchRDD#search(org.apache.lucene.search.Query, int, double)}
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchQuery(org.apache.lucene.search.Query, int, double)}
      */
     JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
 

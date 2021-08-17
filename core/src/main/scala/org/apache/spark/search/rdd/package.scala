@@ -15,6 +15,7 @@
  */
 package org.apache.spark.search
 
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import scala.language.implicitConversions
@@ -27,6 +28,21 @@ import scala.util.{Failure, Success, Try}
 package object rdd {
 
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
+
+  /**
+   * Reload an indexed RDD from spark FS.
+   *
+   * @param sc      current spark context
+   * @param path    Path where the index were saved
+   * @param options Search option
+   * @tparam T Type of beans or case class this RDD is binded to
+   * @return Restored RDD
+   */
+  def loadSearchRDD[T: ClassTag](sc: SparkContext,
+                                 path: String,
+                                 options: SearchOptions[T] = defaultOpts[T]
+                                ): SearchRDD[T] =
+    new SearchRDDLucene[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
 
   private[rdd] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
     SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
