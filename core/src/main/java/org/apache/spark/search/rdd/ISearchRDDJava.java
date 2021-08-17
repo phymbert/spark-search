@@ -17,6 +17,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.lucene.search.Query;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.search.MatchJava;
 import org.apache.spark.search.SearchRecordJava;
 
 import java.io.Serializable;
@@ -49,6 +50,41 @@ public interface ISearchRDDJava<T> {
      * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, double)}
      */
     JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
+
+    /**
+     * Searches and joins the input RDD matches against this one
+     * by building a custom lucene query string per doc
+     * and returns matching hits.
+     *
+     * @param rdd          to join with
+     * @param queryBuilder builds the query string to join with the searched document
+     * @param topK         topK to return
+     * @param minScore     minimum score of matching documents
+     * @return Searched matches documents RDD
+     * @param <S> Doc type to match with
+     */
+    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
+                                                 QueryStringBuilder<S> queryBuilder,
+                                                 int topK,
+                                                 double minScore);
+
+    /**
+     * Searches and joins the input RDD matches against this one
+     * by building a custom lucene query per doc
+     * and returns matching hits.
+     *
+     * @param rdd          to join with
+     * @param queryBuilder builds the lucene query to join with the searched document
+     * @param topK         topK to return
+     * @param minScore     minimum score of matching documents
+     * @return Searched matches documents RDD
+     * @param <S> Doc type to match with
+     */
+    <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
+                                                 QueryBuilder<S> queryBuilder,
+                                                 int topK,
+                                                 double minScore);
+
 
     /**
      * Build a lucene query string to search for matching hits

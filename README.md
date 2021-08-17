@@ -73,24 +73,42 @@ See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/
 ```java
 import org.apache.spark.search.rdd.*;
 
-JavaRDD<Review> reviewRDD = sqlContext.read().json(...).as(Encoders.bean(Review.class)).repartition(2).javaRDD();
-SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD);
+//Create the SearchRDD based on the JavaRDD to enjoy search features
+SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD, Review.class);
 
 // Count matching docs
-searchRDDJava.count("reviewText:good AND reviewText:quality")
+System.out.println("Reviews with good recommendations: " + searchRDDJava.count("reviewText:good AND reviewText:quality"));
 
 // List matching docs
-searchRDDJava.searchList("reviewText:recommend~0.8", 100).forEach(System.out::println);
+System.out.println("Reviews with good recommendations: ");
+SearchRecordJava<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
+Arrays.stream(goodReviews).forEach(r -> System.out.println(r));
 
 // Pass custom search options
 searchRDDJava = new SearchRDDJava<>(reviewRDD,
-        SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
+        SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build(),
+        Review.class);
 
-searchRDDJava.searchList("reviewerName:Patrik", 100)
-        .stream()
-        .map(SearchRecord::getSource)
+System.out.println("Reviews from Patosh: ");
+searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)
+        .map(SearchRecordJava::getSource)
         .map(Review::getReviewerName)
-        .forEach(System.out::println);
+        .distinct()
+        .foreach(r -> System.out.println(r));
+
+System.out.println("Top 10 reviews from same reviewer between computer and software:");
+computerReviews.searchJoin(softwareReviews,
+        r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 3)
+        .filter(matches -> matches.hits.length > 0)
+        .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
+                sameReviewerMatches.doc.reviewerName,
+                sameReviewerMatches.doc.asin,
+                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
+                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+        ))
+        .foreach(matches -> System.out.println(matches));
+
+
 ```
 See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
@@ -143,6 +161,8 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Enable caching of search index rdd only for yarn cluster, and as an option.
 * Remove scala binary version in parent module artifact name
 * Expose SearchRDD as a public API to ease Dataset binding and hdfs reloading
+* Add join full text search based on the SearchJavaRDD API
+* Fix SearchJavaRDD API and examples
 
 ##### v0.1.6
 * Switch to multi modules build: core, sql, examples, benchmark

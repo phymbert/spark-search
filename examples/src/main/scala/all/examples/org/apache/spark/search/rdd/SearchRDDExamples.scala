@@ -33,7 +33,7 @@ object SearchRDDExamples {
     sc.setLogLevel("WARN")
 
     // Amazon computers and software customer reviews
-    val (computersReviewsRDD, softwareReviewsRDD) = loadComputerReviews(spark)
+    val (computersReviewsRDD, softwareReviewsRDD) = loadReviews(spark)
 
     // Search RDD API
     // import org.apache.spark.search.rdd._ to implicitly enhance RDD with search features

@@ -17,6 +17,7 @@ package org.apache.spark.search.rdd
 
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.search._
+import org.apache.spark.search.rdd.ISearchRDDJava.{QueryBuilder, QueryStringBuilder}
 
 import scala.reflect.ClassTag
 
@@ -39,6 +40,25 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
 
   override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
     searchRDD.search(query, topK).map(searchRecordAsJava(_)).toJavaRDD()
+
+  override def searchJoin[S](rdd: JavaRDD[S],
+                             queryBuilder: QueryStringBuilder[S],
+                             topK: Int,
+                             minScore: Double): JavaRDD[MatchJava[S, T]] = {
+    implicit val classTag: ClassTag[S] = rdd.classTag
+    searchRDD.searchJoin(rdd.rdd, (s:S) => queryBuilder.build(s), topK, minScore)
+    .map(matchAsJava(_))
+  }
+
+  override def searchJoinQuery[S](rdd: JavaRDD[S],
+                                  queryBuilder: QueryBuilder[S],
+                                  topK: Int,
+                                  minScore: Double): JavaRDD[MatchJava[S, T]] = {
+    implicit val classTag: ClassTag[S] = rdd.classTag
+    searchRDD.searchJoinQuery(rdd.rdd, (s:S) => queryBuilder.build(s), topK, minScore)
+      .map(matchAsJava(_))
+  }
+
 
   private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
     new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))

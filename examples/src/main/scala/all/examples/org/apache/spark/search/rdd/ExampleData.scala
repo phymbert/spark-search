@@ -32,7 +32,7 @@ object ExampleData {
                     reviewText: String, reviewTime: String, reviewerID: String,
                     reviewerName: String, summary: String, unixReviewTime: Long)
 
-  def loadComputerReviews(spark: SparkSession): (RDD[Review], RDD[Review]) = {
+  def loadReviews(spark: SparkSession): (RDD[Review], RDD[Review]) = {
     import spark.implicits._
 
     val hadoopConf = new Configuration()
