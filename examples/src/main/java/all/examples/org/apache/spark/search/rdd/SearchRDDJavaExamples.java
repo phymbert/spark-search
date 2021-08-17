@@ -99,8 +99,9 @@ public class SearchRDDJavaExamples {
         FileSystem hdfs = FileSystem.get(hadoopConf);
         Path dst = new Path("/tmp/" + reviews.getName());
         hdfs.copyFromLocalFile(new Path(reviews.getAbsolutePath()), dst);
+        hdfs.deleteOnExit(dst);
 
-        return spark.read().json(dst.getName())
+        return spark.read().json("/tmp/" + reviews.getName())
                 .as(Encoders.bean(Review.class))
                 .repartition(2).javaRDD().cache();
     }
