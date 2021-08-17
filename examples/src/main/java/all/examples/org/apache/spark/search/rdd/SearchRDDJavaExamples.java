@@ -44,40 +44,40 @@ import static java.util.stream.Collectors.toList;
 public class SearchRDDJavaExamples {
 
     public static void main(String[] args) throws Exception {
-        System.out.println("Downloading computer reviews...");
+        System.err.println("Downloading computer reviews...");
 
         SparkSession spark = SparkSession.builder().getOrCreate();
 
-        System.out.println("Loading reviews...");
+        System.err.println("Loading reviews...");
         JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
 
         //Create the SearchRDD based on the JavaRDD to enjoy search features
         SearchRDDJava<Review> computerReviews = new SearchRDDJava<>(reviewsRDD, Review.class);
 
         // Count matching docs
-        System.out.println("Reviews with good recommendations: " + computerReviews.count("reviewText:good AND reviewText:quality"));
+        System.err.println("Reviews with good recommendations: " + computerReviews.count("reviewText:good AND reviewText:quality"));
 
         // List matching docs
-        System.out.println("Reviews with good recommendations: ");
+        System.err.println("Reviews with good recommendations: ");
         SearchRecordJava<Review>[] goodReviews = computerReviews.searchList("reviewText:recommend~0.8", 100, 0);
-        Arrays.stream(goodReviews).forEach(r -> System.out.println(r));
+        Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
         // Pass custom search options
         computerReviews = new SearchRDDJava<>(reviewsRDD,
                 SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build(),
                 Review.class);
 
-        System.out.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
+        System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
         computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
                 .map(SearchRecordJava::getSource)
                 .map(Review::getReviewerName)
                 .distinct()
-                .foreach(r -> System.out.println(r));
+                .foreach(r -> System.err.println(r));
 
-        System.out.println("Loading software reviews...");
+        System.err.println("Loading software reviews...");
         JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
 
-        System.out.println("Top 10 reviews from same reviewer between computer and software:");
+        System.err.println("Top 10 reviews from same reviewer between computer and software:");
         computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
                 r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 3)
                 .filter(matches -> matches.hits.length > 0)
@@ -87,7 +87,7 @@ public class SearchRDDJavaExamples {
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
-                .foreach(matches -> System.out.println(matches));
+                .foreach(matches -> System.err.println(matches));
 
         spark.stop();
     }
@@ -99,7 +99,6 @@ public class SearchRDDJavaExamples {
         FileSystem hdfs = FileSystem.get(hadoopConf);
         Path dst = new Path("/tmp/" + reviews.getName());
         hdfs.copyFromLocalFile(new Path(reviews.getAbsolutePath()), dst);
-        hdfs.deleteOnExit(dst);
 
         return spark.read().json(dst.getName())
                 .as(Encoders.bean(Review.class))

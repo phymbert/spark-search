@@ -77,26 +77,26 @@ import org.apache.spark.search.rdd.*;
 SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD, Review.class);
 
 // Count matching docs
-System.out.println("Reviews with good recommendations: " + searchRDDJava.count("reviewText:good AND reviewText:quality"));
+System.err.println("Reviews with good recommendations: " + searchRDDJava.count("reviewText:good AND reviewText:quality"));
 
 // List matching docs
-System.out.println("Reviews with good recommendations: ");
+System.err.println("Reviews with good recommendations: ");
 SearchRecordJava<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
-Arrays.stream(goodReviews).forEach(r -> System.out.println(r));
+Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
 // Pass custom search options
 searchRDDJava = new SearchRDDJava<>(reviewRDD,
         SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build(),
         Review.class);
 
-System.out.println("Reviews from Patosh: ");
+System.err.println("Reviews from Patosh: ");
 searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)
         .map(SearchRecordJava::getSource)
         .map(Review::getReviewerName)
         .distinct()
-        .foreach(r -> System.out.println(r));
+        .foreach(r -> System.err.println(r));
 
-System.out.println("Top 10 reviews from same reviewer between computer and software:");
+System.err.println("Top 10 reviews from same reviewer between computer and software:");
 computerReviews.searchJoin(softwareReviews,
         r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 3)
         .filter(matches -> matches.hits.length > 0)
@@ -106,7 +106,7 @@ computerReviews.searchJoin(softwareReviews,
                 Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
                 Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
         ))
-        .foreach(matches -> System.out.println(matches));
+        .foreach(matches -> System.err.println(matches));
 
 
 ```
