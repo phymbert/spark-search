@@ -26,7 +26,8 @@ import org.apache.spark.util.Utils
 import scala.reflect.ClassTag
 
 /**
- * Result RDD of a [[org.apache.spark.search.rdd.SearchRDDLucene#searchQueryJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
+ * Result RDD of a
+ * [[org.apache.spark.search.rdd.SearchRDD#searchJoinQuery(org.apache.spark.rdd.RDD, scala.Function1, int, double, scala.reflect.ClassTag)]]
  *
  * @author Pierrick HYMBERT
  */

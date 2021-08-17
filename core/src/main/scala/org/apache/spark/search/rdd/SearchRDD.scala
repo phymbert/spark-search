@@ -149,7 +149,7 @@ trait SearchRDD[T] {
 
   /**
    * Alias for
-   * {@link org.apache.spark.search.rdd.SearchRDD#searchDropDuplicates(scala.Function1, int, double, int)}.
+   * [[org.apache.spark.search.rdd.SearchRDD#searchDropDuplicates(scala.Function1, int, double, int)}]]
    */
   def distinct(numPartitions: Int): RDD[T] =
     searchDropDuplicates(numPartitions = numPartitions)

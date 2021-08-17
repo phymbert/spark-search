@@ -21,7 +21,7 @@ import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
 /**
- * Java friendly version of {@link SearchRDDLucene}.
+ * Java friendly version of {@link SearchRDD}.
  */
 public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
     private static final long serialVersionUID = 1L;
