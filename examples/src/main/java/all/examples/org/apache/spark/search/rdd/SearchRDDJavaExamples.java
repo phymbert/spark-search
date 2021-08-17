@@ -79,7 +79,7 @@ public class SearchRDDJavaExamples {
 
         System.err.println("Top 10 reviews from same reviewer between computer and software:");
         computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
-                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 3)
+                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
                 .filter(matches -> matches.hits.length > 0)
                 .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
                         sameReviewerMatches.doc.reviewerName,
