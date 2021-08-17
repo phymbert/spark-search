@@ -52,7 +52,7 @@ trait SearchRDD[T] {
    * @param query Query to match
    * @return Matched doc count
    */
-  def count(query: Query): Long
+  def count(query: StaticQueryProvider): Long
 
   /**
    * Searches the top k hits for this query string.
@@ -79,7 +79,7 @@ trait SearchRDD[T] {
    * @note this method should only be used if the topK is expected to be small, as
    *       all the data is loaded into the driver's memory.
    */
-  def searchListQuery(query: Query,
+  def searchListQuery(query: StaticQueryProvider,
                       topK: Int = Int.MaxValue,
                       minScore: Double = 0): Array[SearchRecord[T]]
 
@@ -107,7 +107,7 @@ trait SearchRDD[T] {
    * @param minScore        minimum score of matching documents
    * @return topK per partition hits RDD sorted by score in descendent order
    */
-  def searchQuery(query: Query,
+  def searchQuery(query: StaticQueryProvider,
                   topKByPartition: Int = Int.MaxValue,
                   minScore: Double = 0): RDD[SearchRecord[T]]
 

@@ -74,7 +74,7 @@ matchesReviewersRDD
 
 // Save then restore onto hdfs
 matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
-val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query-on")
+val restoredSearchRDD = loadSearchRDD[Review](sc, "hdfs:///path-for-later-query-on")
 
 // Drop duplicates (see options)
 restoredSearchRDD.searchDropDuplicates()

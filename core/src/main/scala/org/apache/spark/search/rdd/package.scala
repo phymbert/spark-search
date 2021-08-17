@@ -15,6 +15,8 @@
  */
 package org.apache.spark.search
 
+import org.apache.lucene.queryparser.classic.QueryParser
+import org.apache.lucene.search.Query
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
@@ -43,6 +45,19 @@ package object rdd {
                                  options: SearchOptions[T] = defaultOpts[T]
                                 ): SearchRDD[T] =
     new SearchRDDLucene[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
+
+  /**
+   * Provide a static query to pass to SearchRDD serializable.
+   *
+   * /!\ Important as Lucene Query is not serializable.
+   */
+  type StaticQueryProvider = () => Query
+
+  def parseQueryString[T](queryString: String, opts: SearchOptions[_] = defaultOpts): StaticQueryProvider =
+  // Query parser is not thread safe
+    () => new QueryParser(opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer.newInstance())
+      .parse(queryString)
+
 
   private[rdd] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
     SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)

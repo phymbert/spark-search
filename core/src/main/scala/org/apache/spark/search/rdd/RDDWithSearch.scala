@@ -35,14 +35,14 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
 
   override def count(): Long = searchRDD.count()
 
-  override def count(query: Query): Long = searchRDD.count(query)
+  override def count(query: StaticQueryProvider): Long = searchRDD.count(query)
 
-  override def searchListQuery(query: Query,
+  override def searchListQuery(query: StaticQueryProvider,
                                topK: Int = Int.MaxValue,
                                minScore: Double = 0): Array[SearchRecord[T]] =
     searchRDD.searchListQuery(query, topK, minScore)
 
-  override def searchQuery(query: Query,
+  override def searchQuery(query: StaticQueryProvider,
                            topKByPartition: Int = Int.MaxValue,
                            minScore: Double = 0): RDD[SearchRecord[T]] =
     searchRDD.searchQuery(query, topKByPartition, minScore)

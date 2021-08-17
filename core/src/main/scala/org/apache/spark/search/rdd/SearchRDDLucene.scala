@@ -55,18 +55,18 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
 
   override def count(): Long = runSearchJob[Long, Long](spr => spr.count(), _.sum)
 
-  override def count(query: Query): Long =
-    runSearchJob[Long, Long](spr => spr.count(query), _.sum)
+  override def count(query: StaticQueryProvider): Long =
+    runSearchJob[Long, Long](spr => spr.count(query()), _.sum)
 
-  override def searchListQuery(query: Query,
+  override def searchListQuery(query: StaticQueryProvider,
                                topK: Int = Int.MaxValue,
                                minScore: Double = 0
                               ): Array[SearchRecord[T]] =
     runSearchJob[Array[SearchRecord[T]], Array[SearchRecord[T]]](
-      spr => _partitionReaderSearchList(spr, query, topK, minScore),
+      spr => _partitionReaderSearchList(spr, query(), topK, minScore),
       reduceSearchRecordsByTopK(topK))
 
-  override def searchQuery(query: Query,
+  override def searchQuery(query: StaticQueryProvider,
                            topKByPartition: Int = Int.MaxValue,
                            minScore: Double = 0
                           ): RDD[SearchRecord[T]] = {
@@ -74,7 +74,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     searchIndexRDD.mapPartitionsWithIndex(
       (index, _) =>
         tryAndClose(reader(indexDirectoryByPartition, index)) {
-          spr => _partitionReaderSearchList(spr, query, topKByPartition, minScore)
+          spr => _partitionReaderSearchList(spr, query(), topKByPartition, minScore)
         }.iterator
     ).sortBy(_.score, ascending = false)
   }
