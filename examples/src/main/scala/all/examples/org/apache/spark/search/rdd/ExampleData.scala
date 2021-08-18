@@ -48,11 +48,12 @@ object ExampleData {
 
         spark.read.json(hdfsPath).as[Review].rdd.repartition(4)*/
 
-    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
-    softwareReviewsFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
+    val reviewsFile = File.createTempFile("reviews_Software", ".json.gz")
+    reviewsFile.deleteOnExit()
+    new URL(reviewURL) #> reviewsFile !!
 
-    hdfs.copyFromLocalFile(new Path(softwareReviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
+    hdfs.copyFromLocalFile(new Path(reviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
+    hdfs.deleteOnExit(new Path("/tmp/reviews_Software.json.gz"))
     spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
   }
 }
