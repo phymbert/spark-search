@@ -94,21 +94,19 @@ public class SearchRDDJavaExamples {
 
         Configuration hadoopConf = new Configuration();
         FileSystem hdfs = FileSystem.get(hadoopConf);
-        Path dst = new Path("/tmp/" + reviews.getName());
+        String dstPathName = "/tmp/" + reviews.getName();
+        Path dst = new Path(dstPathName);
         hdfs.copyFromLocalFile(new Path(reviews.getAbsolutePath()), dst);
-        //FIXME small fix for spark standalone
-        // Caused by: java.io.EOFException: Unexpected end of input stream
-        //hdfs.deleteOnExit(dst);
-        Thread.sleep(5000);
+        hdfs.deleteOnExit(dst);
 
-        return spark.read().json("/tmp/" + reviews.getName())
+        return spark.read().json(dstPathName)
                 .as(Encoders.bean(Review.class))
                 .repartition(2).javaRDD().cache();
     }
 
     private static File loadReview(String reviewURL) throws IOException {
         File reviews = File.createTempFile("reviews", "json.gz");
-        //reviews.deleteOnExit();
+        reviews.deleteOnExit();
         URL reviewsURL = new URL(reviewURL);
         try (InputStream is = reviewsURL.openStream()){
             try (ReadableByteChannel rbc = Channels.newChannel(is)) {

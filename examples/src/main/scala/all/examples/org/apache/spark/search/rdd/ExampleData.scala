@@ -32,7 +32,7 @@ object ExampleData {
                     reviewText: String, reviewTime: String, reviewerID: String,
                     reviewerName: String, summary: String, unixReviewTime: Long)
 
-  def loadReviews(spark: SparkSession): (RDD[Review], RDD[Review]) = {
+  def loadReviews(spark: SparkSession, reviewURL: String): RDD[Review] = {
     import spark.implicits._
 
     val hadoopConf = new Configuration()
@@ -40,24 +40,14 @@ object ExampleData {
 
     // Amazon computers reviews
     println("Downloading amazon computers reviews...")
-    val computersReviewFile = File.createTempFile("reviews_Computers", ".json.gz")
+    val computersReviewFile = File.createTempFile("reviews_", ".json.gz")
     computersReviewFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz") #> computersReviewFile !!
+    new URL(reviewURL) #> computersReviewFile !!
 
-    hdfs.copyFromLocalFile(new Path(computersReviewFile.getAbsolutePath), new Path("/tmp/reviews_Computers.json.gz"))
+    val hdfsPath = s"/tmp/${computersReviewFile.getName}"
+    hdfs.copyFromLocalFile(new Path(computersReviewFile.getAbsolutePath), new Path(hdfsPath))
+    hdfs.deleteOnExit(new Path(hdfsPath))
 
-    val computersReviewsRDD = spark.read.json("/tmp/reviews_Computers.json.gz").as[Review].rdd.repartition(4)
-
-    // Amazon software reviews
-    println("Downloading amazon software reviews...")
-    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
-    softwareReviewsFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
-
-    hdfs.copyFromLocalFile(new Path(softwareReviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
-
-    val softwareReviewsRDD = spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
-
-    (computersReviewsRDD, softwareReviewsRDD)
+    spark.read.json(hdfsPath).as[Review].rdd.repartition(4)
   }
 }
