@@ -37,23 +37,14 @@ object ExampleData {
 
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
-    /*
-        val reviewFile = File.createTempFile("reviews_", ".json.gz")
-        reviewFile.deleteOnExit()
-        new URL(reviewURL) #> reviewFile !!
 
-        val hdfsPath = s"/tmp/${reviewFile.getName}"
-        hdfs.copyFromLocalFile(new Path(reviewFile.getAbsolutePath), new Path(hdfsPath))
-        hdfs.deleteOnExit(new Path(hdfsPath))
-
-        spark.read.json(hdfsPath).as[Review].rdd.repartition(4)*/
-
-    val reviewsFile = File.createTempFile("reviews_Software", ".json.gz")
+    val reviewsFile = File.createTempFile("reviews_", ".json.gz")
     reviewsFile.deleteOnExit()
     new URL(reviewURL) #> reviewsFile !!
 
-    hdfs.copyFromLocalFile(new Path(reviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
-    hdfs.deleteOnExit(new Path("/tmp/reviews_Software.json.gz"))
-    spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
+    val dstPathName = "/tmp/reviews.json.gz"
+    hdfs.copyFromLocalFile(new Path(reviewsFile.getAbsolutePath), new Path(dstPathName))
+    hdfs.deleteOnExit(new Path(dstPathName))
+    spark.read.json(dstPathName).as[Review].rdd.repartition(4)
   }
 }

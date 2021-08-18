@@ -31,6 +31,7 @@ object SearchRDDExamples {
     val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("WARN")
+    Console.withOut(Console.err)
 
     // Amazon computers customer reviews
     val computersReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
@@ -40,12 +41,12 @@ object SearchRDDExamples {
 
     // Count positive review: indexation + count matched doc
     val happyReview = computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
-    Console.err.println(s"${happyReview} positive reviews :)")
+    println(s"${happyReview} positive reviews :)")
 
     // Search for key words
-    Console.err.println(s"Full text search results:")
+    println(s"Full text search results:")
     computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 10)
-      .foreach(Console.err.println)
+      .foreach(println)
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
     // if you do multiple operations on the same parent RDD, you might have a variable in the driver:
@@ -54,34 +55,34 @@ object SearchRDDExamples {
         .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
         .analyzer(classOf[EnglishAnalyzer])
         .build())
-    Console.err.println("All reviews speaking about hardware:")
-    computersReviewsSearchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(Console.err.println)
+    println("All reviews speaking about hardware:")
+    computersReviewsSearchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
     // Fuzzy matching
-    Console.err.println("Some typo in names:")
+    println("Some typo in names:")
     computersReviewsSearchRDD.search("reviewerName:Mikey~0.8 or reviewerName:\"Patrik\"~0.4 or reviewerName:jonh~0.2", 10)
       .map(doc => (doc.source.reviewerName, doc.score))
-      .foreach(Console.err.println)
+      .foreach(println)
 
     // Amazon software customer reviews
-    Console.err.println("Downloading software reviews...")
+    println("Downloading software reviews...")
     val softwareReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
 
     // Match software and computer reviewers
-    Console.err.println("Joined software and computer reviews by reviewer names:")
+    println("Joined software and computer reviews by reviewer names:")
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD.filter(_.reviewerName != null),
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~0.4", 10)
     matchesReviewersRDD
       .filter(_.hits.nonEmpty)
       .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
-      .foreach(Console.err.println)
+      .foreach(println)
 
     // Save & restore example
-    Console.err.println(s"Restoring from previous indexation:")
+    println(s"Restoring from previous indexation:")
     softwareReviewsRDD.searchRDD().save("/tmp/save-path")
     val restoredSearchRDD = loadSearchRDD[Review](sc, "/tmp/save-path")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
-    Console.err.println(s"${happyReview2} positive reviews after restoration ^^")
+    println(s"${happyReview2} positive reviews after restoration ^^")
 
     spark.stop()
   }
