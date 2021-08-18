@@ -84,10 +84,9 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
                                             topK: Int = Int.MaxValue,
                                             minScore: Double = 0
                                            ): RDD[Match[S, T]] = {
-    val topKReducer = (matches: Iterator[SearchRecord[T]]) => matches.toArray
+    val topKReducer = (matches: Array[SearchRecord[T]]) => matches
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)
-      .iterator
 
     val otherZipped = other.zipWithIndex.map(_.swap)
     otherZipped
@@ -95,7 +94,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
       .reduceByKey((d1, d2) => (d1._1, topKReducer(d1._2 ++ d2._2)))
       .map {
         case (_, (doc, matches)) =>
-          new Match[S, T](doc, matches.toArray)
+          new Match[S, T](doc, matches)
       }
   }
 

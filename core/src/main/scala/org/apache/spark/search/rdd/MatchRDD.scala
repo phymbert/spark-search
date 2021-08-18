@@ -36,7 +36,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLuce
                                          queryBuilder: S => Query,
                                          topK: Int = Int.MaxValue,
                                          minScore: Double = 0)
-  extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil)
+  extends RDD[(Long, Array[SearchRecord[H]])](searchRDD.context, Nil)
     with Serializable {
 
   override val partitioner: Option[Partitioner] = searchRDD.partitioner
@@ -45,7 +45,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLuce
     firstParent[H].asInstanceOf[SearchRDDLucene[H]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(Long, Array[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
@@ -62,11 +62,11 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLuce
           parent[(Long, S)](2).iterator(op, context)
             .map(docIndex => (docIndex._1,
               try {
-                spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
+                spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct)
               } catch {
                 case e: SearchException => throw new SearchException(s"error during matching ${docIndex._1}: ${docIndex._2}", e)
               })
-            )).toIterator
+            )).toList.toIterator
     }
   }
 

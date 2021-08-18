@@ -27,7 +27,7 @@ import org.apache.spark.rdd.RDD
 object SearchRDDExamples {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().master("local[2]").appName("Spark Search Examples").getOrCreate() // FIXME
+    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     Console.setOut(Console.err)
@@ -79,7 +79,7 @@ object SearchRDDExamples {
       .foreach(println)
 
     // Drop duplicates
-    println("Dropping duplicate reviewers:")
+    println("Dropping duplicated reviewers:")
     val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
       queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
