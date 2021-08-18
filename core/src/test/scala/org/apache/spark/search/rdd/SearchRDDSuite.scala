@@ -120,7 +120,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(3)(searchRDD.count)
   }
 
-  test("Distinct with no minimum score test RDD") {
+  test("Distinct with no minimum score") {
     val searchRDD = sc.parallelize(personsDuplicated)
       .repartition(1)
       .searchRDD()
@@ -128,11 +128,21 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(1)(deduplicated.length)
   }
 
-  test("Drop duplicate with min score test RDD") {
+  test("Drop duplicates with min score") {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
 
     val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
+    assertResult(3)(deduplicated.length)
+  }
+
+  test("Drop duplicate with query builder and min score") {
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
+
+    val deduplicated = searchRDD.searchDropDuplicates(
+      queryBuilder = queryStringBuilder(p =>  s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
+      minScore = 1
+    ).collect
     assertResult(3)(deduplicated.length)
   }
 

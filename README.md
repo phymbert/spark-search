@@ -13,7 +13,7 @@ Let's image you have a billion records dataset you want to query on and match ag
 You do not expect an external datasource or database system than Spark, and of course with the best performances.
 Spark Search fits your needs: it builds for all parent RDD partitions a one-2-one volatile Lucene index available
  during the lifecycle of your spark session across your executors local directories and RAM.
-Strongly typed, Spark Search API plans to support Java, Scala and Python Spark SQL, Dataset and RDD SDKs.
+Strongly typed, Spark Search supports Java and Scala RDD and plans to support Python, Spark SQL and Dataset.
 Have a look and feel free to contribute!
 
 ## Getting started
@@ -25,7 +25,7 @@ Have a look and feel free to contribute!
 import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
 
 // Load some Amazon computer user reviews
-val computersReviews = loadReviews("**/*/reviews_Computers.json.gz") 
+val computersReviews: RDD[Review] = loadReviews("**/*/reviews_Computers.json.gz") 
     // Number of partition is the number of Lucene index which will be created across your cluster
     .repartition(4)
 
@@ -38,7 +38,7 @@ computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Ci
 
 // /!\ Important lucene indexation is done each time a SearchRDD is computed,
 // if you do multiple operations on the same parent RDD, you might have a variable in the driver:
-val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
+val computersReviewsSearchRDD: SearchRDD[Review] = computersReviewsRDD.searchRDD(
   SearchOptions.builder[Review]() // See all other options SearchOptions, IndexationOptions and ReaderOptions
     .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
     .analyzer(classOf[EnglishAnalyzer])
@@ -53,23 +53,32 @@ computersReviews.searchList("(reviewerName:Mikey~0.8) or (reviewerName:Wiliam~0.
                         .map(doc => s"${doc.source.reviewerName}=${doc.score}"
                         .foreach(println)
 
-// RDD full text joining - example here searches for persons who did both computer and software reviews with fuzzy matching on reviewer name
-val softwareReviews = loadReviews("**/*/reviews_Software_10.json.gz")
-val matchesReviewers = computersReviews.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~0.4", 10)
+// RDD full text joining - example here searches for persons
+// who did both computer and software reviews with fuzzy matching on reviewer name
+val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
+val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviewsRDD,
+												  (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
+												   topK = 10)
 matchesReviewersRDD
   .filter(_.hits.nonEmpty)
-  .map(m => (m.doc.reviewerName, m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}")))
+  .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
+				m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
   .foreach(println)
 
-// Save then restore onto hdfs
-matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
-val restoredSearchRDD = loadSearchRDD[Review](sc, "hdfs:///path-for-later-query-on")
+// Drop duplicates
+println("Dropping duplicate reviewers:")
+val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
+ queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
+).map(sr => sr.reviewerName)
+distinctReviewers.foreach(println)
 
-// Drop duplicates 
-restoredSearchRDD.searchDropDuplicates()
+// Save then restore onto hdfs
+matchesReviewersRDD.save("hdfs-pathname")
+val restoredSearchRDD: SearchRDD[Review] = loadSearchRDD[Review](sc, "hdfs-pathname")
 ```
 
-See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala) and [Documentation](core/src/main/scala/org/apache/spark/search/rdd/SearchRDD.scala) for more details.
+See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)
+ and [Documentation](core/src/main/scala/org/apache/spark/search/rdd/SearchRDD.scala) for more details.
 
 * Java
 ```java
@@ -109,12 +118,11 @@ computerReviews.searchJoin(softwareReviews,
                 Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
         ))
         .foreach(matches -> System.err.println(matches));
-
-
 ```
-See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)  and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.
+See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)
+ and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.
 
-* Python
+* Python (In progress)
 ```python
 from pyspark import SparkContext
 import pysparksearch
@@ -128,7 +136,6 @@ sc = SparkContext()
 sc.parallelize(data).count("firstName:agnes~")
 ```
 
-
 ### Dataset/DataFrame API (In progress)
 * Scala
 ```scala
@@ -140,7 +147,6 @@ sentences.count("sentence:happy OR sentence:best or sentence:good")
 // coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
 sentences.where($"sentence".matches($"searchKeyword" ))
 ```
-
 
 ## Benchmark
 

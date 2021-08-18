@@ -18,8 +18,8 @@ package all.examples.org.apache.spark.search.rdd
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.spark.search._
 import org.apache.spark.sql.SparkSession
-
 import ExampleData._
+import org.apache.spark.rdd.RDD
 
 /**
  * Spark Search RDD examples.
@@ -27,13 +27,13 @@ import ExampleData._
 object SearchRDDExamples {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate() // FIXME
+    val spark = SparkSession.builder().master("local[2]").appName("Spark Search Examples").getOrCreate() // FIXME
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     Console.setOut(Console.err)
 
     // Amazon computers customer reviews
-    val computersReviews = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
+    val computersReviews: RDD[Review] = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
 
     // Search RDD API
     import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
@@ -49,7 +49,7 @@ object SearchRDDExamples {
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
     // if you do multiple operations on the same parent RDD, you might have a variable in the driver:
-    val computersReviewsSearchRDD = computersReviews.searchRDD(
+    val computersReviewsSearchRDD: SearchRDD[Review] = computersReviews.searchRDD(
       SearchOptions.builder[Review]() // See all other options SearchRDDOptions, IndexationOptions and ReaderOptions
         .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
         .analyzer(classOf[EnglishAnalyzer])
@@ -66,23 +66,31 @@ object SearchRDDExamples {
 
     // Amazon software customer reviews
     println("Downloading software reviews...")
-    val softwareReviews = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
+    val softwareReviews: RDD[Review] = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
 
     // Match software and computer reviewers
     println("Joined software and computer reviews by reviewer names:")
-    val matchesReviewersRDD = computersReviews.searchJoin(softwareReviews.filter(_.reviewerName != null),
-      (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~0.4", 10)
-    matchesReviewersRDD
+    val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviews.filter(_.reviewerName != null),
+      (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
+    matchesReviewers
       .filter(_.hits.nonEmpty)
-      .map(m => (m.doc.reviewerName, m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+      .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
+                    m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .foreach(println)
+
+    // Drop duplicates
+    println("Dropping duplicate reviewers:")
+    val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
+      queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
+    ).map(sr => sr.reviewerName)
+    distinctReviewers.foreach(println)
 
     // Save & restore example
     println(s"Restoring from previous indexation:")
-    computersReviews.searchRDD().save("/tmp/save-path")
-    val restoredSearchRDD = loadSearchRDD[Review](sc, "/tmp/save-path")
+    computersReviews.save("hdfs-pathname")
+    val restoredSearchRDD: SearchRDD[Review] = loadSearchRDD[Review](sc, "hdfs-pathname")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
-    println(s"${happyReview2} positive reviews after restoration ^^")
+    println(s"${happyReview2} positive reviews after restoration")
 
     spark.stop()
   }

@@ -107,7 +107,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
                                     minScore: Double = 0,
                                     numPartitions: Int = getNumPartitions
                                    ): RDD[T] = {
-    searchJoinQuery[T](parent(1), queryBuilder, topK, minScore) // FIXME add tests #24
+    searchJoinQuery[T](parent(1), queryBuilder, topK, minScore)
       .map(m => {
         val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
         val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
