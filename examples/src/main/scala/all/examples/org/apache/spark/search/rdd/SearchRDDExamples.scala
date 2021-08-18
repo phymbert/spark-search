@@ -17,7 +17,6 @@ package all.examples.org.apache.spark.search.rdd
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.spark.search._
-import org.apache.spark.search.rdd._
 import org.apache.spark.sql.SparkSession
 
 import ExampleData._
@@ -28,16 +27,16 @@ import ExampleData._
 object SearchRDDExamples {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
+    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate() // FIXME
     val sc = spark.sparkContext
-    sc.setLogLevel("WARN")
+    sc.setLogLevel("ERROR")
     Console.setOut(Console.err)
 
     // Amazon computers customer reviews
     val computersReviews = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
 
     // Search RDD API
-    // import org.apache.spark.search.rdd._ to implicitly enhance RDD with search features
+    import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
 
     // Count positive review: indexation + count matched doc
     val happyReview = computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
@@ -60,8 +59,9 @@ object SearchRDDExamples {
 
     // Fuzzy matching
     println("Some typo in names:")
-    computersReviews.search("reviewerName:Mikey~0.8 or reviewerName:\"Patrik\"~0.4 or reviewerName:jonh~0.2", 10)
-      .map(doc => (doc.source.reviewerName, doc.score))
+    computersReviews.search("(reviewerName:Mikey~0.8) or (reviewerName:\"Patrik\"~0.4) or (reviewerName:jonh~0.2)",
+      topKByPartition = 10)
+      .map(doc => s"${doc.source.reviewerName}=${doc.score}")
       .foreach(println)
 
     // Amazon software customer reviews
@@ -74,7 +74,7 @@ object SearchRDDExamples {
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~0.4", 10)
     matchesReviewersRDD
       .filter(_.hits.nonEmpty)
-      .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
+      .map(m => (m.doc.reviewerName, m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .foreach(println)
 
     // Save & restore example

@@ -42,6 +42,7 @@ public class SearchRDDJavaExamples {
         System.err.println("Downloading computer reviews...");
 
         SparkSession spark = SparkSession.builder().getOrCreate();
+        spark.sparkContext().setLogLevel("ERROR");
 
         System.err.println("Loading reviews...");
         JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");

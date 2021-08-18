@@ -22,17 +22,18 @@ Have a look and feel free to contribute!
 * Scala
 
 ```scala
-import org.apache.spark.search.rdd._
+import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
 
-val computersReviewsRDD = sc.parallelize(Seq(Review("AAAAA", Array(3, 3), 3.0, "Ok, this is a good computer to play Civilization IV or World of Warcraft", "11 29, 2010", "XXXXX", "Patrick H.", "Ok for an average user, but not much else.", 1290988800)))
-// Number of partition is the number of Lucene index which will be created across your cluster
-.repartition(4)
+// Load some Amazon computer user reviews
+val computersReviews = loadReviews("**/*/reviews_Computers.json.gz") 
+    // Number of partition is the number of Lucene index which will be created across your cluster
+    .repartition(4)
 
 // Count positive review: indexation + count matched doc
-computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
+computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
 
 // Search for key words
-computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
   .foreach(println)
 
 // /!\ Important lucene indexation is done each time a SearchRDD is computed,
@@ -47,23 +48,24 @@ val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
 computersReviewsSearchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
 
 // Fuzzy matching
-computersReviewsSearchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
-  .map(doc => (doc.getSource.reviewerName, doc.getScore))
-  .foreach(println)
+computersReviews.searchList("(reviewerName:Mikey~0.8) or (reviewerName:Wiliam~0.4) or (reviewerName:jonh~0.2)",
+                                      topKByPartition = 10)
+                        .map(doc => s"${doc.source.reviewerName}=${doc.score}"
+                        .foreach(println)
 
 // RDD full text joining - example here searches for persons who did both computer and software reviews with fuzzy matching on reviewer name
-val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
-val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~0.4", 10)
+val softwareReviews = loadReviews("**/*/reviews_Software_10.json.gz")
+val matchesReviewers = computersReviews.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~0.4", 10)
 matchesReviewersRDD
   .filter(_.hits.nonEmpty)
-  .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
+  .map(m => (m.doc.reviewerName, m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}")))
   .foreach(println)
 
 // Save then restore onto hdfs
 matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
 val restoredSearchRDD = loadSearchRDD[Review](sc, "hdfs:///path-for-later-query-on")
 
-// Drop duplicates (see options)
+// Drop duplicates 
 restoredSearchRDD.searchDropDuplicates()
 ```
 
