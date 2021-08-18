@@ -37,17 +37,22 @@ object ExampleData {
 
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
+    /*
+        val reviewFile = File.createTempFile("reviews_", ".json.gz")
+        reviewFile.deleteOnExit()
+        new URL(reviewURL) #> reviewFile !!
 
-    // Amazon computers reviews
-    println("Downloading amazon computers reviews...")
-    val computersReviewFile = File.createTempFile("reviews_", ".json.gz")
-    computersReviewFile.deleteOnExit()
-    new URL(reviewURL) #> computersReviewFile !!
+        val hdfsPath = s"/tmp/${reviewFile.getName}"
+        hdfs.copyFromLocalFile(new Path(reviewFile.getAbsolutePath), new Path(hdfsPath))
+        hdfs.deleteOnExit(new Path(hdfsPath))
 
-    val hdfsPath = s"/tmp/${computersReviewFile.getName}"
-    hdfs.copyFromLocalFile(new Path(computersReviewFile.getAbsolutePath), new Path(hdfsPath))
-    hdfs.deleteOnExit(new Path(hdfsPath))
+        spark.read.json(hdfsPath).as[Review].rdd.repartition(4)*/
 
-    spark.read.json(hdfsPath).as[Review].rdd.repartition(4)
+    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
+    softwareReviewsFile.deleteOnExit()
+    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
+
+    hdfs.copyFromLocalFile(new Path(softwareReviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
+    spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
   }
 }

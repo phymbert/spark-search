@@ -32,7 +32,7 @@ object SearchRDDExamples {
     val sc = spark.sparkContext
     sc.setLogLevel("WARN")
 
-    // Amazon computers and software customer reviews
+    // Amazon computers customer reviews
     val computersReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
 
     // Search RDD API
@@ -63,9 +63,12 @@ object SearchRDDExamples {
       .map(doc => (doc.source.reviewerName, doc.score))
       .foreach(Console.err.println)
 
+    // Amazon software customer reviews
+    Console.err.println("Downloading software reviews...")
+    val softwareReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
+
     // Match software and computer reviewers
     Console.err.println("Joined software and computer reviews by reviewer names:")
-    val softwareReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz")
     val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD.filter(_.reviewerName != null),
       (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName.replace('"', ' ') + "\""}~0.4", 10)
     matchesReviewersRDD
