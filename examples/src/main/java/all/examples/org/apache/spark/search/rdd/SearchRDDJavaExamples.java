@@ -15,11 +15,11 @@
  */
 package all.examples.org.apache.spark.search.rdd;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
@@ -29,8 +29,6 @@ import org.apache.spark.sql.SparkSession;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
 import static java.util.stream.Collectors.toList;
@@ -94,7 +92,7 @@ public class SearchRDDJavaExamples {
 
         Configuration hadoopConf = new Configuration();
         FileSystem hdfs = FileSystem.get(hadoopConf);
-        String dstPathName = "/tmp/" + reviews.getName();
+        String dstPathName = "/tmp/reviews.json.gz";
         Path dst = new Path(dstPathName);
         hdfs.copyFromLocalFile(new Path(reviews.getAbsolutePath()), dst);
         hdfs.deleteOnExit(dst);
@@ -108,11 +106,9 @@ public class SearchRDDJavaExamples {
         File reviews = File.createTempFile("reviews", "json.gz");
         reviews.deleteOnExit();
         URL reviewsURL = new URL(reviewURL);
-        try (InputStream is = reviewsURL.openStream()){
-            try (ReadableByteChannel rbc = Channels.newChannel(is)) {
-                try (FileOutputStream fos = new FileOutputStream(reviews)) {
-                    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-                }
+        try (InputStream is = reviewsURL.openStream()) {
+            try (FileOutputStream fos = new FileOutputStream(reviews)) {
+                IOUtils.copy(is, fos);
             }
         }
         return reviews;

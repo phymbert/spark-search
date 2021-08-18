@@ -204,13 +204,13 @@ The general use cases is to match company names against two data sets (7M vs 600
 <dependency>
   <groupId>io.github.phymbert</groupId>
   <artifactId>spark-search_2.12</artifactId>
-  <version>0.1.7</version>
+  <version>${spark.search.version}</version>
 </dependency>
 ```
 
 *** Gradle
 ```groovy
-implementation 'io.github.phymbert:spark-search_2.12:0.1.7'
+implementation 'io.github.phymbert:spark-search_2.12:$sparkSearchVersion'
 ```
 
 ## Building Spark Search
