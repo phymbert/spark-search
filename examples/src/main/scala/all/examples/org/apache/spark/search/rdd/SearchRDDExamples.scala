@@ -31,7 +31,7 @@ object SearchRDDExamples {
     val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("WARN")
-    Console.withOut(Console.err)
+    Console.setOut(Console.err)
 
     // Amazon computers customer reviews
     val computersReviewsRDD = loadReviews(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz")
