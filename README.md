@@ -73,8 +73,8 @@ val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
 distinctReviewers.foreach(println)
 
 // Save then restore onto hdfs
-matchesReviewersRDD.save("hdfs-pathname")
-val restoredSearchRDD: SearchRDD[Review] = loadSearchRDD[Review](sc, "hdfs-pathname")
+matchesReviewersRDD.save("/tmp/hdfs-pathname")
+val restoredSearchRDD: SearchRDD[Review] = loadSearchRDD[Review](sc, "/tmp/hdfs-pathname")
 ```
 
 See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)

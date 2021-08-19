@@ -28,6 +28,12 @@ public class PersonJava implements Serializable {
             new PersonJava("Jorge", "Michael", 53),
             new PersonJava("Bob", "Marley", 37),
             new PersonJava("Agnès", "Bartoll", -1));
+    public static final List<PersonJava> PERSONS2 = Arrays.asList(
+            new PersonJava("Andrée", null, 5, null, null, null),
+            new PersonJava(null, "Julia", 2, null, null, null),
+            new PersonJava("George", "Mickael", 53),
+            new PersonJava("Bobby", "Marlee", 37),
+            new PersonJava("Agnes", "Barttoll", -1));
 
     private static final long serialVersionUID = 1L;
 
