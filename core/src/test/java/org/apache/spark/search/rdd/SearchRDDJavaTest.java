@@ -95,7 +95,7 @@ public class SearchRDDJavaTest {
                 .load(sc, "target/test-save", PersonJava.class);
 
         assertEquals(Optional.of(4),
-                restoredSearchRDD.search("firstName:yuliia~0.4", 1, 0.4)
+                restoredSearchRDD.search("lastName:yuliia~0.4", 1, 0.4)
                         .map(SearchRecordJava::getSource)
                         .map(PersonJava::getAge)
                         .collect().stream().findFirst());
