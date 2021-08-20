@@ -95,13 +95,13 @@ public class SearchRDDJavaTest {
                 .load(sc, "target/test-save", PersonJava.class);
 
         System.err.println("TESSSST: " + restoredSearchRDD.count());
-        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:yulia"));
-        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:yulya"));
+        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:lastName"));
+        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:lastName"));
 
-        restoredSearchRDD.search("firstName:yuulia~0.4", 1, 0).collect().forEach(System.err::println);
+        restoredSearchRDD.search("lastName:Julia~0.4", 1, 0).collect().forEach(System.err::println);
 
         assertEquals(Optional.of(4),
-                restoredSearchRDD.search("firstName:yuulia~0.4", 1, 0)
+                restoredSearchRDD.search("firstName:Julia~0.4", 1, 0)
                         .map(SearchRecordJava::getSource)
                         .map(PersonJava::getAge)
                         .collect().stream().findFirst());
