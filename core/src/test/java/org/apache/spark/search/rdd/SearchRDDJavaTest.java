@@ -94,7 +94,10 @@ public class SearchRDDJavaTest {
         SearchRDDJava<PersonJava> restoredSearchRDD = SearchRDDJava
                 .load(sc, "target/test-save", PersonJava.class);
 
-        System.err.println("TESSSST");
+        System.err.println("TESSSST: " + restoredSearchRDD.count());
+        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:yulia"));
+        System.err.println("TESSSST: " + restoredSearchRDD.count("firstName:yulya"));
+
         restoredSearchRDD.search("firstName:yuulia~0.4", 1, 0).collect().forEach(System.err::println);
 
         assertEquals(Optional.of(4),
