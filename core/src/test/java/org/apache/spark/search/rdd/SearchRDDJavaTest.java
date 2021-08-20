@@ -21,6 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.search.MatchJava;
 import org.apache.spark.search.SearchRecordJava;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -32,10 +33,11 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SearchRDDJavaTest {
-    private static final JavaSparkContext sc =
-            new JavaSparkContext(new SparkContext("local[*]", "SearchRDDJavaTest"));
+    static JavaSparkContext sc;
 
-    static {
+    @BeforeAll
+    static void setupSpark() {
+        sc = new JavaSparkContext(new SparkContext("local[*]", "SearchRDDJavaTest"));
         sc.setLogLevel("WARN");
     }
 
