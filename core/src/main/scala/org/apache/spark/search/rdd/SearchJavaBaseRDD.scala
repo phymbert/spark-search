@@ -18,16 +18,18 @@ package org.apache.spark.search.rdd
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.search._
 import SearchRDDJava.{QueryBuilder, QueryStringBuilder}
+import org.apache.spark.SparkContext
 
 import scala.reflect.ClassTag
 
 /**
  * Java friendly version of [[SearchRDD]].
  */
-class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
-  extends JavaRDD[T](rdd.rdd) with SearchRDDJava[T] {
+trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T]{
 
-  protected val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
+  val searchRDD: SearchRDD[T]
+
+  override def count(): Long = searchRDD.count()
 
   override def count(query: String): Long =
     searchRDD.count(parseQueryString(query))
@@ -47,7 +49,7 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
                              minScore: Double): JavaRDD[MatchJava[S, T]] = {
     implicit val classTag: ClassTag[S] = rdd.classTag
     searchRDD.searchJoin(rdd.rdd, (s:S) => queryBuilder.build(s), topK, minScore)
-    .map(matchAsJava(_))
+      .map(matchAsJava(_))
   }
 
   override def save(path: String): Unit = searchRDD.save(path)
@@ -68,4 +70,24 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
 
   private def searchRecordAsJava(sr: SearchRecord[T]) =
     new SearchRecordJava[T](sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
+}
+
+class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
+  extends JavaRDD[T](rdd.rdd)
+    with SearchRDDJavaWrapper[T] {
+  override lazy val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
+
+  override def count(): Long = searchRDD.count()
+}
+
+class SearchIndexReloadedRDDJava[T: ClassTag](val searchRdd: SearchRDD[T])
+  extends SearchRDDJavaWrapper[T] {
+  override lazy val searchRDD: SearchRDD[T] = searchRdd
+}
+
+object SearchIndexReloadedRDDJava {
+  def load[T: ClassTag](sc: SparkContext,
+                        path: String,
+                        options: SearchOptions[T]
+                       ): SearchRDDJava[T] = new SearchIndexReloadedRDDJava(SearchRDD.load(sc,path,options))
 }

@@ -95,7 +95,7 @@ public class SearchRDDJavaExamples {
         SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
                 .save("/tmp/hdfs-pathname");
         SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
-                .loadSearchRDD(sc, "/tmp/hdfs-pathname", Review.class);
+                .load(sc, "/tmp/hdfs-pathname", Review.class);
         System.err.println("Software reviews with good recommendations: "
                 + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
 

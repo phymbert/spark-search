@@ -26,7 +26,9 @@ import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * Definition of search RDD for java.
@@ -66,13 +68,13 @@ public interface SearchRDDJava<T> {
      * @param queryBuilder builds the query string to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
+     * @param <S>          Doc type to match with
      * @return Searched matches documents RDD
-     * @param <S> Doc type to match with
      */
     <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
-                                                 QueryStringBuilder<S> queryBuilder,
-                                                 int topK,
-                                                 double minScore);
+                                            QueryStringBuilder<S> queryBuilder,
+                                            int topK,
+                                            double minScore);
 
     /**
      * Searches and joins the input RDD matches against this one
@@ -83,8 +85,8 @@ public interface SearchRDDJava<T> {
      * @param queryBuilder builds the lucene query to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
+     * @param <S>          Doc type to match with
      * @return Searched matches documents RDD
-     * @param <S> Doc type to match with
      */
     <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
                                                  QueryBuilder<S> queryBuilder,
@@ -129,9 +131,10 @@ public interface SearchRDDJava<T> {
 
     /**
      * Creates a search java rdd.
-     * @param rdd RDD to index and search on
+     *
+     * @param rdd   RDD to index and search on
      * @param clazz Runtime time of the index documents
-     * @param <T> Runtime type of document to index
+     * @param <T>   Runtime type of document to index
      * @return A search RDD builder
      */
     static <T> SearchRDDJava<T> of(JavaRDD<T> rdd, Class<T> clazz) {
@@ -141,38 +144,40 @@ public interface SearchRDDJava<T> {
     /**
      * Reload an indexed RDD from spark FS.
      *
-     * @param sc Spark context
-     * @param path Path where the search rdd lucene indices were previously saved
+     * @param sc    Spark context
+     * @param path  Path where the search rdd lucene indices were previously saved
      * @param clazz Runtime class instance T of indexed document
-     * @param <T> Runtime class of indexed document
+     * @param <T>   Runtime class of indexed document
      * @return Reloaded search java rdd
      */
-    static <T> SearchRDDJava<T> loadSearchRDD(JavaSparkContext sc, String path, Class<T> clazz) {
-        return loadSearchRDD(sc, path, clazz, SearchOptions.defaultOptions());
+    static <T> SearchRDDJava<T> load(JavaSparkContext sc, String path, Class<T> clazz) {
+        return load(sc, path, clazz, SearchOptions.defaultOptions());
     }
 
     /**
      * Reload an indexed RDD from spark FS.
      *
-     * @param sc Spark context
-     * @param path Path where the search rdd lucene indices were previously saved
-     * @param clazz Runtime class instance T of indexed document
+     * @param sc      Spark context
+     * @param path    Path where the search rdd lucene indices were previously saved
+     * @param clazz   Runtime class instance T of indexed document
      * @param options Search option
-     * @param <T> Runtime class of indexed document
+     * @param <T>     Runtime class of indexed document
      * @return Reloaded search java rdd
      */
-    static <T> SearchRDDJava<T> loadSearchRDD(JavaSparkContext sc, String path,
-                                              Class<T> clazz, SearchOptions<T> options) {
+    static <T> SearchRDDJava<T> load(JavaSparkContext sc, String path,
+                                     Class<T> clazz, SearchOptions<T> options) {
         try {
             return (SearchRDDJava<T>) SearchRDDJava.class.getClassLoader()
-               .loadClass("org.apache.spark.search.rdd.package$.MODULE$")
-               .getDeclaredMethod("loadSearchRDD", SparkContext.class, String.class,
-                       SearchOptions.class, ClassTag.class)
-               .invoke(null, sc.sc(), path,
-                       options, scala.reflect.ClassTag$.MODULE$.apply(clazz));
+                    .loadClass("org.apache.spark.search.rdd.SearchIndexReloadedRDDJava")
+                    .getDeclaredMethod("load", SparkContext.class, String.class,
+                            SearchOptions.class, ClassTag.class)
+                    .invoke(
+                            null,
+                            sc.sc(), path,
+                            options, scala.reflect.ClassTag$.MODULE$.apply(clazz));
         } catch (Exception e) {
-          throw new SearchException("Unable to reload SearchRDDJava from path "
-                  + path + ", got: " + e, e);
+            throw new SearchException("Unable to reload SearchRDDJava from path "
+                    + path + ", got: " + e, e);
         }
     }
 
@@ -181,7 +186,7 @@ public interface SearchRDDJava<T> {
         private Class<T> clazz;
         private SearchOptions<T> options = SearchOptions.defaultOptions();
 
-        private Builder(){
+        private Builder() {
         }
 
         public Builder<T> runtimeClass(Class<T> clazz) {

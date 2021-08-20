@@ -154,7 +154,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
     searchRDD.save("target/test-save")
 
-    val restoredSearchRDD = loadSearchRDD[Person](sc, "target/test-save")
+    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
     assertResult(3)(restoredSearchRDD.count())
   }
 }

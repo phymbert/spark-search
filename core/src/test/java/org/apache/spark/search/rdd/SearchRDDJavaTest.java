@@ -92,7 +92,7 @@ public class SearchRDDJavaTest {
                         .save("target/test-save");
 
         SearchRDDJava<PersonJava> restoredSearchRDD = SearchRDDJava
-                .loadSearchRDD(sc, "target/test-save", PersonJava.class);
+                .load(sc, "target/test-save", PersonJava.class);
 
         assertEquals(Optional.of(4),
                 restoredSearchRDD.search("firstName:julia~0.5", 1, 0.4)

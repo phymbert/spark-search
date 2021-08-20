@@ -74,7 +74,7 @@ distinctReviewers.foreach(println)
 
 // Save then restore onto hdfs
 matchesReviewersRDD.save("/tmp/hdfs-pathname")
-val restoredSearchRDD: SearchRDD[Review] = loadSearchRDD[Review](sc, "/tmp/hdfs-pathname")
+val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
 ```
 
 See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)
@@ -133,7 +133,7 @@ computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null &&
 SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
         .save("/tmp/hdfs-pathname");
 SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
-        .loadSearchRDD(sc, "/tmp/hdfs-pathname", Review.class);
+        .load(sc, "/tmp/hdfs-pathname", Review.class);
 System.err.println("Software reviews with good recommendations: "
         + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
 ```

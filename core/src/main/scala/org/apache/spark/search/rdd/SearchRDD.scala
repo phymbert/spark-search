@@ -16,6 +16,7 @@
 package org.apache.spark.search.rdd
 
 import org.apache.lucene.search.Query
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
 
@@ -184,4 +185,21 @@ trait SearchRDD[T] {
    * @return current search options
    */
   def options: SearchOptions[T]
+}
+
+object SearchRDD {
+  /**
+   * Reload an indexed RDD from spark FS.
+   *
+   * @param sc      current spark context
+   * @param path    Path where the index were saved
+   * @param options Search option
+   * @tparam T Type of beans or case class this RDD is binded to
+   * @return Restored RDD
+   */
+  def load[T: ClassTag](sc: SparkContext,
+                        path: String,
+                        options: SearchOptions[T] = defaultOpts[T]
+                                ): SearchRDD[T] =
+    new SearchRDDLucene[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
 }
