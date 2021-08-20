@@ -42,7 +42,10 @@ public class SearchRDDJavaExamples {
     public static void main(String[] args) throws Exception {
         System.err.println("Downloading computer reviews...");
 
-        SparkSession spark = SparkSession.builder().getOrCreate();
+        SparkSession spark = SparkSession.builder()
+                .config("spark.default.parallelism", "4")
+                .config("spark.sql.shuffle.partitions", "4")
+                .getOrCreate();
         spark.sparkContext().setLogLevel("ERROR");
         JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
 

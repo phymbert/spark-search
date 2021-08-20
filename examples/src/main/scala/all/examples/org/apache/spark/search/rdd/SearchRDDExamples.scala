@@ -27,7 +27,11 @@ import org.apache.spark.rdd.RDD
 object SearchRDDExamples {
 
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("Spark Search Examples").getOrCreate()
+    val spark = SparkSession.builder()
+      .appName("Spark Search Examples")
+      .config("spark.default.parallelism", "4")
+      .config("spark.sql.shuffle.partitions", "4")
+      .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     Console.setOut(Console.err)

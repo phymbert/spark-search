@@ -187,8 +187,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Enable caching of search index rdd only for yarn cluster, and as an option.
 * Remove scala binary version in parent module artifact name
 * Expose SearchRDD as a public API to ease Dataset binding and hdfs reloading
-* Add join full text search based on the SearchJavaRDD API
-* Fix SearchJavaRDD API and examples
+* Fix and enhance SearchJavaRDD API
 
 ##### v0.1.6
 * Switch to multi modules build: core, sql, examples, benchmark
