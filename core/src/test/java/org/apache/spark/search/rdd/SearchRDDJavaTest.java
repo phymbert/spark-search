@@ -53,7 +53,7 @@ public class SearchRDDJavaTest {
 
     @Test
     public void shouldSearchList() {
-        JavaRDD<PersonJava> persons = sc.parallelize(PersonJava.PERSONS);
+        JavaRDD<PersonJava> persons = sc.parallelize(PersonJava.PERSONS).repartition(1);
 
         SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
 
