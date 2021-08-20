@@ -32,32 +32,19 @@ object ExampleData {
                     reviewText: String, reviewTime: String, reviewerID: String,
                     reviewerName: String, summary: String, unixReviewTime: Long)
 
-  def loadComputerReviews(spark: SparkSession): (RDD[Review], RDD[Review]) = {
+  def loadReviews(spark: SparkSession, reviewURL: String): RDD[Review] = {
     import spark.implicits._
 
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
 
-    // Amazon computers reviews
-    println("Downloading amazon computers reviews...")
-    val computersReviewFile = File.createTempFile("reviews_Computers", ".json.gz")
-    computersReviewFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz") #> computersReviewFile !!
+    val reviewsFile = File.createTempFile("reviews_", ".json.gz")
+    reviewsFile.deleteOnExit()
+    new URL(reviewURL) #> reviewsFile !!
 
-    hdfs.copyFromLocalFile(new Path(computersReviewFile.getAbsolutePath), new Path("/tmp/reviews_Computers.json.gz"))
-
-    val computersReviewsRDD = spark.read.json("/tmp/reviews_Computers.json.gz").as[Review].rdd.repartition(4)
-
-    // Amazon software reviews
-    println("Downloading amazon software reviews...")
-    val softwareReviewsFile = File.createTempFile("reviews_Software", ".json.gz")
-    softwareReviewsFile.deleteOnExit()
-    new URL("http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz") #> softwareReviewsFile !!
-
-    hdfs.copyFromLocalFile(new Path(softwareReviewsFile.getAbsolutePath), new Path("/tmp/reviews_Software.json.gz"))
-
-    val softwareReviewsRDD = spark.read.json("/tmp/reviews_Software.json.gz").as[Review].rdd.repartition(4)
-
-    (computersReviewsRDD, softwareReviewsRDD)
+    val dstPathName = "/tmp/reviews.json.gz"
+    hdfs.copyFromLocalFile(new Path(reviewsFile.getAbsolutePath), new Path(dstPathName))
+    hdfs.deleteOnExit(new Path(dstPathName))
+    spark.read.json(dstPathName).as[Review].rdd.repartition(4)
   }
 }

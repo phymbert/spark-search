@@ -33,4 +33,4 @@ def searchcount(self, query):
     searchRDD(self.ctx, self).count(query)
 
 def searchRDD(ctx, rdd):
-    return ctx._jvm.org.apache.spark.search.rdd.SearchRDDJava.create(rdd)
+    return ctx._jvm.org.apache.spark.search.rdd.SearchRDDJava2Scala.of(rdd, object) // FIXME
