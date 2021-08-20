@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
 import org.apache.spark.search.rdd.SearchRDDJava;
@@ -43,25 +44,30 @@ public class SearchRDDJavaExamples {
 
         SparkSession spark = SparkSession.builder().getOrCreate();
         spark.sparkContext().setLogLevel("ERROR");
+        JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
 
         System.err.println("Loading reviews...");
         JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
 
-        //Create the SearchRDD based on the JavaRDD to enjoy search features
-        SearchRDDJava<Review> computerReviews = new SearchRDDJava<>(reviewsRDD, Review.class);
+        // Create the SearchRDD based on the JavaRDD to enjoy search features
+        SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
 
         // Count matching docs
-        System.err.println("Reviews with good recommendations: " + computerReviews.count("reviewText:good AND reviewText:quality"));
+        System.err.println("Computer reviews with good recommendations: "
+                + computerReviews.count("reviewText:good AND reviewText:quality"));
 
         // List matching docs
-        System.err.println("Reviews with good recommendations: ");
-        SearchRecordJava<Review>[] goodReviews = computerReviews.searchList("reviewText:recommend~0.8", 100, 0);
+        System.err.println("Reviews with good recommendations and fuzzy: ");
+        SearchRecordJava<Review>[] goodReviews = computerReviews
+                .searchList("reviewText:recommend~0.8", 100, 0);
         Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
         // Pass custom search options
-        computerReviews = new SearchRDDJava<>(reviewsRDD,
-                SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build(),
-                Review.class);
+        computerReviews = SearchRDDJava.<Review>builder()
+                .rdd(reviewsRDD)
+                .runtimeClass(Review.class)
+                .options(SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build())
+                .build();
 
         System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
         computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
@@ -75,7 +81,7 @@ public class SearchRDDJavaExamples {
 
         System.err.println("Top 10 reviews from same reviewer between computer and software:");
         computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
-                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
+                        r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
                 .filter(matches -> matches.hits.length > 0)
                 .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
                         sameReviewerMatches.doc.reviewerName,
@@ -84,6 +90,14 @@ public class SearchRDDJavaExamples {
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
                 .foreach(matches -> System.err.println(matches));
+
+        // Save and search reload example
+        SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
+                .save("/tmp/hdfs-pathname");
+        SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
+                .loadSearchRDD(sc, "/tmp/hdfs-pathname", Review.class);
+        System.err.println("Software reviews with good recommendations: "
+                + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
 
         spark.stop();
     }

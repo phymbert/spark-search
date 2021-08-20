@@ -84,32 +84,42 @@ See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/
 ```java
 import org.apache.spark.search.rdd.*;
 
-//Create the SearchRDD based on the JavaRDD to enjoy search features
-SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD, Review.class);
+System.err.println("Loading reviews...");
+JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
+
+// Create the SearchRDD based on the JavaRDD to enjoy search features
+SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
 
 // Count matching docs
-System.err.println("Reviews with good recommendations: " + searchRDDJava.count("reviewText:good AND reviewText:quality"));
+System.err.println("Computer reviews with good recommendations: "
+        + computerReviews.count("reviewText:good AND reviewText:quality"));
 
 // List matching docs
-System.err.println("Reviews with good recommendations: ");
-SearchRecordJava<Review>[] goodReviews = searchRDDJava.searchList("reviewText:recommend~0.8", 100, 0);
+System.err.println("Reviews with good recommendations and fuzzy: ");
+SearchRecordJava<Review>[] goodReviews = computerReviews
+        .searchList("reviewText:recommend~0.8", 100, 0);
 Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
 // Pass custom search options
-searchRDDJava = new SearchRDDJava<>(reviewRDD,
-        SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build(),
-        Review.class);
+computerReviews = SearchRDDJava.<Review>builder()
+        .rdd(reviewsRDD)
+        .runtimeClass(Review.class)
+        .options(SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build())
+        .build();
 
-System.err.println("Reviews from Patosh: ");
-searchRDDJava.search("reviewerName:Patrik~0.5", 100, 0)
+System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
+computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
         .map(SearchRecordJava::getSource)
         .map(Review::getReviewerName)
         .distinct()
         .foreach(r -> System.err.println(r));
 
+System.err.println("Loading software reviews...");
+JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
+
 System.err.println("Top 10 reviews from same reviewer between computer and software:");
-computerReviews.searchJoin(softwareReviews,
-        r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 3)
+computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
         .filter(matches -> matches.hits.length > 0)
         .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
                 sameReviewerMatches.doc.reviewerName,
@@ -118,6 +128,14 @@ computerReviews.searchJoin(softwareReviews,
                 Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
         ))
         .foreach(matches -> System.err.println(matches));
+
+// Save and search reload example
+SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
+        .save("/tmp/hdfs-pathname");
+SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
+        .loadSearchRDD(sc, "/tmp/hdfs-pathname", Review.class);
+System.err.println("Software reviews with good recommendations: "
+        + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
 ```
 See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)
  and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.

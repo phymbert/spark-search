@@ -17,7 +17,7 @@ package org.apache.spark.search.rdd
 
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.search._
-import org.apache.spark.search.rdd.ISearchRDDJava.{QueryBuilder, QueryStringBuilder}
+import SearchRDDJava.{QueryBuilder, QueryStringBuilder}
 
 import scala.reflect.ClassTag
 
@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
  * Java friendly version of [[SearchRDD]].
  */
 class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
-  extends JavaRDD[T](rdd.rdd) with ISearchRDDJava[T] {
+  extends JavaRDD[T](rdd.rdd) with SearchRDDJava[T] {
 
   protected val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
 
@@ -49,6 +49,8 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
     searchRDD.searchJoin(rdd.rdd, (s:S) => queryBuilder.build(s), topK, minScore)
     .map(matchAsJava(_))
   }
+
+  override def save(path: String): Unit = searchRDD.save(path)
 
   override def searchJoinQuery[S](rdd: JavaRDD[S],
                                   queryBuilder: QueryBuilder[S],
