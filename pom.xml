@@ -130,6 +130,7 @@
                         <email>The Spark Search Contributors</email>
                     </properties>
                 </configuration>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <phase>process-sources</phase>
