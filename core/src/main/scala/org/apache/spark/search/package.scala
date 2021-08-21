@@ -55,8 +55,9 @@ package object search {
    * @tparam T Type of input class
    */
   class QueryStringBuilderWithAnalyzer[T](val queryStringBuilder: T => String,
-                                          val defaultFieldName: String = ReaderOptions.DEFAULT_FIELD_NAME)
-    extends CanBuildQueryWithAnalyzer[T] {
+                                          val defaultFieldName: String = ReaderOptions.DEFAULT_FIELD_NAME,
+                                          override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
+    extends CanBuildQueryWithAnalyzer[T](analyzerClass) {
 
     override def apply(t: T): Query =
       new QueryParser(defaultFieldName, _analyzer).parse(queryStringBuilder.apply(t))
@@ -69,8 +70,10 @@ package object search {
    * @param queryBuilder Generate lucene query for this input element
    * @tparam T Type of input class
    */
-  class QueryBuilderWithAnalyzer[T](queryBuilder: (T, QueryBuilder) => Query, override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
-    extends CanBuildQueryWithAnalyzer[T] {
+  class QueryBuilderWithAnalyzer[T](queryBuilder: (T, QueryBuilder) => Query,
+                                    override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer]
+                                   )
+    extends CanBuildQueryWithAnalyzer[T](analyzerClass) {
 
     @transient private lazy val _luceneQueryBuilder: QueryBuilder = new QueryBuilder(_analyzer)
 
@@ -98,7 +101,7 @@ package object search {
     new QueryBuilderWithAnalyzer[T](builder, opts.getReaderOptions.analyzer)
 
   def queryStringBuilder[T](builder: T => String, opts: SearchOptions[_] = defaultOpts): T => Query =
-    new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName)
+    new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer)
 
   implicit def indexOptions[T](optionsBuilderFunc: Function[IndexationOptions.Builder[T], IndexationOptions.Builder[T]]): JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] =
     new JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] {
