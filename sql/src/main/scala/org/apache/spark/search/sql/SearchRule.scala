@@ -27,29 +27,28 @@ import org.apache.spark.sql.catalyst.rules.Rule
  * @author Pierrick HYMBERT
  */
 object SearchRule extends Rule[LogicalPlan] {
-  override def apply(executionPlan: LogicalPlan): LogicalPlan = {
-    executionPlan match {
-      case agg@Aggregate(groupingExpressions, aggregateExpressions, aggregateChild) =>
-        val (isRewritten, rewritten) = rewriteForSearch(aggregateChild)
-        if (isRewritten) Aggregate(groupingExpressions, aggregateExpressions, rewritten) else agg
-      case _ => executionPlan
+
+  override def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+    case filter@Filter(conditions, _) if hasSearchCondition(conditions) =>
+      extractSearchFilter(filter)
+  }
+
+  private def hasSearchCondition(e: Expression): Boolean = {
+    e match {
+      case _: MatchesExpression => true
+      case _ => e.children.exists(hasSearchCondition)
     }
   }
 
-  private def rewriteForSearch(logicalPlan: LogicalPlan): (Boolean, LogicalPlan) = {
-    logicalPlan match {
-      case project@Project(projectList, child) => child match {
-        case Filter(conditions, childFilter) =>
-          val (searchExpression, newConditions) = searchConditions(conditions)
-          searchExpression.map(searchExpression => {
-            val rddPlan = SearchIndexPlan(project, searchExpression)
-            val joinPlan = SearchJoin(Project(projectList ++ Seq(scoreAttribute), Filter(newConditions, childFilter)), rddPlan, searchExpression)
-            (true, joinPlan)
-          }).getOrElse((false, project))
-        case _ => (false, project)
-      }
-      case _ => (false, logicalPlan)
-    }
+  def extractSearchFilter(filter: Filter): LogicalPlan = {
+    val (searchExpression, other) = searchConditions(filter.condition)
+
+    val rddPlan = SearchIndexPlan(filter.child, searchExpression.get)
+    val joinPlan = SearchJoin(filter.child, rddPlan, searchExpression.get)
+    /*if (other.children.nonEmpty)
+      Filter(other, joinPlan)
+    else*/
+      joinPlan // FIXME lost
   }
 
   private def searchConditions(e: Expression): (Option[Expression], Expression) = {
@@ -60,8 +59,8 @@ object SearchRule extends Rule[LogicalPlan] {
         val (rightSearchExpression, _) = searchConditions(be.right)
         val searchExpression = if (leftSearchExpression.nonEmpty && rightSearchExpression.nonEmpty)
           Option(be match {
-            case _:And => And(leftSearchExpression.get, rightSearchExpression.get)
-            case _:Or => Or(leftSearchExpression.get, rightSearchExpression.get)
+            case _: And => And(leftSearchExpression.get, rightSearchExpression.get)
+            case _: Or => Or(leftSearchExpression.get, rightSearchExpression.get)
             case _ => throw new UnsupportedOperationException
           })
         else if (leftSearchExpression.nonEmpty)

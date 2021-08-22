@@ -15,6 +15,7 @@
  */
 package org.apache.spark.search.sql
 
+import org.apache.spark.search.sql.TestData._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SearchDatasetSuite extends AnyFlatSpec with LocalSparkSession {
@@ -23,15 +24,11 @@ class SearchDatasetSuite extends AnyFlatSpec with LocalSparkSession {
     val spark = _spark
     import spark.sqlContext.implicits._
 
-    val companies1 = TestData.companies1DS(spark).repartition(4).cache
-
-    val appleCompany = companies1
+    val appleCompany = companies1DS(spark)
       .where($"name".matches("apple") && score() > 1d)
 
-    appleCompany.show
-
-    assertResult(1) {
-      appleCompany.count
+    assertResult(Company("Apple, Inc")) {
+      appleCompany.collect()
     }
   }
 }

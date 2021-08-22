@@ -2,8 +2,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
-    <version>0.1.7-SNAPSHOT</version>
+    <artifactId>spark-search-parent</artifactId>
+    <version>0.1.8-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -12,8 +12,9 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <lucene.version>8.5.2</lucene.version>
-        <spark.version>2.4.5</spark.version>
+        <spark.version>2.4.8</spark.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
+        <maven.surefire.version>2.22.0</maven.surefire.version>
     </properties>
 
     <modules>
@@ -70,6 +71,19 @@
         <system>Github</system>
         <url>https://github.com/phymbert/spark-search/issues</url>
     </issueManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.7.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -116,6 +130,7 @@
                         <email>The Spark Search Contributors</email>
                     </properties>
                 </configuration>
+                <inherited>false</inherited>
                 <executions>
                     <execution>
                         <phase>process-sources</phase>
@@ -147,6 +162,16 @@
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
                     <version>4.4.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven.surefire.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven.surefire.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.scalatest</groupId>

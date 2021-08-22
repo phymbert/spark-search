@@ -15,63 +15,203 @@
  */
 package org.apache.spark.search.rdd;
 
+import org.apache.lucene.search.Query;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.search.MatchJava;
+import org.apache.spark.search.SearchException;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
- * Java friendly version of {@link SearchRDD}.
+ * Definition of search RDD for java.
  */
-public class SearchRDDJava<T> extends JavaRDD<T> implements ISearchRDDJava<T> {
-    private static final long serialVersionUID = 1L;
+public interface SearchRDDJava<T> {
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#count()}
+     */
+    long count();
 
-    private final ISearchRDDJava<T> searchRDDJava;
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#count(String)}
+     */
+    long count(String query);
 
-    public SearchRDDJava(JavaRDD<T> rdd) {
-        this(rdd, SearchOptions.defaultOptions());
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
+     */
+    SearchRecordJava<T>[] searchList(String query, int topK);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
+     */
+    SearchRecordJava<T>[] searchList(String query, int topK, double minScore);
+
+    /**
+     * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, double)}
+     */
+    JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
+
+    /**
+     * Searches and joins the input RDD matches against this one
+     * by building a custom lucene query string per doc
+     * and returns matching hits.
+     *
+     * @param rdd          to join with
+     * @param queryBuilder builds the query string to join with the searched document
+     * @param topK         topK to return
+     * @param minScore     minimum score of matching documents
+     * @param <S>          Doc type to match with
+     * @return Searched matches documents RDD
+     */
+    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
+                                            QueryStringBuilder<S> queryBuilder,
+                                            int topK,
+                                            double minScore);
+
+    /**
+     * Searches and joins the input RDD matches against this one
+     * by building a custom lucene query per doc
+     * and returns matching hits.
+     *
+     * @param rdd          to join with
+     * @param queryBuilder builds the lucene query to join with the searched document
+     * @param topK         topK to return
+     * @param minScore     minimum score of matching documents
+     * @param <S>          Doc type to match with
+     * @return Searched matches documents RDD
+     */
+    <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
+                                                 QueryBuilder<S> queryBuilder,
+                                                 int topK,
+                                                 double minScore);
+
+    /**
+     * Save the current indexed RDD onto hdfs
+     * in order to be able to reload it later on.
+     *
+     * @param path Path on the spark file system (hdfs) to save on
+     */
+    void save(String path);
+
+    /**
+     * Build a lucene query string to search for matching hits
+     * against the input bean.
+     */
+    @FunctionalInterface
+    interface QueryStringBuilder<T> extends Serializable {
+        String build(T doc);
     }
 
-    public SearchRDDJava(JavaRDD<T> rdd, SearchOptions<T> options) {
-        super(rdd.rdd(), scala.reflect.ClassTag$.MODULE$.apply(Object.class));
+    /**
+     * Build a lucene query to search for matching hits
+     * against the input bean.
+     */
+    @FunctionalInterface
+    interface QueryBuilder<T> extends Serializable {
+        Query build(T doc);
+    }
+
+    /**
+     * Builder to build a search java rdd.
+     *
+     * @param <T> Runtime type of document to index
+     * @return A search RDD builder
+     */
+    static <T> Builder<T> builder() {
+        return new Builder<>();
+    }
+
+    /**
+     * Creates a search java rdd.
+     *
+     * @param rdd   RDD to index and search on
+     * @param clazz Runtime time of the index documents
+     * @param <T>   Runtime type of document to index
+     * @return A search RDD builder
+     */
+    static <T> SearchRDDJava<T> of(JavaRDD<T> rdd, Class<T> clazz) {
+        return SearchRDDJava.<T>builder().rdd(rdd).runtimeClass(clazz).build();
+    }
+
+    /**
+     * Reload an indexed RDD from spark FS.
+     *
+     * @param sc    Spark context
+     * @param path  Path where the search rdd lucene indices were previously saved
+     * @param clazz Runtime class instance T of indexed document
+     * @param <T>   Runtime class of indexed document
+     * @return Reloaded search java rdd
+     */
+    static <T> SearchRDDJava<T> load(JavaSparkContext sc, String path, Class<T> clazz) {
+        return load(sc, path, clazz, SearchOptions.defaultOptions());
+    }
+
+    /**
+     * Reload an indexed RDD from spark FS.
+     *
+     * @param sc      Spark context
+     * @param path    Path where the search rdd lucene indices were previously saved
+     * @param clazz   Runtime class instance T of indexed document
+     * @param options Search option
+     * @param <T>     Runtime class of indexed document
+     * @return Reloaded search java rdd
+     */
+    static <T> SearchRDDJava<T> load(JavaSparkContext sc, String path,
+                                     Class<T> clazz, SearchOptions<T> options) {
         try {
-            // Yes, what a mess: JavaFirst was maybe not a good choice
-            this.searchRDDJava
-                    = (ISearchRDDJava) getClass().getClassLoader()
-                    .loadClass("org.apache.spark.search.rdd.SearchJavaBaseRDD")
-                    .getConstructor(JavaRDD.class, SearchOptions.class, ClassTag.class)
-                    .newInstance(rdd, options, classTag());
+            return (SearchRDDJava<T>) SearchRDDJava.class.getClassLoader()
+                    .loadClass("org.apache.spark.search.rdd.SearchIndexReloadedRDDJava")
+                    .getDeclaredMethod("load", SparkContext.class, String.class,
+                            SearchOptions.class, ClassTag.class)
+                    .invoke(
+                            null,
+                            sc.sc(), path,
+                            options, scala.reflect.ClassTag$.MODULE$.apply(clazz));
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            throw new SearchException("Unable to reload SearchRDDJava from path "
+                    + path + ", got: " + e, e);
         }
     }
 
-    @Override
-    public long count() {
-        return searchRDDJava.count();
-    }
+    class Builder<T> {
+        private JavaRDD<T> rdd;
+        private Class<T> clazz;
+        private SearchOptions<T> options = SearchOptions.defaultOptions();
 
-    @Override
-    public long count(String query) {
-        return searchRDDJava.count(query);
-    }
+        private Builder() {
+        }
 
-    @Override
-    public SearchRecordJava<T>[] searchList(String query, int topK) {
-        return searchRDDJava.searchList(query, topK);
-    }
+        public Builder<T> runtimeClass(Class<T> clazz) {
+            this.clazz = clazz;
+            return this;
+        }
 
-    @Override
-    public SearchRecordJava<T>[] searchList(String query, int topK, double minScore) {
-        return searchRDDJava.searchList(query, topK, minScore);
-    }
+        public Builder<T> rdd(JavaRDD<T> rdd) {
+            this.rdd = rdd;
+            return this;
+        }
 
-    @Override
-    public JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore) {
-        return searchRDDJava.search(query, topK, minScore);
-    }
+        public Builder<T> options(SearchOptions<T> options) {
+            this.options = options;
+            return this;
+        }
 
-    public static <T> SearchRDDJava<T> create(JavaRDD<T> rdd) {
-        return new SearchRDDJava<>(rdd);
+        public SearchRDDJava<T> build() {
+            if (rdd == null) {
+                throw new SearchException("Please specify rdd to search for");
+            }
+            if (clazz == null) {
+                throw new SearchException("Please specify runtime class of element to search for");
+            }
+            return new SearchRDDJava2Scala<>(rdd, clazz, options);
+        }
     }
 }

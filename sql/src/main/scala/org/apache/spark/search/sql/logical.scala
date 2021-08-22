@@ -17,7 +17,7 @@ package org.apache.spark.search.sql
 
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, LeafNode, LogicalPlan, Statistics}
-import org.apache.spark.sql.types.{DataTypes, DoubleType}
+import org.apache.spark.sql.types.DoubleType
 
 trait SearchLogicalPlan
 

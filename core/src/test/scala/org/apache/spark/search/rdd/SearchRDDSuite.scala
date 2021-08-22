@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.search.BooleanClause.Occur
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.api.java.StorageLevels
+import org.apache.spark.rdd.RDD
 import org.apache.spark.search.rdd.TestData._
 import org.apache.spark.search.{SearchException, _}
 import org.scalatest.funsuite.AnyFunSuite
@@ -47,7 +48,10 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
   test("search RDD hits matching query") {
     assertResult(Array(new SearchRecord[Person](0, 1, 0.3150668740272522f, 0,
-      Person("Bob", "Marley", 37))))(sc.parallelize(persons).search("firstName:bob", 10).take(10))
+      Person("Bob", "Marley", 37))))(
+      sc.parallelize(persons)
+        .search("firstName:bob", 10).take(10)
+    )
   }
 
   test("search RDD query must use default field") {
@@ -68,7 +72,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       Person("Agnes", "Bartol", 0),
       Person("Agnec", "Barttol", 0))
 
-    val searchRDD = sc.parallelize(persons2).repartition(2).searchRDD
+    val searchRDD = sc.parallelize(persons2).repartition(2).searchRDD()
     val matchingRDD = sc.parallelize(persons)
 
     val matches = searchRDD.searchJoin(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
@@ -77,7 +81,8 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("Persisting RDD to local dirs is forbidden") {
-    val searchRDD = sc.parallelize(Seq(Person("Georges", "Brassens", 99))).searchRDD
+    val searchRDD = sc.parallelize(Seq(Person("Georges", "Brassens", 99)))
+      .searchRDD().asInstanceOf[RDD[Person]]
     assertThrows[SearchException] {
       searchRDD.persist(StorageLevels.MEMORY_AND_DISK)
     }
@@ -94,7 +99,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
   test("self search join with self query value should returns all document with self match") {
     val rdd = sc.parallelize(persons)
-    val searchRDD = rdd.searchQueryJoin(rdd,
+    val searchRDD = rdd.searchJoinQuery(rdd,
       queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName, Occur.MUST)),
       topK = 1,
       minScore = 0)
@@ -105,39 +110,51 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
   test("search join should work") {
     val opts = SearchOptions.builder[Person]().analyzer(classOf[TestPersonAnalyzer]).build()
-    val searchRDD = sc.parallelize(persons2).repartition(1)
-      .searchQueryJoin(sc.parallelize(persons),
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
+      .searchRDD(opts)
+      .searchJoinQuery(sc.parallelize(persons),
         queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName), opts),
         2,
-        0,
-        opts)
+        0)
       .filter(_.hits.length == 2)
     assertResult(3)(searchRDD.count)
   }
 
-  test("Distinct with no minimum score test RDD") {
-    val searchRDD = sc.parallelize(persons2).repartition(1).searchRDD
-    val deduplicated = searchRDD.distinct().collect
+  test("Distinct with no minimum score") {
+    val searchRDD = sc.parallelize(personsDuplicated)
+      .repartition(1)
+      .searchRDD()
+    val deduplicated = searchRDD.distinct(1).collect
     assertResult(1)(deduplicated.length)
   }
 
-  test("Drop duplicate with min score test RDD") {
-    val searchRDD = sc.parallelize(persons2).repartition(1)
+  test("Drop duplicates with min score") {
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
 
     val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
     assertResult(3)(deduplicated.length)
   }
 
+  test("Drop duplicate with query builder and min score") {
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
+
+    val deduplicated = searchRDD.searchDropDuplicates(
+      queryBuilder = queryStringBuilder(p =>  s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
+      minScore = 1
+    ).collect
+    assertResult(3)(deduplicated.length)
+  }
+
   test("Save and restore index from/to hdfs") {
     FileUtils.deleteDirectory(new File("target/test-save"))
 
-    val searchRDD = sc.parallelize(persons).searchRDD
+    val searchRDD = sc.parallelize(persons).searchRDD()
     assertResult(3)(searchRDD.count())
 
     searchRDD.save("target/test-save")
 
     val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
-    assertResult(3)(restoredSearchRDD.count)
+    assertResult(3)(restoredSearchRDD.count())
   }
 }

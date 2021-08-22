@@ -4,8 +4,8 @@
     <parent>
         <relativePath>../pom.xml</relativePath>
         <groupId>io.github.phymbert</groupId>
-        <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
-        <version>0.1.7-SNAPSHOT</version>
+        <artifactId>spark-search-parent</artifactId>
+        <version>0.1.8-SNAPSHOT</version>
     </parent>
 
     <artifactId>spark-search_${scala.binary.version}</artifactId>
@@ -57,8 +57,7 @@
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.6.2</version>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -13,10 +13,146 @@ Let's image you have a billion records dataset you want to query on and match ag
 You do not expect an external datasource or database system than Spark, and of course with the best performances.
 Spark Search fits your needs: it builds for all parent RDD partitions a one-2-one volatile Lucene index available
  during the lifecycle of your spark session across your executors local directories and RAM.
-Strongly typed, Spark Search API plans to support Java, Scala and Python Spark SQL, Dataset and RDD SDKs.
+Strongly typed, Spark Search supports Java and Scala RDD and plans to support Python, Spark SQL and Dataset.
 Have a look and feel free to contribute!
 
 ## Getting started
+
+### RDD API
+* Scala
+
+```scala
+import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
+
+// Load some Amazon computer user reviews
+val computersReviews: RDD[Review] = loadReviews("**/*/reviews_Computers.json.gz") 
+    // Number of partition is the number of Lucene index which will be created across your cluster
+    .repartition(4)
+
+// Count positive review: indexation + count matched doc
+computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
+
+// Search for key words
+computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+  .foreach(println)
+
+// /!\ Important lucene indexation is done each time a SearchRDD is computed,
+// if you do multiple operations on the same parent RDD, you might have a variable in the driver:
+val computersReviewsSearchRDD: SearchRDD[Review] = computersReviewsRDD.searchRDD(
+  SearchOptions.builder[Review]() // See all other options SearchOptions, IndexationOptions and ReaderOptions
+    .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
+    .analyzer(classOf[EnglishAnalyzer])
+    .build())
+
+// Boolean queries and boosting examples returning RDD
+computersReviewsSearchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+
+// Fuzzy matching
+computersReviews.searchList("(reviewerName:Mikey~0.8) or (reviewerName:Wiliam~0.4) or (reviewerName:jonh~0.2)",
+                                      topKByPartition = 10)
+                        .map(doc => s"${doc.source.reviewerName}=${doc.score}"
+                        .foreach(println)
+
+// RDD full text joining - example here searches for persons
+// who did both computer and software reviews with fuzzy matching on reviewer name
+val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
+val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviewsRDD,
+												  (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
+												   topK = 10)
+matchesReviewersRDD
+  .filter(_.hits.nonEmpty)
+  .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
+				m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+  .foreach(println)
+
+// Drop duplicates
+println("Dropping duplicated reviewers:")
+val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
+ queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
+).map(sr => sr.reviewerName)
+distinctReviewers.foreach(println)
+
+// Save then restore onto hdfs
+matchesReviewersRDD.save("/tmp/hdfs-pathname")
+val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
+```
+
+See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)
+ and [Documentation](core/src/main/scala/org/apache/spark/search/rdd/SearchRDD.scala) for more details.
+
+* Java
+```java
+import org.apache.spark.search.rdd.*;
+
+System.err.println("Loading reviews...");
+JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
+
+// Create the SearchRDD based on the JavaRDD to enjoy search features
+SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
+
+// Count matching docs
+System.err.println("Computer reviews with good recommendations: "
+        + computerReviews.count("reviewText:good AND reviewText:quality"));
+
+// List matching docs
+System.err.println("Reviews with good recommendations and fuzzy: ");
+SearchRecordJava<Review>[] goodReviews = computerReviews
+        .searchList("reviewText:recommend~0.8", 100, 0);
+Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
+
+// Pass custom search options
+computerReviews = SearchRDDJava.<Review>builder()
+        .rdd(reviewsRDD)
+        .runtimeClass(Review.class)
+        .options(SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build())
+        .build();
+
+System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
+computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
+        .map(SearchRecordJava::getSource)
+        .map(Review::getReviewerName)
+        .distinct()
+        .foreach(r -> System.err.println(r));
+
+System.err.println("Loading software reviews...");
+JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
+
+System.err.println("Top 10 reviews from same reviewer between computer and software:");
+computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
+        .filter(matches -> matches.hits.length > 0)
+        .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
+                sameReviewerMatches.doc.reviewerName,
+                sameReviewerMatches.doc.asin,
+                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
+                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+        ))
+        .foreach(matches -> System.err.println(matches));
+
+// Save and search reload example
+SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
+        .save("/tmp/hdfs-pathname");
+SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
+        .load(sc, "/tmp/hdfs-pathname", Review.class);
+System.err.println("Software reviews with good recommendations: "
+        + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
+```
+See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)
+ and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.
+
+* Python (In progress)
+```python
+from pyspark import SparkContext
+import pysparksearch
+
+data = [{"firstName": "Geoorge", "lastName": "Michael"},
+         {"firstName": "Bob", "lastName": "Marley"},
+         {"firstName": "Agnès", "lastName": "Bartoll"}]
+
+sc = SparkContext()
+
+sc.parallelize(data).count("firstName:agnes~")
+```
 
 ### Dataset/DataFrame API (In progress)
 * Scala
@@ -29,83 +165,6 @@ sentences.count("sentence:happy OR sentence:best or sentence:good")
 // coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
 sentences.where($"sentence".matches($"searchKeyword" ))
 ```
-
-### RDD API
-* Scala
-
-```scala
-import org.apache.spark.search.rdd._
-
-val computersReviewsRDD = sc.parallelize(Seq(Review("AAAAA", Array(3, 3), 3.0, "Ok, this is a good computer to play Civilization IV or World of Warcraft", "11 29, 2010", "XXXXX", "Patrick H.", "Ok for an average user, but not much else.", 1290988800)))
-// Number of partition is the number of Lucene index which will be created across your cluster
-.repartition(4)
-
-// Count positive review: indexation + count matched doc
-computersReviewsRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
-
-// Search for key words
-computersReviewsRDD.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
-  .foreach(println)
-
-// /!\ Important lucene indexation is done each time a SearchRDD is computed,
-// if you do multiple operations on the same parent RDD, you might have a variable in the driver:
-val computersReviewsSearchRDD = computersReviewsRDD.searchRDD(
-  SearchOptions.builder[Review]() // See all other options SearchOptions, IndexationOptions and ReaderOptions
-    .read((r: ReaderOptions.Builder[Review]) => r.defaultFieldName("reviewText"))
-    .analyzer(classOf[EnglishAnalyzer])
-    .build())
-
-// Boolean queries and boosting examples returning RDD
-computersReviewsSearchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
-
-// Fuzzy matching
-computersReviewsSearchRDD.searchList("reviewerName:Mikey~0.8 or reviewerName:Wiliam~0.4 or reviewerName:jonh~0.2", 100)
-  .map(doc => (doc.getSource.reviewerName, doc.getScore))
-  .foreach(println)
-
-// RDD full text joining
-val softwareReviewsRDD = sc.parallelize(Seq(Review("BBBB", Array(1), 4.0, "I use this and Ulead video studio 11.", "09 17, 2008", "YYYY", "Patrick Holtt", "Great, easy to use and user friendly.", 1221609600)))
-val matchesRDD = searchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
-val matchesReviewersRDD = computersReviewsSearchRDD.searchJoin(softwareReviewsRDD, (sr: Review) => s"reviewerName:${"\"" + sr.reviewerName + "\""}~8", 10)
-matchesReviewersRDD
-  .filter(_.hits.nonEmpty)
-  .map(m => (m.doc.reviewerName, m.hits.map(h => (h.source.reviewerName, h.score))))
-  .foreach(println)
-
-// Save then restore onto hdfs
-matchesReviewersRDD.save("hdfs:///path-for-later-query-on")
-val restoredSearchRDD = SearchRDD.load[Review](sc, "hdfs:///path-for-later-query-on")
-
-// Drop duplicates (see options)
-restoredSearchRDD.searchDropDuplicates()
-```
-
-See [Examples](examples/src/main/scala/org/apache/spark/search/rdd/SearchRDDExamples.scala) for more details.
-
-* Java
-```java
-import org.apache.spark.search.rdd.*;
-
-JavaRDD<Review> reviewRDD = sqlContext.read().json(...).as(Encoders.bean(Review.class)).repartition(2).javaRDD();
-SearchRDDJava<Review> searchRDDJava = new SearchRDDJava<>(reviewRDD);
-
-// Count matching docs
-searchRDDJava.count("reviewText:good AND reviewText:quality")
-
-// List matching docs
-searchRDDJava.searchList("reviewText:recommend~0.8", 100).forEach(System.out::println);
-
-// Pass custom search options
-searchRDDJava = new SearchRDDJava<>(reviewRDD,
-        SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build());
-
-searchRDDJava.searchList("reviewerName:Patrik", 100)
-        .stream()
-        .map(SearchRecord::getSource)
-        .map(Review::getReviewerName)
-        .forEach(System.out::println);
-```
-See [Examples](examples/src/main/java/org/apache/spark/search/rdd/SearchRDDJavaExamples.java) for more details.
 
 ## Benchmark
 
@@ -122,6 +181,14 @@ The general use cases is to match company names against two data sets (7M vs 600
 (*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
+
+##### v0.1.7
+
+* Enable caching of search index rdd only for yarn cluster, and as an option.
+* Remove scala binary version in parent module artifact name
+* Expose SearchRDD as a public API to ease Dataset binding and hdfs reloading
+* Fix and enhance Search Java RDD API
+* Fix string query builder does not support analyzer
 
 ##### v0.1.6
 * Switch to multi modules build: core, sql, examples, benchmark
@@ -156,6 +223,21 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Support of `SearchRDD#count(String)` -  count matching hits
 * Support of `SearchRDD#searchList(String)` - search matching records as list
 * Support of `SearchRDD#search(String)` - search matching records as RDD
+
+## Installation Spark Search
+** Maven
+```xml
+<dependency>
+  <groupId>io.github.phymbert</groupId>
+  <artifactId>spark-search_2.12</artifactId>
+  <version>${spark.search.version}</version>
+</dependency>
+```
+
+*** Gradle
+```groovy
+implementation 'io.github.phymbert:spark-search_2.12:$sparkSearchVersion'
+```
 
 ## Building Spark Search
 ```shell script

@@ -1,11 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <relativePath>../pom.xml</relativePath>
         <groupId>io.github.phymbert</groupId>
-        <artifactId>spark-search-parent_${scala.binary.version}</artifactId>
-        <version>0.1.7-SNAPSHOT</version>
+        <artifactId>spark-search-parent</artifactId>
+        <version>0.1.8-SNAPSHOT</version>
     </parent>
 
     <artifactId>spark-search-benchmark_${scala.binary.version}</artifactId>
@@ -57,7 +56,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.12</version>
+            <version>4.5.13</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>

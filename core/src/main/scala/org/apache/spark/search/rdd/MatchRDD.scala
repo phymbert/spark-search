@@ -26,25 +26,26 @@ import org.apache.spark.util.Utils
 import scala.reflect.ClassTag
 
 /**
- * Result RDD of a [[org.apache.spark.search.rdd.SearchRDD#searchQueryJoin(org.apache.spark.rdd.RDD, scala.Function1, int, double)]]
+ * Result RDD of a
+ * [[org.apache.spark.search.rdd.SearchRDD#searchJoinQuery(org.apache.spark.rdd.RDD, scala.Function1, int, double, scala.reflect.ClassTag)]]
  *
  * @author Pierrick HYMBERT
  */
-class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
+class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLucene[H],
                                          @transient var other: RDD[(Long, S)],
                                          queryBuilder: S => Query,
                                          topK: Int = Int.MaxValue,
                                          minScore: Double = 0)
-  extends RDD[(Long, Iterator[SearchRecord[H]])](searchRDD.context, Nil)
+  extends RDD[(Long, Array[SearchRecord[H]])](searchRDD.context, Nil)
     with Serializable {
 
   override val partitioner: Option[Partitioner] = searchRDD.partitioner
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[H].asInstanceOf[SearchRDD[H]]
+    firstParent[H].asInstanceOf[SearchRDDLucene[H]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchPartition)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(Long, Iterator[SearchRecord[H]])] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(Long, Array[SearchRecord[H]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
@@ -54,18 +55,18 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
     ZipUtils.unzipPartition(matchPartition.searchPartition.searchIndexPartition.indexDir, it)
 
     // Match other partitions against our
-    tryAndClose(firstParent[H].asInstanceOf[SearchRDD[H]].reader(matchPartition.searchPartition.index,
+    tryAndClose(firstParent[H].asInstanceOf[SearchRDDLucene[H]].reader(matchPartition.searchPartition.index,
       matchPartition.searchPartition.searchIndexPartition.indexDir)) {
       spr =>
         matchPartition.otherPartitions.flatMap(op =>
           parent[(Long, S)](2).iterator(op, context)
             .map(docIndex => (docIndex._1,
               try {
-                spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct).toSeq.iterator
+                spr.search(queryBuilder(docIndex._2), topK, minScore).map(searchRecordJavaToProduct)
               } catch {
                 case e: SearchException => throw new SearchException(s"error during matching ${docIndex._1}: ${docIndex._2}", e)
               })
-            )).toIterator
+            )).toList.toIterator
     }
   }
 
@@ -91,7 +92,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDD[H],
 
   class MatchRDDPartition(val idx: Int,
                           val otherIndex: Array[Int],
-                          @transient private val searchRDD: SearchRDD[H],
+                          @transient private val searchRDD: SearchRDDLucene[H],
                           @transient private val other: RDD[(Long, S)]) extends Partition {
     override def index: Int = idx
 

@@ -28,7 +28,7 @@ object TestData {
     Person("Bob", "Marley", 37),
     Person("Agnès", "Bartoll", -1))
 
-  def persons2 = Seq(
+  def personsDuplicated = Seq(
     Person("George", "Michal", 0),
     Person("Georgee", "Michall", 0),
     Person("Bobb", "Marley", 0),
