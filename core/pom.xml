@@ -5,7 +5,7 @@
         <relativePath>../pom.xml</relativePath>
         <groupId>io.github.phymbert</groupId>
         <artifactId>spark-search-parent</artifactId>
-        <version>0.1.7</version>
+        <version>0.1.8-SNAPSHOT</version>
     </parent>
 
     <artifactId>spark-search_${scala.binary.version}</artifactId>
