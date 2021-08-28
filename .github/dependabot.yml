@@ -1,0 +1,22 @@
+# Basic set up for three package managers
+
+version: 2
+updates:
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # Maintain dependencies for maven
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # Maintain dependencies for pip
+  - package-ecosystem: "pip"
+    directory: "/python"
+    schedule:
+      interval: "monthly"
