@@ -30,7 +30,7 @@ val computersReviews: RDD[Review] = loadReviews("**/*/reviews_Computers.json.gz"
     .repartition(4)
 
 // Count positive review: indexation + count matched doc
-computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
+computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good")
 
 // Search for key words
 computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
@@ -45,10 +45,10 @@ val computersReviewsSearchRDD: SearchRDD[Review] = computersReviewsRDD.searchRDD
     .build())
 
 // Boolean queries and boosting examples returning RDD
-computersReviewsSearchRDD.search("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+computersReviewsSearchRDD.search("(RAM OR memory) AND (CPU OR processor~)^4", 10).foreach(println)
 
 // Fuzzy matching
-computersReviews.searchList("(reviewerName:Mikey~0.8) or (reviewerName:Wiliam~0.4) or (reviewerName:jonh~0.2)",
+computersReviews.searchList("(reviewerName:Mikey~0.8) OR (reviewerName:Wiliam~0.4) OR (reviewerName:jonh~0.2)",
                                       topKByPartition = 10)
                         .map(doc => s"${doc.source.reviewerName}=${doc.score}"
                         .foreach(println)
@@ -160,7 +160,7 @@ sc.parallelize(data).count("firstName:agnes~")
 import org.apache.spark.search.sql._
 
 val sentences = spark.read.csv("...")
-sentences.count("sentence:happy OR sentence:best or sentence:good")
+sentences.count("sentence:happy OR sentence:best OR sentence:good")
 
 // coming soon: SearchSparkStrategy/LogicPlan & column enhanced with search
 sentences.where($"sentence".matches($"searchKeyword" ))

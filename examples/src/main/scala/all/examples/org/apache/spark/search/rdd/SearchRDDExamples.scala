@@ -43,7 +43,7 @@ object SearchRDDExamples {
     import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
 
     // Count positive review: indexation + count matched doc
-    val happyReview = computersReviews.count("reviewText:happy OR reviewText:best or reviewText:good")
+    val happyReview = computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good")
     println(s"${happyReview} positive reviews :)")
 
     // Search for key words
@@ -59,11 +59,11 @@ object SearchRDDExamples {
         .analyzer(classOf[EnglishAnalyzer])
         .build())
     println("All reviews speaking about hardware:")
-    computersReviewsSearchRDD.searchList("(RAM or memory) and (CPU or processor)^4", 10).foreach(println)
+    computersReviewsSearchRDD.searchList("(RAM OR memory) AND (CPU OR processor~)^4", 10).foreach(println)
 
     // Fuzzy matching
     println("Some typo in names:")
-    computersReviews.search("(reviewerName:Mikey~0.8) or (reviewerName:\"Patrik\"~0.4) or (reviewerName:jonh~0.2)",
+    computersReviews.search("(reviewerName:Mikey~0.8) OR (reviewerName:\"Patrik\"~0.4) OR (reviewerName:jonh~0.2)",
       topKByPartition = 10)
       .map(doc => s"${doc.source.reviewerName}=${doc.score}")
       .foreach(println)
@@ -93,7 +93,7 @@ object SearchRDDExamples {
     println(s"Restoring from previous indexation:")
     computersReviews.save("/tmp/hdfs-pathname")
     val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
-    val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best or reviewText:good")
+    val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best OR reviewText:good")
     println(s"${happyReview2} positive reviews after restoration")
 
     spark.stop()
