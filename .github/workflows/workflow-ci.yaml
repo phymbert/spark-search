@@ -15,12 +15,12 @@ jobs:
             skip: true
     name: Build ${{ matrix.spark }}_${{ matrix.scala }}
     steps:
-      - uses: actions/cache@v2.1.6
+      - name: Cache Maven packages
+        uses: actions/cache@v2.1.6
         with:
-          path: ~/.m2/repository/
-          key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.scala }}-${{ matrix.spark }}-maven-
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - uses: actions/checkout@v2
       - name: Set up JDK 8
         uses: actions/setup-java@v2.3.0
@@ -44,12 +44,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Run examples Spark Standalone
     steps:
-      - uses: actions/cache@v2.1.6
+      - name: Cache Maven packages
+        uses: actions/cache@v2.1.6
         with:
-          path: ~/.m2/repository/
-          key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.scala }}-${{ matrix.spark }}-maven-
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - uses: actions/checkout@v2
       - name: Start spark stack
         run: |
@@ -80,12 +80,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Run examples Yarn
     steps:
-      - uses: actions/cache@v2.1.6
+      - name: Cache Maven packages
+        uses: actions/cache@v2.1.6
         with:
-          path: ~/.m2/repository/
-          key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.scala }}-${{ matrix.spark }}-maven-
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - uses: actions/checkout@v2
       - name: Start spark hadoop stack
         run: |
