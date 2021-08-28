@@ -15,7 +15,7 @@ jobs:
             skip: true
     name: Build ${{ matrix.spark }}_${{ matrix.scala }}
     steps:
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2.1.6
         with:
           path: ~/.m2/repository/
           key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Run examples Spark Standalone
     steps:
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2.1.6
         with:
           path: ~/.m2/repository/
           key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Run examples Yarn
     steps:
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2.1.6
         with:
           path: ~/.m2/repository/
           key: ${{ matrix.scala }}-${{ matrix.spark }}-maven-${{ hashFiles('**/pom.xml') }}
