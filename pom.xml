@@ -14,7 +14,7 @@
         <lucene.version>8.5.2</lucene.version>
         <spark.version>2.4.8</spark.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-        <maven.surefire.version>2.22.0</maven.surefire.version>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
     </properties>
 
     <modules>
