@@ -5,3 +5,5 @@
 target
 .classpath
 .project
+.idea/
+venv/
