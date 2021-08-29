@@ -132,7 +132,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
       throw new SearchException(s"HDFS path $path already exists, delete it first")
     }
 
-    indexerRDD.save(path)
+    indexerRDD.save(pathString)
 
     logInfo(s"Index with $getNumPartitions partitions saved to $path")
   }

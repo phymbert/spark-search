@@ -85,13 +85,13 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
   lazy val _indexDirectoryByPartition: Map[Int, String] =
     partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
 
-  def save(path: Path): Unit = {
+  def save(pathString: String): Unit = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     mapPartitionsWithIndex((index, _) => {
       val hadoopConf = new Configuration()
       val hdfs = FileSystem.get(hadoopConf)
       val localIndexDirPath = new File(indexDirectoryByPartition(index)).toPath
-      val targetPath = new Path(path, s"${localIndexDirPath.getFileName}.zip")
+      val targetPath = new Path(pathString, s"${localIndexDirPath.getFileName}.zip")
       logInfo(s"Saving partition $localIndexDirPath to $targetPath")
       val fos = hdfs.create(targetPath)
       zipPartition(localIndexDirPath, fos)
