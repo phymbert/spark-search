@@ -27,6 +27,7 @@ import org.apache.spark.search.SearchRecordJava;
 import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
+import scala.Tuple2;
 
 import java.io.*;
 import java.net.URL;
@@ -103,6 +104,15 @@ public class SearchRDDJavaExamples {
                 .load(sc, "/tmp/hdfs-pathname", Review.class);
         System.err.println("Software reviews with good recommendations: "
                 + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
+
+        // Reloaded index can be used as classical RDD
+        Tuple2<String, Review> longestReview = restoredSearchRDD.javaRDD().map(r -> new Tuple2<>(r.reviewerID, r))
+                .sortBy(t -> t._2.reviewText.length(), false, 2)
+                .take(1).get(0);
+        System.err.printf("Longest review %s has %d chars and has been submitted by %s%n",
+                longestReview._1,
+                longestReview._2.reviewText.length(),
+                longestReview._2.reviewerName);
 
         spark.stop();
     }

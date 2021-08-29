@@ -94,11 +94,23 @@ object SearchRDDExamples {
     distinctReviewers.collect().foreach(println)
 
     // Save & restore example
-    println(s"Restoring from previous indexation:")
+    println(s"Saving index to hdfs...")
     computersReviews.save("/tmp/hdfs-pathname")
+    println(s"Restoring from previous indexation:")
     val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best OR reviewText:good")
     println(s"$happyReview2 positive reviews after restoration")
+
+    // Restored index can be use as classical rdd
+    val topReviewer = restoredSearchRDD.map(r => (r.reviewerID, 1))
+      .reduceByKey(_ + _)
+      .sortBy(_._2, ascending = false)
+      .take(1).head
+    println(s"${topReviewer._1} has submitted ${topReviewer._2} reviews")
+
+    val topReviewNameFiltered = restoredSearchRDD.filter(_.reviewerID.equals(topReviewer._1))
+      .take(1).head
+    println(s"He is named ${topReviewNameFiltered.reviewerName}")
 
     spark.stop()
   }
