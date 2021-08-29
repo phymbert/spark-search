@@ -15,9 +15,11 @@
  */
 package org.apache.spark.search.rdd
 
-import java.io.{IOException, ObjectOutputStream}
-import java.util.Objects
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 
+import java.io.{File, IOException, ObjectOutputStream}
+import java.util.Objects
 import org.apache.lucene.search.Query
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
@@ -117,10 +119,18 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
       .repartition(numPartitions)
   }
 
-  override def save(path: String): Unit = {
-    logInfo(s"Saving index with $getNumPartitions partitions to $path ...")
+  override def save(pathString: String): Unit = {
+    logInfo(s"Saving index with $getNumPartitions partitions to $pathString ...")
     // Be sure we are indexed
     count()
+
+    val hadoopConf = new Configuration()
+    val hdfs = FileSystem.get(hadoopConf)
+    val path = new Path(pathString)
+    if (hdfs.exists(path)) {
+      // FIXME issue github #77 https://github.com/phymbert/spark-search/issues/77
+      throw new SearchException(s"HDFS path $path already exists, delete it first")
+    }
 
     indexerRDD.save(path)
 
