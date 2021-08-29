@@ -104,7 +104,9 @@ public class SearchRDDJavaExamples {
                 + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
 
         // Reloaded index can be used as classical RDD
-        Tuple2<String, Review> longestReview = restoredSearchRDD.javaRDD().map(r -> new Tuple2<>(r.reviewerID, r))
+        Tuple2<String, Review> longestReview = restoredSearchRDD.javaRDD()
+                .filter(t -> t.reviewText != null)
+                .map(r -> new Tuple2<>(r.reviewerID, r))
                 .sortBy(t -> t._2.reviewText.length(), false, 2)
                 .take(1).get(0);
         System.err.printf("Longest review %s has %d chars and has been submitted by %s%n",
