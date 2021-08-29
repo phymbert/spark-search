@@ -85,12 +85,17 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
   lazy val _indexDirectoryByPartition: Map[Int, String] =
     partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
 
-  def save(path: String): Unit = {
+  def save(pathString: String): Unit = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
     mapPartitionsWithIndex((index, _) => {
       val hadoopConf = new Configuration()
       val hdfs = FileSystem.get(hadoopConf)
       val localIndexDirPath = new File(indexDirectoryByPartition(index)).toPath
+      val path = new Path(pathString)
+      if (hdfs.exists(path)) {
+        // FIXME issue github #77 https://github.com/phymbert/spark-search/issues/77
+        throw new SearchException(s"HDFS path $path already exists, delete it first")
+      }
       val targetPath = new Path(path, s"${localIndexDirPath.getFileName}.zip")
       logInfo(s"Saving partition $localIndexDirPath to $targetPath")
       val fos = hdfs.create(targetPath)
