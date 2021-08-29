@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,17 @@
 package org.apache.spark.search.rdd
 
 import java.io.File
-
 import org.apache.commons.io.FileUtils
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.search.BooleanClause.Occur
 import org.apache.lucene.util.QueryBuilder
+import org.apache.spark.{HashPartitioner, Partitioner, RangePartitioner}
 import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.rdd.TestData._
 import org.apache.spark.search.{SearchException, _}
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.must.Matchers.{convertToAnyMustWrapper, sorted}
 
 import scala.language.implicitConversions
 
@@ -52,6 +53,34 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       sc.parallelize(persons)
         .search("firstName:bob", 10).take(10)
     )
+  }
+
+  test("search RDD hits matching fuzzy query should return topK per partition") {
+    val personsKeyedBy = sc.parallelize(personsDuplicated)
+      .union(sc.parallelize(personsDuplicated))
+      .zipWithIndex()
+      .keyBy(_._2)
+
+    val personsRDD = personsKeyedBy.partitionBy(new RangePartitioner(2, personsKeyedBy))
+      .map(_._2._1)
+
+    personsRDD.getNumPartitions mustBe 2
+
+    val matches = personsRDD
+      // Bob Marley will have a better score than Agnès Bartoll and she should not be hit
+      .search("firstName:agnès~ OR firstName:bob~ lastName:marley~", topKByPartition = 2)
+
+    // Assert we have only one lucene index per partition
+    matches.map(_.partitionIndex).distinct().sortBy(identity).collect() mustBe Array(0, 1)
+
+    // Assert we only have bob
+    matches.map(_.source.firstName).map(_.toLowerCase.substring(0, 3)).collect().distinct mustBe Array("bob")
+
+    // Assert we have all bobs matched
+    matches.count() mustBe 4
+
+    // Should be sorted by score score descending
+    matches.map(_.score).collect().reverse mustBe sorted
   }
 
   test("search RDD query must use default field") {
@@ -101,8 +130,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val rdd = sc.parallelize(persons)
     val searchRDD = rdd.searchJoinQuery(rdd,
       queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName, Occur.MUST)),
-      topK = 1,
-      minScore = 0)
+      topK = 1)
       .filter(m => m.hits.count(h => h.source.firstName.equals(m.doc.firstName)) == 1)
       .cache
     assertResult(3)(searchRDD.count)
@@ -114,8 +142,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       .searchRDD(opts)
       .searchJoinQuery(sc.parallelize(persons),
         queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName), opts),
-        2,
-        0)
+        topK = 2)
       .filter(_.hits.length == 2)
     assertResult(3)(searchRDD.count)
   }
@@ -140,7 +167,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
 
     val deduplicated = searchRDD.searchDropDuplicates(
-      queryBuilder = queryStringBuilder(p =>  s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
+      queryBuilder = queryStringBuilder(p => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
       minScore = 1
     ).collect
     assertResult(3)(deduplicated.length)

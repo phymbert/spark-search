@@ -29,11 +29,12 @@ val computersReviews: RDD[Review] = loadReviews("**/*/reviews_Computers.json.gz"
     // Number of partition is the number of Lucene index which will be created across your cluster
     .repartition(4)
 
-// Count positive review: indexation + count matched doc
-computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good")
+// Count positive review: indexation + count matched doc with fuzzy matching
+computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good OR reviewText:\"sounds great\"~")
 
 // Search for key words
-computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 100)
+computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"",
+ topK = 100, minScore = 10)
   .foreach(println)
 
 // /!\ Important lucene indexation is done each time a SearchRDD is computed,
@@ -45,24 +46,27 @@ val computersReviewsSearchRDD: SearchRDD[Review] = computersReviewsRDD.searchRDD
     .build())
 
 // Boolean queries and boosting examples returning RDD
-computersReviewsSearchRDD.search("(RAM OR memory) AND (CPU OR processor~)^4", 10).foreach(println)
+computersReviewsSearchRDD.search("(RAM OR memory) AND (CPU OR processor~)^4", 15)
+        .collect()
+        .foreach(println)
 
 // Fuzzy matching
 computersReviews.searchList("(reviewerName:Mikey~0.8) OR (reviewerName:Wiliam~0.4) OR (reviewerName:jonh~0.2)",
                                       topKByPartition = 10)
-                        .map(doc => s"${doc.source.reviewerName}=${doc.score}"
+                        .map(doc => s"${doc.source.reviewerName}=${doc.score}")
                         .foreach(println)
 
 // RDD full text joining - example here searches for persons
 // who did both computer and software reviews with fuzzy matching on reviewer name
 val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
 val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviewsRDD,
-												  (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
-												   topK = 10)
+                            (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
+                             topK = 10)
 matchesReviewersRDD
   .filter(_.hits.nonEmpty)
   .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
-				m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+      m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+  .collect()
   .foreach(println)
 
 // Drop duplicates
@@ -70,7 +74,7 @@ println("Dropping duplicated reviewers:")
 val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
  queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
 ).map(sr => sr.reviewerName)
-distinctReviewers.foreach(println)
+distinctReviewers.collect().foreach(println)
 
 // Save then restore onto hdfs
 matchesReviewersRDD.save("/tmp/hdfs-pathname")
@@ -84,61 +88,67 @@ See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/
 ```java
 import org.apache.spark.search.rdd.*;
 
-System.err.println("Loading reviews...");
-JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
+class SearchRDDJava {
+ public void examples() {
+  System.err.println("Loading reviews...");
+  JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
 
 // Create the SearchRDD based on the JavaRDD to enjoy search features
-SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
+  SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
 
 // Count matching docs
-System.err.println("Computer reviews with good recommendations: "
-        + computerReviews.count("reviewText:good AND reviewText:quality"));
+  System.err.println("Computer reviews with good recommendations: "
+          + computerReviews.count("reviewText:good AND reviewText:quality"));
 
 // List matching docs
-System.err.println("Reviews with good recommendations and fuzzy: ");
-SearchRecordJava<Review>[] goodReviews = computerReviews
-        .searchList("reviewText:recommend~0.8", 100, 0);
-Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
+  System.err.println("Reviews with good recommendations and fuzzy: ");
+  SearchRecordJava<Review>[] goodReviews = computerReviews
+          .searchList("reviewText:recommend~0.8", 100, 0);
+  Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
 // Pass custom search options
-computerReviews = SearchRDDJava.<Review>builder()
-        .rdd(reviewsRDD)
-        .runtimeClass(Review.class)
-        .options(SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build())
-        .build();
+  computerReviews = SearchRDDJava.<Review>builder()
+          .rdd(reviewsRDD)
+          .runtimeClass(Review.class)
+          .options(SearchOptions.<Review>builder().analyzer(ShingleAnalyzerWrapper.class).build())
+          .build();
 
-System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
-computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
-        .map(SearchRecordJava::getSource)
-        .map(Review::getReviewerName)
-        .distinct()
-        .foreach(r -> System.err.println(r));
+  System.err.println("Top 100 reviews from Patosh with fuzzy with 0.5 minimum score:");
+  computerReviews.search("reviewerName:Patrik~0.5", 100, 0.5)
+          .map(SearchRecordJava::getSource)
+          .map(Review::getReviewerName)
+          .distinct()
+          .collect()
+          .foreach(r -> System.err.println(r));
 
-System.err.println("Loading software reviews...");
-JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
+  System.err.println("Loading software reviews...");
+  JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
 
-System.err.println("Top 10 reviews from same reviewer between computer and software:");
-computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
-                r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
-        .filter(matches -> matches.hits.length > 0)
-        .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
-                sameReviewerMatches.doc.reviewerName,
-                sameReviewerMatches.doc.asin,
-                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
-                Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
-        ))
-        .foreach(matches -> System.err.println(matches));
+  System.err.println("Top 10 reviews from same reviewer between computer and software:");
+  computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+                  r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
+          .filter(matches -> matches.hits.length > 0)
+          .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
+                  sameReviewerMatches.doc.reviewerName,
+                  sameReviewerMatches.doc.asin,
+                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
+                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+          ))
+          .collect()
+          .foreach(matches -> System.err.println(matches));
 
 // Save and search reload example
-SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
-        .save("/tmp/hdfs-pathname");
-SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
-        .load(sc, "/tmp/hdfs-pathname", Review.class);
-System.err.println("Software reviews with good recommendations: "
-        + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
+  SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
+          .save("/tmp/hdfs-pathname");
+  SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
+          .load(sc, "/tmp/hdfs-pathname", Review.class);
+  System.err.println("Software reviews with good recommendations: "
+          + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
+ }
+}
 ```
 See [Examples](examples/src/main/java/all/examples/org/apache/spark/search/rdd/SearchRDDJavaExamples.java)
- and [Documentation](core/src/main/java/org/apache/spark/search/rdd/ISearchRDDJava.java)for more details.
+ and [Documentation](core/src/main/java/org/apache/spark/search/rdd/SearchRDDJava.java)for more details.
 
 * Python (In progress)
 ```python
@@ -225,7 +235,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Support of `SearchRDD#search(String)` - search matching records as RDD
 
 ## Installation Spark Search
-** Maven
+* Maven
 ```xml
 <dependency>
   <groupId>io.github.phymbert</groupId>
@@ -234,7 +244,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 </dependency>
 ```
 
-*** Gradle
+* Gradle
 ```groovy
 implementation 'io.github.phymbert:spark-search_2.12:$sparkSearchVersion'
 ```

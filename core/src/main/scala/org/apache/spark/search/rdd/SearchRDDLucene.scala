@@ -118,13 +118,13 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
   }
 
   override def save(path: String): Unit = {
-    logInfo(s"Saving index with ${getNumPartitions} partitions to ${path} ...")
+    logInfo(s"Saving index with $getNumPartitions partitions to $path ...")
     // Be sure we are indexed
-    count
+    count()
 
     searchIndexRDD.save(path)
 
-    logInfo(s"Index with ${getNumPartitions} partitions saved to ${path}")
+    logInfo(s"Index with $getNumPartitions partitions saved to $path")
   }
 
   override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
@@ -172,10 +172,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
 
     // Trigger indexation if not done yet
-    val it = firstParent[Array[Byte]].iterator(searchRDDPartition.searchIndexPartition, context)
-
-    // Unzip if needed
-    ZipUtils.unzipPartition(searchRDDPartition.searchIndexPartition.indexDir, it)
+    firstParent[Array[Byte]].iterator(searchRDDPartition.searchIndexPartition, context)
 
     Iterator()
   }
@@ -193,7 +190,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     super.persist(newLevel)
   }
 
-  override def clearDependencies() {
+  override def clearDependencies(): Unit = {
     super.clearDependencies()
     if (options.getIndexationOptions.isCacheSearchIndexRDD) {
       searchIndexRDD.unpersist()
