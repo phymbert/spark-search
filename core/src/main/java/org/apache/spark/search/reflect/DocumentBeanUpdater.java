@@ -51,6 +51,7 @@ public class DocumentBeanUpdater<T> extends DocumentBasePropertyDescriptors impl
             // since spark as built-in filtering/explode feature. We do not need lucene
             // for that purpose. Indeed the developer can join the result after the search stage done.
             // For arrays string search, the input RDD might be exploded
+            // FIXME GitHub Issue #21 support array
             ((Field) field).setStringValue(value(propertyDescriptor, element));
         }
     }
