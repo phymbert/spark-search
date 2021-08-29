@@ -225,7 +225,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 * Support of `SearchRDD#search(String)` - search matching records as RDD
 
 ## Installation Spark Search
-** Maven
+* Maven
 ```xml
 <dependency>
   <groupId>io.github.phymbert</groupId>
@@ -234,7 +234,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 </dependency>
 ```
 
-*** Gradle
+* Gradle
 ```groovy
 implementation 'io.github.phymbert:spark-search_2.12:$sparkSearchVersion'
 ```
