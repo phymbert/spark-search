@@ -15,6 +15,7 @@
  */
 package org.apache.spark.search.rdd;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.search.IndexDirectoryCleanupHandler;
 import org.apache.spark.search.IndexationOptions;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +40,7 @@ public class SearchPartitionIndexTest {
     public void setUp() throws IOException {
         Path rootDir = Paths.get(IndexationOptions.defaultOptions().getRootIndexDirectory());
         if (rootDir.toFile().exists())
-            Files.delete(rootDir);
+            FileUtils.deleteDirectory(rootDir.toFile().getAbsoluteFile());
     }
 
     @AfterEach
