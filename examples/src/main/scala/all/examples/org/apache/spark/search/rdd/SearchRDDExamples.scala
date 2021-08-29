@@ -29,8 +29,6 @@ object SearchRDDExamples {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("Spark Search Examples")
-      .config("spark.default.parallelism", "4")
-      .config("spark.sql.shuffle.partitions", "4")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -69,6 +67,8 @@ object SearchRDDExamples {
       topKByPartition = 10)
       .map(doc => s"${doc.source.reviewerName}=${doc.score}")
       .collect()
+      .map(_.toLowerCase)
+      .distinct
       .foreach(println)
 
     // Amazon software customer reviews
@@ -81,9 +81,11 @@ object SearchRDDExamples {
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
     matchesReviewers
       .filter(_.hits.nonEmpty)
+      .sortBy(_.hits.length, ascending = false)
       .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
                     m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .collect()
+      .take(20)
       .foreach(println)
 
     // Drop duplicates
@@ -91,13 +93,13 @@ object SearchRDDExamples {
     val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
       queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
-    distinctReviewers.collect().foreach(println)
+    distinctReviewers.collect().sorted.take(20).foreach(println)
 
     // Save & restore example
     println(s"Saving index to hdfs...")
-    computersReviews.save("/tmp/hdfs-pathname")
+    computersReviews.save("/hdfs-tmp/hdfs-pathname")
     println(s"Restoring from previous indexation:")
-    val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
+    val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/hdfs-tmp/hdfs-pathname")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best OR reviewText:good")
     println(s"$happyReview2 positive reviews after restoration")
 
