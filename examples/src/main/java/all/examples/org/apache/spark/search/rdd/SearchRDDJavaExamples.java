@@ -61,7 +61,7 @@ public class SearchRDDJavaExamples {
         // List matching docs
         System.err.println("Reviews with good recommendations and fuzzy: ");
         SearchRecordJava<Review>[] goodReviews = computerReviews
-                .searchList("reviewText:recommend~0.8", 10, 10);
+                .searchList("reviewText:recommend~0.8", 10, 0);
         Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
         // Pass custom search options
