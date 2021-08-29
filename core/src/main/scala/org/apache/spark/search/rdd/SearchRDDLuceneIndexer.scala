@@ -65,12 +65,11 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
     firstParent.partitions.map(p =>
-      new SearchPartitionIndex[T](p.index,
-        rootDir, p)).toArray
+      new SearchPartitionIndex[T](p.index, rootDir, p)).toArray
   }
 
-  def rootDir: String =
-    s"${options.getIndexationOptions.getRootIndexDirectory}-rdd$id"
+  protected val rootDir: String =
+    s"${options.getIndexationOptions.getRootIndexDirectory}${File.separator}${sc.applicationId}-sparksearch-rdd$id"
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
