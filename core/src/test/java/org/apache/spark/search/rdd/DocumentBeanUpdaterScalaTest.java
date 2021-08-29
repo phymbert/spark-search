@@ -24,6 +24,7 @@ import org.apache.spark.search.IndexationOptions;
 import org.apache.spark.search.reflect.DocumentBeanUpdater;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 
@@ -51,7 +52,8 @@ public class DocumentBeanUpdaterScalaTest {
         assertNull(doc.get("birthDate")); // No Getter
         assertEquals("34", doc.get("age"));
         assertFalse(doc.get("address").isEmpty());
-        assertEquals("[]", doc.get("friends"));
+        // FIXME GitHub Issue #21 support array depends of version of hadoop/commons-beanutils
+        assertTrue(Arrays.asList("[]", "").contains(doc.get("friends")));
         assertTrue(doc.getField("age").fieldType().stored());
         assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, doc.getField("lastName").fieldType().indexOptions());
 
