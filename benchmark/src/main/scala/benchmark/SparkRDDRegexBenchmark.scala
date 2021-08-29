@@ -16,7 +16,6 @@
 package benchmark
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.util.StringUtils
 
 
 object SparkRDDRegexBenchmark extends BaseBenchmark("Spark RDD Regex") {

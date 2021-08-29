@@ -9,11 +9,12 @@ jobs:
       matrix:
         scala: [ '2.11', '2.12' ]
         spark: [ '2.4.8', '3.0.0' ]
+        hadoop: [ '2.6.5', '2.10.1' ]
         include:
           - scala: '2.11'
             spark: '3.0.0'
             skip: true
-    name: Build ${{ matrix.spark }}_${{ matrix.scala }}
+    name: Build ${{ matrix.spark }}_${{ matrix.scala }} hadoop-${{ matrix.hadoop }}
     steps:
       - name: Cache Maven packages
         uses: actions/cache@v2.1.6
@@ -32,7 +33,7 @@ jobs:
         run: |
           export MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=512m -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN"
           export MAVEN_CLI_OPTS="-B --no-transfer-progress"
-          mvn $MAVEN_CLI_OPTS -P CI,scala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} clean verify site
+          mvn $MAVEN_CLI_OPTS -P CI,scala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} -Dhadoop.version=${{ matrix.hadoop }} clean verify site
           rm -rf ~/.m2/repository/io/github/phymbert
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.0.3

@@ -13,6 +13,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <lucene.version>8.9.0</lucene.version>
         <spark.version>2.4.8</spark.version>
+        <hadoop.version>2.6.5</hadoop.version>
         <commons-io.version>2.11.0</commons-io.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <maven.surefire.version>2.22.2</maven.surefire.version>
@@ -94,6 +95,11 @@
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-sql_${scala.binary.version}</artifactId>
                 <version>${spark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client</artifactId>
+                <version>${hadoop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.lucene</groupId>
