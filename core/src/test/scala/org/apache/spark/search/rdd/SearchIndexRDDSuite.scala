@@ -28,7 +28,7 @@ class SearchIndexRDDSuite extends AnyFlatSpec with LocalSparkContext {
     val searchIndexedRDD = sc.parallelize(persons)
       .searchRDD()
       .asInstanceOf[SearchRDDLucene[Person]]
-      .searchIndexRDD
+      .indexerRDD
     searchIndexedRDD.count()
     val indexDirectoryByPartition = searchIndexedRDD._indexDirectoryByPartition
     indexDirectoryByPartition.foreach(t => {

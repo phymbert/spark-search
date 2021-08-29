@@ -192,6 +192,10 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 ## Release notes
 
+##### v0.1.8
+
+* SearchRDD is now iterable as a classical RDD, reloaded RDD can now be used as any other RDD
+
 ##### v0.1.7
 
 * Enable caching of search index rdd only for yarn cluster, and as an option.

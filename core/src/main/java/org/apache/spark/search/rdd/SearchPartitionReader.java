@@ -72,6 +72,10 @@ class SearchPartitionReader<T> implements AutoCloseable {
         return monitorQuery(() -> (long) indexSearcher.count(new MatchAllDocsQuery()));
     }
 
+    SearchRecordJava<T>[] allDocs() {
+        return search(new MatchAllDocsQuery(), Integer.MAX_VALUE, 0);
+    }
+
     Long count(Query query) {
         return monitorQuery(() -> (long) indexSearcher.count(query));
     }

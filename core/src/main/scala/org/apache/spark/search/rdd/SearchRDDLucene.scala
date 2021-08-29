@@ -36,21 +36,21 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
-                                                   var searchIndexRDD: SearchIndexedRDD[T],
+                                                   val indexerRDD: SearchRDDLuceneIndexer[T],
                                                    val options: SearchOptions[T],
                                                    val deps: Seq[Dependency[_]])
-  extends RDD[T](sc, Seq(new OneToOneDependency(searchIndexRDD)) ++ deps)
+  extends RDD[T](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
     with SearchRDD[T] {
 
   def this(rdd: RDD[T], options: SearchOptions[T]) {
     this(rdd.sparkContext,
-      new SearchIndexedRDD(rdd, options),
+      new SearchRDDLuceneIndexer(rdd, options),
       options,
       Seq(new OneToOneDependency(rdd)))
   }
 
   if (options.getIndexationOptions.isCacheSearchIndexRDD) {
-    searchIndexRDD.persist(StorageLevel.DISK_ONLY)
+    indexerRDD.persist(StorageLevel.DISK_ONLY)
   }
 
   override def count(): Long = runSearchJob[Long, Long](spr => spr.count(), _.sum)
@@ -70,8 +70,8 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
                            topKByPartition: Int = Int.MaxValue,
                            minScore: Double = 0
                           ): RDD[SearchRecord[T]] = {
-    val indexDirectoryByPartition = searchIndexRDD._indexDirectoryByPartition
-    searchIndexRDD.mapPartitionsWithIndex(
+    val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
+    indexerRDD.mapPartitionsWithIndex(
       (index, _) =>
         tryAndClose(reader(indexDirectoryByPartition, index)) {
           spr => _partitionReaderSearchList(spr, query(), topKByPartition, minScore)
@@ -122,15 +122,15 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     // Be sure we are indexed
     count()
 
-    searchIndexRDD.save(path)
+    indexerRDD.save(path)
 
     logInfo(s"Index with $getNumPartitions partitions saved to $path")
   }
 
-  override val partitioner: Option[Partitioner] = searchIndexRDD.partitioner
+  override val partitioner: Option[Partitioner] = indexerRDD.partitioner
 
   override def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[T].asInstanceOf[SearchIndexedRDD[T]]
+    firstParent[T].asInstanceOf[SearchRDDLuceneIndexer[T]]
       .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
 
   override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
@@ -149,9 +149,12 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
 
   protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
                                                                        reducer: Iterator[R] => A): A = {
-    val indexDirectoryByPartition = searchIndexRDD._indexDirectoryByPartition
-    val ret = sparkContext.runJob(this, (context: TaskContext, partitionZipped: Iterator[T]) => {
+    val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
+    val ret = sparkContext.runJob(indexerRDD, (context: TaskContext, it: Iterator[Array[Byte]]) => {
       val index = context.partitionId()
+
+      // Unzip if needed
+      ZipUtils.unzipPartition(indexDirectoryByPartition(index), it)
 
       tryAndClose(reader(indexDirectoryByPartition, index)) {
         r => searchByPartitionWithContext(r, context)
@@ -169,18 +172,27 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
       options.getReaderOptions)
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val searchRDDPartition = split.asInstanceOf[SearchPartition[T]]
+    val partition = split.asInstanceOf[SearchPartition[T]]
 
-    // Trigger indexation if not done yet
-    firstParent[Array[Byte]].iterator(searchRDDPartition.searchIndexPartition, context)
+    val indexedRDD = firstParent[Array[Byte]].asInstanceOf[SearchRDDLuceneIndexer[T]]
 
-    Iterator()
+    // Trigger indexation if not done yet on parent rdd partition node
+    val it: Iterator[Array[Byte]] = indexedRDD.iterator(partition.searchIndexPartition, context)
+
+    val indexDirectory = partition.searchIndexPartition.indexDir
+
+    // Unzip if needed
+    ZipUtils.unzipPartition(indexDirectory, it)
+
+    tryAndClose(reader(partition.index, indexDirectory)) {
+      r => r.allDocs().map(searchRecordJavaToProduct).map(_.source)
+    }.iterator
   }
 
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
     firstParent.partitions.map(p =>
-      new SearchPartition(p.index, searchIndexRDD)).toArray
+      new SearchPartition(p.index, indexerRDD)).toArray
   }
 
   override def persist(newLevel: StorageLevel): SearchRDDLucene.this.type = {
@@ -193,14 +205,13 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
   override def clearDependencies(): Unit = {
     super.clearDependencies()
     if (options.getIndexationOptions.isCacheSearchIndexRDD) {
-      searchIndexRDD.unpersist()
+      indexerRDD.unpersist()
     }
-    searchIndexRDD = null
   }
 }
 
 class SearchPartition[T](val idx: Int,
-                         @transient private val searchRDD: SearchIndexedRDD[T]) extends Partition {
+                         @transient private val searchRDD: SearchRDDLuceneIndexer[T]) extends Partition {
   override def index: Int = idx
 
   var searchIndexPartition: SearchPartitionIndex[T] = searchRDD.partitions(idx).asInstanceOf[SearchPartitionIndex[T]]

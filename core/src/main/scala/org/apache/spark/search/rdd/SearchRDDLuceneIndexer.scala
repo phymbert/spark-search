@@ -30,15 +30,14 @@ import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 /**
- * A search RDD indexes parent RDD partitions to lucene indexes.
- * It builds for all parent RDD partitions a one-2-one volatile Lucene index
- * available during the lifecycle of the spark session across executors local directories and RAM.
+ * RDD responsible to index element to lucene index on local disk where the partition resides,
+ * it then sends the partition as zipped byte array.
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
-                                                    val options: SearchOptions[T],
-                                                    val deps: Seq[Dependency[_]])
+private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
+                                                          val options: SearchOptions[T],
+                                                          val deps: Seq[Dependency[_]])
   extends RDD[Array[Byte]](sc, deps) {
 
   def this(rdd: RDD[T], options: SearchOptions[T]) {
@@ -71,7 +70,7 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
   }
 
   def rootDir: String =
-    s"${options.getIndexationOptions.getRootIndexDirectory}-rdd${id}"
+    s"${options.getIndexationOptions.getRootIndexDirectory}-rdd$id"
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
     // Try to balance partitions across executors
@@ -94,17 +93,15 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
       val hdfs = FileSystem.get(hadoopConf)
       val localIndexDirPath = new File(indexDirectoryByPartition(index)).toPath
       val targetPath = new Path(path, s"${localIndexDirPath.getFileName}.zip")
-      logInfo(s"Saving partition ${localIndexDirPath} to ${targetPath}")
+      logInfo(s"Saving partition $localIndexDirPath to $targetPath")
       val fos = hdfs.create(targetPath)
       zipPartition(localIndexDirPath, fos)
-      logInfo(s"Partition ${localIndexDirPath} saved to ${targetPath}")
+      logInfo(s"Partition $localIndexDirPath saved to $targetPath")
       Iterator()
     }).collect
   }
 
-
-
-  override def unpersist(blocking: Boolean): SearchIndexedRDD.this.type = {
+  override def unpersist(blocking: Boolean): SearchRDDLuceneIndexer.this.type = {
     // TODO support non blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
     sparkContext.runJob(this, (context: TaskContext, _: Iterator[Array[Byte]]) => {
@@ -115,6 +112,6 @@ private[search] class SearchIndexedRDD[T: ClassTag](sc: SparkContext,
     super.unpersist(blocking)
   }
 }
-private[rdd] object SearchIndexedRDD {
+private[rdd] object SearchRDDLuceneIndexer {
 
 }

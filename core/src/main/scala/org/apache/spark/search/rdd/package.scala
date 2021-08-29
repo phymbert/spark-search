@@ -30,6 +30,8 @@ package object rdd {
 
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
 
+  implicit def searchAsRDD[T: ClassTag](searchRDD: SearchRDD[T]): RDD[T] = searchRDD.asInstanceOf[RDD[T]]
+
   /**
    * Provide a static query to pass to SearchRDD serializable.
    *
