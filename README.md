@@ -80,7 +80,7 @@ distinctReviewers.collect().foreach(println)
 matchesReviewersRDD.save("/tmp/hdfs-pathname")
 val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
 
-// Restored index can be use as classical rdd
+// Restored index can be used as classical rdd
 val topReviewer = restoredSearchRDD.map(r => (r.reviewerID, 1))
         .reduceByKey(_ + _)
         .sortBy(_._2, ascending = false)
