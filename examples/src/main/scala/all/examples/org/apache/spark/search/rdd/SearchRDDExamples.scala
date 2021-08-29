@@ -43,12 +43,13 @@ object SearchRDDExamples {
     import org.apache.spark.search.rdd._ // to implicitly enhance RDD with search features
 
     // Count positive review: indexation + count matched doc
-    val happyReview = computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good")
-    println(s"${happyReview} positive reviews :)")
+    val happyReview = computersReviews.count("reviewText:happy OR reviewText:best OR reviewText:good OR reviewText:\"sounds great\"~")
+    println(s"$happyReview positive reviews :)")
 
     // Search for key words
     println(s"Full text search results:")
-    computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"", 10)
+    computersReviews.searchList("reviewText:\"World of Warcraft\" OR reviewText:\"Civilization IV\"",
+      topK = 10, minScore = 10)
       .foreach(println)
 
     // /!\ Important lucene indexation is done each time a SearchRDD is computed,
@@ -59,13 +60,15 @@ object SearchRDDExamples {
         .analyzer(classOf[EnglishAnalyzer])
         .build())
     println("All reviews speaking about hardware:")
-    computersReviewsSearchRDD.searchList("(RAM OR memory) AND (CPU OR processor~)^4", 10).foreach(println)
+    computersReviewsSearchRDD.searchList("(RAM OR memory) AND (CPU OR processor~)^4",
+      topK = 10, minScore = 15).foreach(println)
 
     // Fuzzy matching
     println("Some typo in names:")
     computersReviews.search("(reviewerName:Mikey~0.8) OR (reviewerName:\"Patrik\"~0.4) OR (reviewerName:jonh~0.2)",
       topKByPartition = 10)
       .map(doc => s"${doc.source.reviewerName}=${doc.score}")
+      .collect()
       .foreach(println)
 
     // Amazon software customer reviews
@@ -80,6 +83,7 @@ object SearchRDDExamples {
       .filter(_.hits.nonEmpty)
       .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
                     m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+      .collect()
       .foreach(println)
 
     // Drop duplicates
@@ -87,14 +91,14 @@ object SearchRDDExamples {
     val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
       queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
-    distinctReviewers.foreach(println)
+    distinctReviewers.collect().foreach(println)
 
     // Save & restore example
     println(s"Restoring from previous indexation:")
     computersReviews.save("/tmp/hdfs-pathname")
     val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best OR reviewText:good")
-    println(s"${happyReview2} positive reviews after restoration")
+    println(s"$happyReview2 positive reviews after restoration")
 
     spark.stop()
   }

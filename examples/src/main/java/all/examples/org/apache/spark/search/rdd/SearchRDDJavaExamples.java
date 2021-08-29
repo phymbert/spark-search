@@ -77,7 +77,8 @@ public class SearchRDDJavaExamples {
                 .map(SearchRecordJava::getSource)
                 .map(Review::getReviewerName)
                 .distinct()
-                .foreach(r -> System.err.println(r));
+                .collect()
+                .forEach(r -> System.err.println(r));
 
         System.err.println("Loading software reviews...");
         JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
@@ -92,7 +93,8 @@ public class SearchRDDJavaExamples {
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
-                .foreach(matches -> System.err.println(matches));
+                .collect()
+                .forEach(matches -> System.err.println(matches));
 
         // Save and search reload example
         SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
@@ -105,7 +107,7 @@ public class SearchRDDJavaExamples {
         spark.stop();
     }
 
-    private static JavaRDD<Review> loadReviewRDD(SparkSession spark, String reviewURL) throws IOException, InterruptedException {
+    private static JavaRDD<Review> loadReviewRDD(SparkSession spark, String reviewURL) throws IOException {
         File reviews = loadReview(reviewURL);
 
         Configuration hadoopConf = new Configuration();
