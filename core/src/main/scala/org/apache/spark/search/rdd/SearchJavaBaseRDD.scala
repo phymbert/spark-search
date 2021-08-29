@@ -29,6 +29,8 @@ trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
 
   val searchRDD: SearchRDD[T]
 
+  val classTag: ClassTag[T]
+
   override def count(): Long = searchRDD.count()
 
   override def count(query: String): Long =
@@ -63,6 +65,10 @@ trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
       .map(matchAsJava(_))
   }
 
+  override def javaRDD(): JavaRDD[T] = {
+    implicit val classTag: ClassTag[T] = this.classTag
+    new JavaRDD(searchAsRDD(searchRDD))
+  }
 
   private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
     new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))
@@ -76,19 +82,21 @@ class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])
   extends JavaRDD[T](rdd.rdd)
     with SearchRDDJavaWrapper[T] {
   override lazy val searchRDD: SearchRDD[T] = rdd.rdd.searchRDD(opts)
+  override val classTag: ClassTag[T] = searchRDD.elementClassTag
 
   override def count(): Long = searchRDD.count()
 }
 
-class SearchIndexReloadedRDDJava[T: ClassTag](val searchRdd: SearchRDD[T])
+class SearchRDDReloadedJava[T: ClassTag](val searchRdd: SearchRDD[T])
   extends SearchRDDJavaWrapper[T]
     with Serializable {
   override lazy val searchRDD: SearchRDD[T] = searchRdd
+  override val classTag: ClassTag[T] = searchRDD.elementClassTag
 }
 
-object SearchIndexReloadedRDDJava {
+object SearchRDDReloadedJava {
   def load[T: ClassTag](sc: SparkContext,
                         path: String,
                         options: SearchOptions[T]
-                       ): SearchRDDJava[T] = new SearchIndexReloadedRDDJava(SearchRDD.load(sc, path, options))
+                       ): SearchRDDJava[T] = new SearchRDDReloadedJava(SearchRDD.load(sc, path, options))
 }

@@ -16,6 +16,7 @@
 package org.apache.spark.search.rdd;
 
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.rdd.RDD;
 import org.apache.spark.search.MatchJava;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
@@ -82,5 +83,15 @@ class SearchRDDJava2Scala<T> extends JavaRDD<T> implements SearchRDDJava<T> {
     @Override
     public void save(String path) {
         searchRDDJava.save(path);
+    }
+
+    @Override
+    public JavaRDD<T> javaRDD() {
+        return searchRDDJava.javaRDD();
+    }
+
+    @Override
+    public RDD<T> rdd() {
+        return javaRDD().rdd();
     }
 }
