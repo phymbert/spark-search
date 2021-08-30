@@ -17,6 +17,7 @@ package org.apache.spark.search
 
 import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.Query
+import org.apache.spark.{ExecutorAllocationClient, SparkContext}
 import org.apache.spark.rdd.RDD
 
 import scala.language.implicitConversions
@@ -59,4 +60,17 @@ package object rdd {
         throw e
     }
   }
+
+  private[rdd] def getPreferredLocation(sc: SparkContext,
+                                        index: Int,
+                                        numPartition: Int,
+                                        parentPreferredLocation: Seq[String]): Array[String] =
+    sc.schedulerBackend match {
+      case b: ExecutorAllocationClient =>
+        // Try to balance partitions across executors
+        val allIds = sc.getExecutorIds()
+        val ids = allIds.sliding(numPartition).toList
+        ids(index % ids.length).toArray
+      case _ => parentPreferredLocation.toArray
+    }
 }

@@ -56,7 +56,7 @@ public class SearchPartitionIndexTest {
         IndexationOptions<PersonJava> options = IndexationOptions.<PersonJava>builder()
                 .indexDirectoryCleanupHandler(handler)
                 .build();
-        SearchPartitionIndex<PersonJava> partition = new SearchPartitionIndex<>(0, options.getRootIndexDirectory(), null);
+        SearchPartitionIndex<PersonJava> partition = new SearchPartitionIndex<>(0, options.getRootIndexDirectory(), null,null);
         partition.index(PersonJava.PERSONS.iterator(), options);
 
         File indexDir = new File(partition.indexDir);

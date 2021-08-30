@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,24 +63,19 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
+    val parentPartitions = firstParent.partitions
     // One-2-One partition
-    firstParent.partitions.map(p =>
-      new SearchPartitionIndex[T](p.index, rootDir, p)).toArray
+    parentPartitions.map(p =>
+      new SearchPartitionIndex[T](p.index, rootDir,
+        getPreferredLocation(context, p.index, parentPartitions.length, super.getPreferredLocations(p)),
+        p)).toArray
   }
 
   protected val rootDir: String =
     s"${options.getIndexationOptions.getRootIndexDirectory}${File.separator}${sc.applicationId}-sparksearch-rdd$id"
 
-  override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] = {
-    // Try to balance partitions across executors
-    val allIds = context.getExecutorIds()
-    if (allIds.nonEmpty) {
-      val ids = allIds.sliding(getNumPartitions).toList
-      ids(split.index % ids.length)
-    } else {
-      super.getPreferredLocations(split)
-    }
-  }
+  override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] =
+    split.asInstanceOf[SearchPartitionIndex[T]].preferredLocations
 
   lazy val _indexDirectoryByPartition: Map[Int, String] =
     partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
@@ -111,6 +106,7 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
     super.unpersist(blocking)
   }
 }
+
 private[rdd] object SearchRDDLuceneIndexer {
 
 }
