@@ -42,7 +42,7 @@ object ExampleData {
     reviewsFile.deleteOnExit()
     new URL(reviewURL) #> reviewsFile !!
 
-    val dstPathName = "/tmp/reviews.json.gz"
+    val dstPathName = "/hdfs-tmp/reviews.json.gz"
     hdfs.copyFromLocalFile(new Path(reviewsFile.getAbsolutePath), new Path(dstPathName))
     hdfs.deleteOnExit(new Path(dstPathName))
     spark.read.json(dstPathName).as[Review].rdd.repartition(4)

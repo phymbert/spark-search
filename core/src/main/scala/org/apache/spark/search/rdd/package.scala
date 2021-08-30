@@ -17,6 +17,7 @@ package org.apache.spark.search
 
 import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.Query
+import org.apache.spark.{ExecutorAllocationClient, SparkContext}
 import org.apache.spark.rdd.RDD
 
 import scala.language.implicitConversions
@@ -29,6 +30,8 @@ import scala.util.{Failure, Success, Try}
 package object rdd {
 
   implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
+
+  implicit def searchAsRDD[T: ClassTag](searchRDD: SearchRDD[T]): RDD[T] = searchRDD.asInstanceOf[RDD[T]]
 
   /**
    * Provide a static query to pass to SearchRDD serializable.
@@ -57,4 +60,17 @@ package object rdd {
         throw e
     }
   }
+
+  private[rdd] def getPreferredLocation(sc: SparkContext,
+                                        index: Int,
+                                        numPartition: Int,
+                                        parentPreferredLocation: Seq[String]): Array[String] =
+    sc.schedulerBackend match {
+      case b: ExecutorAllocationClient =>
+        // Try to balance partitions across executors
+        val allIds = sc.getExecutorIds()
+        val ids = allIds.sliding(numPartition).toList
+        ids(index % ids.length).toArray
+      case _ => parentPreferredLocation.toArray
+    }
 }

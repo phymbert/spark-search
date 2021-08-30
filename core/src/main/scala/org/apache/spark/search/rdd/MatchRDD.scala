@@ -70,7 +70,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLuce
     }
   }
 
-  override def clearDependencies() {
+  override def clearDependencies(): Unit = {
     super.clearDependencies()
     searchRDD = null
     other = null
@@ -86,7 +86,7 @@ class MatchRDD[S: ClassTag, H: ClassTag](@transient var searchRDD: SearchRDDLuce
 
   override def getDependencies: Seq[Dependency[_]] = Seq(
     new OneToOneDependency(searchRDD),
-    new OneToOneDependency(searchRDD.searchIndexRDD),
+    new OneToOneDependency(searchRDD.indexerRDD),
     new OneToOneDependency(other)
   )
 

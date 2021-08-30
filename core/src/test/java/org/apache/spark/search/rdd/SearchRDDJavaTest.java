@@ -23,11 +23,14 @@ import org.apache.spark.search.MatchJava;
 import org.apache.spark.search.SearchRecordJava;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import scala.Tuple2;
+import scala.Tuple3;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,7 +88,7 @@ public class SearchRDDJavaTest {
     }
 
     @Test
-    public void shouldSaveAndReload() throws IOException {
+    public void shouldSaveAndReloadBeUsableAsOtherRDD() throws IOException {
         FileUtils.deleteDirectory(new File("target/test-save"));
 
         SearchRDDJava.of(sc.parallelize(PersonJava.PERSONS).repartition(1), PersonJava.class)
@@ -99,5 +102,24 @@ public class SearchRDDJavaTest {
                         .map(SearchRecordJava::getSource)
                         .map(PersonJava::getAge)
                         .collect().stream().findFirst());
+
+        // And usable in spark (first reduction to be sure we have a PairJavaRDD)
+        Tuple2<Integer, Integer> persons = restoredSearchRDD.javaRDD()
+                .mapToPair(p -> new Tuple2<>(p.getFirstName(), new Tuple2<>(1, p.getAge())))
+                .reduceByKey((p1, p2) -> new Tuple2<>(p1._1 + p2._1, p1._2 + p2._2))
+                .reduce((p1, p2) -> new Tuple2<>("", new Tuple2<>(p1._2._1 + p2._2._1, p1._2._2 + p2._2._2)))
+                ._2;
+        assertEquals(5, persons._1);
+        assertEquals(99, persons._2);
+    }
+
+    @Test
+    public void shouldBeAClassicalRDD() {
+        JavaRDD<PersonJava> persons = sc.parallelize(PersonJava.PERSONS).repartition(1);
+        SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
+        assertEquals(Optional.of(99), searchRDD.javaRDD().sortBy(PersonJava::getAge, false, 1)
+                .map(PersonJava::getAge)
+                .collect().stream().reduce(Integer::sum));
+
     }
 }

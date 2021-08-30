@@ -19,6 +19,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.spark.search._
 import org.apache.spark.sql.SparkSession
 import ExampleData._
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 
 /**
@@ -29,8 +31,6 @@ object SearchRDDExamples {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("Spark Search Examples")
-      .config("spark.default.parallelism", "4")
-      .config("spark.sql.shuffle.partitions", "4")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -69,6 +69,8 @@ object SearchRDDExamples {
       topKByPartition = 10)
       .map(doc => s"${doc.source.reviewerName}=${doc.score}")
       .collect()
+      .map(_.toLowerCase)
+      .distinct
       .foreach(println)
 
     // Amazon software customer reviews
@@ -81,9 +83,11 @@ object SearchRDDExamples {
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
     matchesReviewers
       .filter(_.hits.nonEmpty)
+      .sortBy(_.hits.length, ascending = false)
       .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
                     m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .collect()
+      .take(20)
       .foreach(println)
 
     // Drop duplicates
@@ -91,14 +95,27 @@ object SearchRDDExamples {
     val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
       queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
-    distinctReviewers.collect().foreach(println)
+    distinctReviewers.collect().sorted.take(20).foreach(println)
 
     // Save & restore example
+    FileSystem.get(new Configuration).delete(new Path("/hdfs-tmp/hdfs-pathname"), true)
+    println(s"Saving index to hdfs...")
+    computersReviews.save("/hdfs-tmp/hdfs-pathname")
     println(s"Restoring from previous indexation:")
-    computersReviews.save("/tmp/hdfs-pathname")
-    val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
+    val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/hdfs-tmp/hdfs-pathname")
     val happyReview2 = restoredSearchRDD.count("reviewText:happy OR reviewText:best OR reviewText:good")
     println(s"$happyReview2 positive reviews after restoration")
+
+    // Restored index can be use as classical rdd
+    val topReviewer = restoredSearchRDD.map(r => (r.reviewerID, 1))
+      .reduceByKey(_ + _)
+      .sortBy(_._2, ascending = false)
+      .take(1).head
+    println(s"${topReviewer._1} has submitted ${topReviewer._2} reviews")
+
+    val topReviewNameFiltered = restoredSearchRDD.filter(_.reviewerID.equals(topReviewer._1))
+      .take(1).head
+    println(s"He is named ${topReviewNameFiltered.reviewerName}")
 
     spark.stop()
   }

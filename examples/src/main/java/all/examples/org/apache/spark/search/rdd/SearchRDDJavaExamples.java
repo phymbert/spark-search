@@ -27,6 +27,7 @@ import org.apache.spark.search.SearchRecordJava;
 import org.apache.spark.search.rdd.SearchRDDJava;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SparkSession;
+import scala.Tuple2;
 
 import java.io.*;
 import java.net.URL;
@@ -43,8 +44,6 @@ public class SearchRDDJavaExamples {
         System.err.println("Downloading computer reviews...");
 
         SparkSession spark = SparkSession.builder()
-                .config("spark.default.parallelism", "4")
-                .config("spark.sql.shuffle.partitions", "4")
                 .getOrCreate();
         spark.sparkContext().setLogLevel("ERROR");
         JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
@@ -62,7 +61,7 @@ public class SearchRDDJavaExamples {
         // List matching docs
         System.err.println("Reviews with good recommendations and fuzzy: ");
         SearchRecordJava<Review>[] goodReviews = computerReviews
-                .searchList("reviewText:recommend~0.8", 100, 0);
+                .searchList("reviewText:recommend~0.8", 10, 0);
         Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
         // Pass custom search options
@@ -93,16 +92,28 @@ public class SearchRDDJavaExamples {
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
                         Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
-                .collect()
+                .take(10)
                 .forEach(matches -> System.err.println(matches));
 
-        // Save and search reload example
+        // Save and search reload example - target path must not exist
+        FileSystem.get(new Configuration()).delete(new Path("/hdfs-tmp/hdfs-pathname"), true);
         SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
-                .save("/tmp/hdfs-pathname");
+                .save("/hdfs-tmp/hdfs-pathname");
         SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
-                .load(sc, "/tmp/hdfs-pathname", Review.class);
+                .load(sc, "/hdfs-tmp/hdfs-pathname", Review.class);
         System.err.println("Software reviews with good recommendations: "
                 + restoredSearchRDD.count("reviewText:good AND reviewText:quality"));
+
+        // Reloaded index can be used as classical RDD
+        Tuple2<String, Review> longestReview = restoredSearchRDD.javaRDD()
+                .filter(t -> t.reviewText != null)
+                .map(r -> new Tuple2<>(r.reviewerID, r))
+                .sortBy(t -> t._2.reviewText.length(), false, 2)
+                .take(1).get(0);
+        System.err.printf("Longest review %s has %d chars and has been submitted by %s%n",
+                longestReview._1,
+                longestReview._2.reviewText.length(),
+                longestReview._2.reviewerName);
 
         spark.stop();
     }
@@ -112,7 +123,7 @@ public class SearchRDDJavaExamples {
 
         Configuration hadoopConf = new Configuration();
         FileSystem hdfs = FileSystem.get(hadoopConf);
-        String dstPathName = "/tmp/reviews.json.gz";
+        String dstPathName = "/hdfs-tmp/reviews.json.gz";
         Path dst = new Path(dstPathName);
         hdfs.copyFromLocalFile(new Path(reviews.getAbsolutePath()), dst);
         hdfs.deleteOnExit(dst);

@@ -79,6 +79,13 @@ distinctReviewers.collect().foreach(println)
 // Save then restore onto hdfs
 matchesReviewersRDD.save("/tmp/hdfs-pathname")
 val restoredSearchRDD: SearchRDD[Review] = SearchRDD.load[Review](sc, "/tmp/hdfs-pathname")
+
+// Restored index can be used as classical rdd
+val topReviewer = restoredSearchRDD.map(r => (r.reviewerID, 1))
+        .reduceByKey(_ + _)
+        .sortBy(_._2, ascending = false)
+        .take(1).head
+println(s"${topReviewer._1} has submitted ${topReviewer._2} reviews")
 ```
 
 See [Examples](examples/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)
@@ -93,20 +100,20 @@ class SearchRDDJava {
   System.err.println("Loading reviews...");
   JavaRDD<Review> reviewsRDD = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Computers.json.gz");
 
-// Create the SearchRDD based on the JavaRDD to enjoy search features
+  // Create the SearchRDD based on the JavaRDD to enjoy search features
   SearchRDDJava<Review> computerReviews = SearchRDDJava.of(reviewsRDD, Review.class);
 
-// Count matching docs
+  // Count matching docs
   System.err.println("Computer reviews with good recommendations: "
           + computerReviews.count("reviewText:good AND reviewText:quality"));
-
-// List matching docs
+  
+  // List matching docs
   System.err.println("Reviews with good recommendations and fuzzy: ");
   SearchRecordJava<Review>[] goodReviews = computerReviews
           .searchList("reviewText:recommend~0.8", 100, 0);
   Arrays.stream(goodReviews).forEach(r -> System.err.println(r));
 
-// Pass custom search options
+  // Pass custom search options
   computerReviews = SearchRDDJava.<Review>builder()
           .rdd(reviewsRDD)
           .runtimeClass(Review.class)
@@ -137,7 +144,7 @@ class SearchRDDJava {
           .collect()
           .foreach(matches -> System.err.println(matches));
 
-// Save and search reload example
+  // Save and search reload example
   SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
           .save("/tmp/hdfs-pathname");
   SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
@@ -191,6 +198,10 @@ The general use cases is to match company names against two data sets (7M vs 600
 (*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
+
+##### v0.1.8
+
+* SearchRDD is now iterable as a classical RDD, reloaded RDD can now be used as any other RDD
 
 ##### v0.1.7
 
