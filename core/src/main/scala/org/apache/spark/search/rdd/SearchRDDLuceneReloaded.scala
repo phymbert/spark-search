@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2020 Spark Search (The Spark Search Contributors)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,15 +30,17 @@ import scala.reflect.ClassTag
 private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
                                                           path: String,
                                                           override val options: SearchOptions[T])
-  extends SearchIndexedRDD[T](sc, options, Nil) {
+  extends SearchRDDLuceneIndexer[T](sc, options, Nil) {
 
   override protected def getPartitions: Array[Partition] = {
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
-    hdfs.listStatus(new Path(path), new PathFilter {
+    val partitionsZipped = hdfs.listStatus(new Path(path), new PathFilter {
       override def accept(path: Path): Boolean = path.getName.endsWith(".zip")
     }).zipWithIndex
-      .map(p => new SearchIndexReloadedPartition(p._2, rootDir, p._1.getPath.toUri.toString))
+
+    partitionsZipped.map(p => new SearchIndexReloadedPartition(p._2, rootDir, p._1.getPath.toUri.toString,
+      getPreferredLocation(context, p._2, partitionsZipped.length, Seq())))
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
@@ -52,5 +54,7 @@ private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
 
 class SearchIndexReloadedPartition(val idx: Int,
                                    val rootDir: String,
-                                   val zipPath: String) extends SearchPartitionIndex(idx, rootDir, null) {
+                                   val zipPath: String,
+                                   val preferredLocations2: Array[String])
+  extends SearchPartitionIndex(idx, rootDir, preferredLocations2, null) {
 }

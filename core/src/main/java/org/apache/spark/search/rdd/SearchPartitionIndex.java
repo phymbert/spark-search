@@ -55,9 +55,15 @@ class SearchPartitionIndex<T> implements Partition, Serializable {
      */
     final String indexDir;
 
-    SearchPartitionIndex(int index, String rootDir, Partition parent) {
+    /**
+     * Preferred locations of this partition.
+     */
+    final String[] preferredLocations;
+
+    SearchPartitionIndex(int index, String rootDir, String[] preferredLocations, Partition parent) {
         this.index = index;
         this.indexDir = String.format("%s-index-%d", rootDir, index);
+        this.preferredLocations = preferredLocations;
         this.parent = parent;
     }
 

@@ -9,7 +9,8 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/tmp:rw
+      - hdfs-volume:/hdfs-tmp/:rw
+      - master_volume_tmp:/tmp:rw
   spark-worker-1:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -21,7 +22,8 @@ services:
     networks:
       - spark_net
     volumes:
-    - /tmp:/tmp:rw
+      - hdfs-volume:/hdfs-tmp/:rw
+      - worker1_volume_tmp:/tmp:rw
   spark-worker-2:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -33,7 +35,8 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/tmp:rw
+      - hdfs-volume:/hdfs-tmp/:rw
+      - worker2_volume_tmp:/tmp:rw
   spark-worker-3:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
     depends_on:
@@ -45,6 +48,13 @@ services:
     networks:
       - spark_net
     volumes:
-      - /tmp:/tmp:rw
+      - hdfs-volume:/hdfs-tmp/:rw
+      - worker3_volume_tmp:/tmp:rw
 networks:
   spark_net:
+volumes:
+  hdfs-volume:
+  master_volume_tmp:
+  worker1_volume_tmp:
+  worker2_volume_tmp:
+  worker3_volume_tmp:

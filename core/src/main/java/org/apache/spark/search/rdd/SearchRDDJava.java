@@ -26,9 +26,6 @@ import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /**
  * Definition of search RDD for java.
@@ -94,7 +91,7 @@ public interface SearchRDDJava<T> {
                                                  double minScore);
 
     /**
-     * Save the current indexed RDD onto hdfs
+     * Saves the current indexed RDD onto hdfs
      * in order to be able to reload it later on.
      *
      * @param path Path on the spark file system (hdfs) to save on
@@ -102,7 +99,14 @@ public interface SearchRDDJava<T> {
     void save(String path);
 
     /**
-     * Build a lucene query string to search for matching hits
+     * Returns this search RDD as a classical search RDD.
+     *
+     * @return A classical search RDD
+     */
+    JavaRDD<T> javaRDD();
+
+    /**
+     * Builds a lucene query string to search for matching hits
      * against the input bean.
      */
     @FunctionalInterface
@@ -111,7 +115,7 @@ public interface SearchRDDJava<T> {
     }
 
     /**
-     * Build a lucene query to search for matching hits
+     * Builds a lucene query to search for matching hits
      * against the input bean.
      */
     @FunctionalInterface
@@ -168,7 +172,7 @@ public interface SearchRDDJava<T> {
                                      Class<T> clazz, SearchOptions<T> options) {
         try {
             return (SearchRDDJava<T>) SearchRDDJava.class.getClassLoader()
-                    .loadClass("org.apache.spark.search.rdd.SearchIndexReloadedRDDJava")
+                    .loadClass("org.apache.spark.search.rdd.SearchRDDReloadedJava")
                     .getDeclaredMethod("load", SparkContext.class, String.class,
                             SearchOptions.class, ClassTag.class)
                     .invoke(

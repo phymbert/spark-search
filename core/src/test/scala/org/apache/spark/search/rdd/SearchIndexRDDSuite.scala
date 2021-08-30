@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2020 Spark Search (The Spark Search Contributors)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ class SearchIndexRDDSuite extends AnyFlatSpec with LocalSparkContext {
     val searchIndexedRDD = sc.parallelize(persons)
       .searchRDD()
       .asInstanceOf[SearchRDDLucene[Person]]
-      .searchIndexRDD
+      .indexerRDD
     searchIndexedRDD.count()
     val indexDirectoryByPartition = searchIndexedRDD._indexDirectoryByPartition
     indexDirectoryByPartition.foreach(t => {

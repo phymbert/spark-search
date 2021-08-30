@@ -1,11 +1,11 @@
-/**
+/*
  * Copyright © 2020 Spark Search (The Spark Search Contributors)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -173,6 +173,14 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(3)(deduplicated.length)
   }
 
+  test("SearchRDD should be iterable as an RDD") {
+    val searchRDD = sc.parallelize(persons).searchRDD()
+    assertResult(Array("Agnès", "Bob", "Geoorge"))(searchRDD
+      .filter(_.firstName.nonEmpty)
+      .map(_.firstName)
+      .collect().sorted)
+  }
+
   test("Save and restore index from/to hdfs") {
     FileUtils.deleteDirectory(new File("target/test-save"))
 
@@ -183,5 +191,10 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
 
     val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
     assertResult(3)(restoredSearchRDD.count())
+
+    assertResult(Array("Bartoll", "Marley", "Michael"))(restoredSearchRDD
+      .map(_.lastName)
+      .collect().sorted)
+
   }
 }
