@@ -5,27 +5,6 @@
     <artifactId>spark-search-parent</artifactId>
     <version>0.1.8-SNAPSHOT</version>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <lucene.version>8.9.0</lucene.version>
-        <spark.version>3.1.2</spark.version>
-        <hadoop.version>3.3.1</hadoop.version>
-        <commons-io.version>2.11.0</commons-io.version>
-        <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-        <maven.surefire.version>2.22.2</maven.surefire.version>
-    </properties>
-
-    <modules>
-        <module>core</module>
-        <module>sql</module>
-        <module>examples</module>
-        <module>benchmark</module>
-    </modules>
-
     <packaging>pom</packaging>
     <name>Spark Project Search Parent</name>
 
@@ -57,6 +36,28 @@
         <tag>HEAD</tag>
     </scm>
     <inceptionYear>2020</inceptionYear>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <lucene.version>8.9.0</lucene.version>
+        <spark.version>3.1.2</spark.version>
+        <hadoop.version>3.3.1</hadoop.version>
+        <commons-io.version>2.11.0</commons-io.version>
+        <commons-lang3.version>3.10</commons-lang3.version>
+        <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
+    </properties>
+
+    <modules>
+        <module>core</module>
+        <module>sql</module>
+        <module>examples</module>
+        <module>benchmark</module>
+    </modules>
 
     <distributionManagement>
         <repository>
@@ -119,7 +120,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.12.0</version>
+                <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.scalatest</groupId>
@@ -293,16 +294,16 @@
     <profiles>
         <profile>
             <id>scala-2.12</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
-                <scala.version>2.12.11</scala.version>
+                <scala.version>2.12.14</scala.version>
                 <scala.binary.version>2.12</scala.binary.version>
             </properties>
         </profile>
         <profile>
             <id>scala-2.11</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <scala.version>2.11.12</scala.version>
                 <scala.binary.version>2.11</scala.binary.version>
