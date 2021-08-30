@@ -19,6 +19,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.spark.search._
 import org.apache.spark.sql.SparkSession
 import ExampleData._
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 
 /**
@@ -96,6 +98,7 @@ object SearchRDDExamples {
     distinctReviewers.collect().sorted.take(20).foreach(println)
 
     // Save & restore example
+    FileSystem.get(new Configuration).delete(new Path("/hdfs-tmp/hdfs-pathname"), true)
     println(s"Saving index to hdfs...")
     computersReviews.save("/hdfs-tmp/hdfs-pathname")
     println(s"Restoring from previous indexation:")

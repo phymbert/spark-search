@@ -95,7 +95,8 @@ public class SearchRDDJavaExamples {
                 .take(10)
                 .forEach(matches -> System.err.println(matches));
 
-        // Save and search reload example
+        // Save and search reload example - target path must not exist
+        FileSystem.get(new Configuration()).delete(new Path("/hdfs-tmp/hdfs-pathname"), true);
         SearchRDDJava.of(softwareReviews.repartition(8), Review.class)
                 .save("/hdfs-tmp/hdfs-pathname");
         SearchRDDJava<Review> restoredSearchRDD = SearchRDDJava
