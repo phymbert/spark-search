@@ -199,6 +199,10 @@ The general use cases is to match company names against two data sets (7M vs 600
 
 ## Release notes
 
+##### v0.1.9
+
+* Fix deployment descriptor for scala 2.11
+
 ##### v0.1.8
 
 * SearchRDD is now iterable as a classical RDD, reloaded RDD can now be used as any other RDD
