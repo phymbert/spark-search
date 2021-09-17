@@ -79,12 +79,11 @@ public final class IndexationOptions<T> implements Serializable {
                     .orElse(System.getProperty("java.io.tmpdir"))), "spark-search").getAbsolutePath();
 
     /**
-     * Is search index rdd cached, default to true in yarn cluster manager.
+     * Is search index rdd cached, default to true.
      * Caching partitions avoid reindexing parent rdd partition if the search computation occurs on
      * different node than the indexation one.
      */
-    private boolean cacheSearchIndexRDD = Optional.ofNullable(System.getProperty("spark.master"))
-            .filter("yarn"::equals).isPresent();
+    private boolean cacheSearchIndexRDD = true;
 
     /**
      * Log indexation progress every 100K docs.

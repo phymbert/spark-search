@@ -69,7 +69,7 @@ package object rdd {
       case b: ExecutorAllocationClient =>
         // Try to balance partitions across executors
         val allIds = sc.getExecutorIds()
-        val ids = allIds.sliding(numPartition).toList
+        val ids = allIds.grouped(numPartition).toList
         ids(index % ids.length).toArray
       case _ => parentPreferredLocation.toArray
     }
