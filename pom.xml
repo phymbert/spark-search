@@ -2,8 +2,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.phymbert</groupId>
-    <artifactId>spark-search-parent</artifactId>
-    <version>0.1.9-SNAPSHOT</version>
+    <artifactId>spark-search-parent_2.12</artifactId>
+    <version>0.1.10-SNAPSHOT</version>
 
     <packaging>pom</packaging>
     <name>Spark Project Search Parent</name>
@@ -50,6 +50,8 @@
         <commons-lang3.version>3.10</commons-lang3.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <maven.surefire.version>2.22.2</maven.surefire.version>
+        <scala.version>2.12.14</scala.version>
+        <scala.binary.version>2.12</scala.binary.version>
     </properties>
 
     <modules>
@@ -246,6 +248,16 @@
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>nexus</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                            <goal>deploy-staged</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -297,10 +309,10 @@
     </build>
     <profiles>
         <profile>
-            <id>scala-2.12</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
+            <id>scala-2.12</id>
             <properties>
                 <scala.version>2.12.14</scala.version>
                 <scala.binary.version>2.12</scala.binary.version>

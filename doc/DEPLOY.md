@@ -37,11 +37,6 @@ mvn release:clean release:prepare
 mvn release:perform
 ```
 
-### Deploy an other scala version
-```xml
-mvn clean deploy -Pdeploy,scala-2.12 -pl core,sql
-```
-
 ### Repositories
 Artefacts will be available in [OSSRH Releases](https://oss.sonatype.org/content/groups/public/io/github/phymbert/)
 and few hours after in [maven central repo1](https://repo1.maven.org/maven2/io/github/phymbert/) and [maven search](https://search.maven.org/search?q=g:io.github.phymbert). 
