@@ -202,6 +202,7 @@ The general use cases is to match company names against two data sets (7M vs 600
 ##### v0.1.8
 
 * SearchRDD is now iterable as a classical RDD, reloaded RDD can now be used as any other RDD
+* Upgrade [support matrix](.github/workflows/workflow-ci.yaml) from spark-2.4.8 & hadoop-2.10.1 to spark-3.1.2 & hadoop-3.3.1, built by default for scala 2.12
 
 ##### v0.1.7
 

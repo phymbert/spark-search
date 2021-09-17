@@ -6,15 +6,16 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         scala: [ '2.11', '2.12' ]
-        spark: [ '2.4.8', '3.0.0' ]
-        hadoop: [ '2.6.5', '2.10.1' ]
+        spark: [ '2.4.8', '3.1.2' ]
+        hadoop: [ '2.10.1', '3.3.1' ]
         include:
           - scala: '2.11'
-            spark: '3.0.0'
+            spark: '3.1.2'
             skip: true
-    name: Build ${{ matrix.spark }}_${{ matrix.scala }} hadoop-${{ matrix.hadoop }}
+    name: CI scala_${{ matrix.scala }} spark-${{ matrix.spark }} hadoop-${{ matrix.hadoop }}
     steps:
       - name: Cache Maven packages
         uses: actions/cache@v2.1.6
@@ -64,7 +65,7 @@ jobs:
         run: |
           export MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=512m -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN"
           export MAVEN_CLI_OPTS="-B --no-transfer-progress"
-          mvn $MAVEN_CLI_OPTS clean package -DskipTests=true
+          mvn $MAVEN_CLI_OPTS clean install -P scala-2.11 -Dspark.version=2.4.8 -Dhadoop.version=2.10.1 -DskipTests=true
       - name: Run examples
         run: |
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 7077
@@ -100,7 +101,7 @@ jobs:
         run: |
           export MAVEN_OPTS="-Xmx2g -XX:ReservedCodeCacheSize=512m -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN"
           export MAVEN_CLI_OPTS="-B --no-transfer-progress"
-          mvn $MAVEN_CLI_OPTS clean package -P CI -DskipTests=true
+          mvn $MAVEN_CLI_OPTS clean install -P scala-2.11 -Dspark.version=2.4.8 -Dhadoop.version=2.10.1 -DskipTests=true
       - name: Run examples
         run: |
           timeout 30 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 50070
