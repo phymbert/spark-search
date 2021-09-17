@@ -3,7 +3,7 @@
 
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search-parent</artifactId>
-    <version>0.1.8-SNAPSHOT</version>
+    <version>0.1.9-SNAPSHOT</version>
 
     <packaging>pom</packaging>
     <name>Spark Project Search Parent</name>
