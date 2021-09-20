@@ -25,7 +25,7 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search._
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.util.Utils
+import org.apache.spark.util.{BoundedPriorityQueue, Utils}
 
 import scala.reflect.ClassTag
 
@@ -37,14 +37,14 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
-                                         val indexerRDD: SearchRDDLuceneIndexer[T],
-                                         val options: SearchOptions[T],
-                                         val deps: Seq[Dependency[_]])
-  extends RDD[T](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
-    with SearchRDD[T] {
+private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
+                                                   val indexerRDD: SearchRDDLuceneIndexer[S],
+                                                   val options: SearchOptions[S],
+                                                   val deps: Seq[Dependency[_]])
+  extends RDD[S](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
+    with SearchRDD[S] {
 
-  def this(rdd: RDD[T], options: SearchOptions[T]) {
+  def this(rdd: RDD[S], options: SearchOptions[S]) {
     this(rdd.sparkContext,
       new SearchRDDLuceneIndexer(rdd, options),
       options,
@@ -63,15 +63,15 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
   override def searchListQuery(query: StaticQueryProvider,
                                topK: Int = Int.MaxValue,
                                minScore: Double = 0
-                              ): Array[SearchRecord[T]] =
-    runSearchJob[Array[SearchRecord[T]], Array[SearchRecord[T]]](
+                              ): Array[SearchRecord[S]] =
+    runSearchJob[Array[SearchRecord[S]], Array[SearchRecord[S]]](
       spr => _partitionReaderSearchList(spr, query(), topK, minScore),
       reduceSearchRecordsByTopK(topK))
 
   override def searchQuery(query: StaticQueryProvider,
                            topKByPartition: Int = Int.MaxValue,
                            minScore: Double = 0
-                          ): RDD[SearchRecord[T]] = {
+                          ): RDD[SearchRecord[S]] = {
     val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
     indexerRDD.mapPartitionsWithIndex(
       (index, _) =>
@@ -81,51 +81,60 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     ).sortBy(_.score, ascending = false)
   }
 
-  override def matchesQuery[S: ClassTag](other: RDD[S],
-                                         queryBuilder: S => Query,
-                                         topK: Int = Int.MaxValue,
-                                         minScore: Double = 0
-                                        ): RDD[DocAndHits[S, T]] = {
-    val topKReducer = (matches: Array[SearchRecord[T]]) => matches
-      .sortBy(_.score)(Ordering.Double.reverse)
-      .take(topK)
+  override def searchJoinQuery[K: ClassTag, V: ClassTag](other: RDD[(K, V)],
+                                                         queryBuilder: V => Query,
+                                                         topKByPartition: Int = Int.MaxValue,
+                                                         minScore: Double = 0): RDD[(K, (V, SearchRecord[S]))] = {
+    new SearchRDDLuceneCartesian[K, V, S](
+      indexerRDD, other, queryBuilder,
+      options.getReaderOptions, topKByPartition, minScore
+    )
+  }
 
-    val otherZipped = other.zipWithIndex.map(_.swap)
+  override def matchesQuery[K: ClassTag, V: ClassTag](other: RDD[(K, V)],
+                                                      queryBuilder: V => Query,
+                                                      topK: Int = 10,
+                                                      minScore: Double = 0
+                                                     ): RDD[DocAndHits[V, S]] = {
 
-    val unwrapDoc = (t: (Long, S)) => queryBuilder(t._2)
-
-    val cartesianRDD: RDD[(Long, Array[SearchRecord[T]])] = new SearchRDDLuceneCartesian[(Long, S), T](
-      indexerRDD, otherZipped, unwrapDoc,
-      options.getReaderOptions, topK, minScore
-    ).map {
-      case ((id: Long, _), sr: SearchRecord[T]) => (id, Array(sr))
-    }
-
-    otherZipped
-      .join(cartesianRDD)
-      .reduceByKey {
-        case ((s: S, matches: Array[SearchRecord[T]]), (_, matches2: Array[SearchRecord[T]])) => (s, topKReducer(matches ++ matches2))
+    val cartesianRDD: RDD[(K, (V, SearchRecord[S]))] =
+      new SearchRDDLuceneCartesian[K, V, S](
+        indexerRDD, other, queryBuilder,
+        options.getReaderOptions, topK, minScore
+      ).map {
+        case (id: K, (v: V, sr: SearchRecord[S])) => (id, (v, sr))
       }
+
+    val ord: Ordering[(V, SearchRecord[S])] = Ordering.by(_._2.score)
+
+    cartesianRDD
+      .aggregateByKey(new BoundedPriorityQueue[(V, SearchRecord[S])](topK)(ord.reverse))(
+        seqOp = (queue, item) => queue += item,
+        combOp = (queue1, queue2) => queue1 ++= queue2
+      ).mapValues(_.toList)
       .map {
-        case (_, (doc, matches)) =>
-          new DocAndHits[S, T](doc, matches)
+        case (_, docAndHits :: tail) =>
+          // FIXME historically no key, need to add it to keep a PairRDD
+          new DocAndHits[V, S](docAndHits._1, Array(docAndHits._2) ++ tail.map(_._2))
       }
   }
 
-  override def distinct(numPartitions: Int): RDD[T] =
+  override def distinct(numPartitions: Int): RDD[S] =
     searchDropDuplicates(numPartitions = numPartitions)
 
-  override def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(options),
-                                    topK: Int = Int.MaxValue,
+  override def searchDropDuplicates(queryBuilder: S => Query = defaultQueryBuilder(options),
+                                    topK: Int = 10,
                                     minScore: Double = 0,
                                     numPartitions: Int = getNumPartitions
-                                   ): RDD[T] = {
-    matchesQuery[T](parent(1), queryBuilder, topK, minScore)
-      .map(m => {
-        val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
-        val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
-        (Objects.hash(allHashes), m.doc)
-      })
+                                   ): RDD[S] = {
+    val zipped: RDD[(Long, S)] = parent[S](1).zipWithIndex().map(_.swap)
+    val matched = matchesQuery[Long, S](zipped, queryBuilder, topK, minScore)
+    // FIXME #86 SearchRDD#searchDropDuplicates should take an accumulator func to deal with duplicates
+    matched.map(m => {
+      val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
+      val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
+      (Objects.hash(allHashes), m.doc)
+    })
       .reduceByKey((m1, _) => m1)
       .map(_._2)
       .repartition(numPartitions)
@@ -152,24 +161,24 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
   override val partitioner: Option[Partitioner] = indexerRDD.partitioner
 
   override def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[T].asInstanceOf[SearchRDDLuceneIndexer[T]]
-      .getPreferredLocations(split.asInstanceOf[SearchPartition[T]].searchIndexPartition)
+    firstParent[S].asInstanceOf[SearchRDDLuceneIndexer[S]]
+      .getPreferredLocations(split.asInstanceOf[SearchPartition[S]].searchIndexPartition)
 
-  override def repartition(numPartitions: Int)(implicit ord: Ordering[T]): RDD[T]
-  = new SearchRDDLucene[T](firstParent.firstParent.repartition(numPartitions), options)
+  override def repartition(numPartitions: Int)(implicit ord: Ordering[S]): RDD[S]
+  = new SearchRDDLucene[S](firstParent.firstParent.repartition(numPartitions), options)
 
-  def _partitionReaderSearchList(r: SearchPartitionReader[T],
-                                 query: Query, topK: Int, minScore: Double): Array[SearchRecord[T]] =
+  def _partitionReaderSearchList(r: SearchPartitionReader[S],
+                                 query: Query, topK: Int, minScore: Double): Array[SearchRecord[S]] =
     r.search(query, topK, minScore).map(searchRecordJavaToProduct)
 
-  protected[rdd] def reduceSearchRecordsByTopK(topK: Int): Iterator[Array[SearchRecord[T]]] => Array[SearchRecord[T]] =
+  protected[rdd] def reduceSearchRecordsByTopK(topK: Int): Iterator[Array[SearchRecord[S]]] => Array[SearchRecord[S]] =
     _.reduce(_ ++ _).sortBy(_.score)(Ordering[Double].reverse).take(topK)
 
-  protected[rdd] def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: SearchPartitionReader[T] => R,
+  protected[rdd] def runSearchJob[R: ClassTag, A: ClassTag](searchByPartition: SearchPartitionReader[S] => R,
                                                             reducer: Iterator[R] => A): A =
     runSearchJobWithContext((_searchByPartition, _) => searchByPartition(_searchByPartition), reducer)
 
-  protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[T], TaskContext) => R,
+  protected[rdd] def runSearchJobWithContext[R: ClassTag, A: ClassTag](searchByPartitionWithContext: (SearchPartitionReader[S], TaskContext) => R,
                                                                        reducer: Iterator[R] => A): A = {
     val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
     val ret = sparkContext.runJob(indexerRDD, (context: TaskContext, it: Iterator[Array[Byte]]) => {
@@ -185,18 +194,18 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     reducer(ret.toIterator)
   }
 
-  private def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[T] =
+  private def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[S] =
     reader(index, indexDirectoryByPartition(index))
 
-  private def reader(index: Int, indexDirectory: String): SearchPartitionReader[T] =
-    new SearchPartitionReader[T](index, indexDirectory,
-      elementClassTag.runtimeClass.asInstanceOf[Class[T]],
+  private def reader(index: Int, indexDirectory: String): SearchPartitionReader[S] =
+    new SearchPartitionReader[S](index, indexDirectory,
+      elementClassTag.runtimeClass.asInstanceOf[Class[S]],
       options.getReaderOptions)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
-    val partition = split.asInstanceOf[SearchPartition[T]]
+  override def compute(split: Partition, context: TaskContext): Iterator[S] = {
+    val partition = split.asInstanceOf[SearchPartition[S]]
 
-    val indexedRDD = firstParent[Array[Byte]].asInstanceOf[SearchRDDLuceneIndexer[T]]
+    val indexedRDD = firstParent[Array[Byte]].asInstanceOf[SearchRDDLuceneIndexer[S]]
 
     // Trigger indexation if not done yet on parent rdd partition node
     val it: Iterator[Array[Byte]] = indexedRDD.iterator(partition.searchIndexPartition, context)

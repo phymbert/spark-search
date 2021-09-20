@@ -27,10 +27,10 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
+private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
                                                           path: String,
-                                                          override val options: SearchOptions[T])
-  extends SearchRDDLuceneIndexer[T](sc, options, Nil) {
+                                                          override val options: SearchOptions[S])
+  extends SearchRDDLuceneIndexer[S](sc, options, Nil) {
 
   override protected def getPartitions: Array[Partition] = {
     val hadoopConf = new Configuration()
@@ -48,7 +48,7 @@ private[search] class SearchIndexReloadedRDD[T: ClassTag](sc: SparkContext,
     val hadoopConf = new Configuration()
     val hdfs = FileSystem.get(hadoopConf)
     ZipUtils.unzipPartition(part.indexDir, hdfs.open(new Path(part.zipPath)))
-    streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[T]])
+    streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[S]])
   }
 }
 

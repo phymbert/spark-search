@@ -27,11 +27,11 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
-                                              val opts: SearchOptions[T] = defaultOpts[T]
-                                             ) extends SearchRDD[T] {
+private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
+                                              val opts: SearchOptions[S] = defaultOpts[S]
+                                             ) extends SearchRDD[S] {
 
-  private lazy val searchRDD: SearchRDD[T] = searchRDD(opts)
+  private lazy val searchRDD: SearchRDD[S] = searchRDD(opts)
 
   override def count(): Long = searchRDD.count()
 
@@ -39,41 +39,40 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
 
   override def searchListQuery(query: StaticQueryProvider,
                                topK: Int = Int.MaxValue,
-                               minScore: Double = 0): Array[SearchRecord[T]] =
+                               minScore: Double = 0): Array[SearchRecord[S]] =
     searchRDD.searchListQuery(query, topK, minScore)
 
   override def searchQuery(query: StaticQueryProvider,
                            topKByPartition: Int = Int.MaxValue,
-                           minScore: Double = 0): RDD[SearchRecord[T]] =
+                           minScore: Double = 0): RDD[SearchRecord[S]] =
     searchRDD.searchQuery(query, topKByPartition, minScore)
 
+  override def searchJoinQuery[K: ClassTag, V: ClassTag](rdd: RDD[(K, V)],
+                                                         queryBuilder: V => Query,
+                                                         topKByPartition: Int = Int.MaxValue,
+                                                         minScore: Double = 0
+                                                        ): RDD[(K, (V, SearchRecord[S]))] =
+    searchRDD.searchJoinQuery(rdd, queryBuilder, topKByPartition, minScore)
 
-  override def matches[S: ClassTag](rdd: RDD[S],
-                                    queryBuilder: S => String,
-                                    topK: Int = Int.MaxValue,
-                                    minScore: Double = 0
-                                      ): RDD[DocAndHits[S, T]] =
-    searchRDD.matches(rdd, queryBuilder, topK, minScore)
-
-  override def matchesQuery[S: ClassTag](rdd: RDD[S],
-                                    queryBuilder: S => Query,
-                                    topK: Int = Int.MaxValue,
-                                    minScore: Double = 0
-                                           ): RDD[DocAndHits[S, T]] =
+  override def matchesQuery[K: ClassTag, V: ClassTag](rdd: RDD[(K, V)],
+                                                      queryBuilder: V => Query,
+                                                      topK: Int = 10,
+                                                      minScore: Double = 0
+                                                     ): RDD[DocAndHits[V, S]] =
     searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
 
 
-  override def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(options),
-                                    topK: Int = Int.MaxValue,
+  override def searchDropDuplicates(queryBuilder: S => Query = defaultQueryBuilder(options),
+                                    topK: Int = 10,
                                     minScore: Double = 0,
-                                    numPartitions: Int = getNumPartitions): RDD[T] =
+                                    numPartitions: Int = getNumPartitions): RDD[S] =
     searchRDD.searchDropDuplicates(queryBuilder, topK, minScore, numPartitions)
 
   override def save(path: String): Unit = searchRDD.save(path)
 
   override def getNumPartitions: Int = searchRDD.getNumPartitions
 
-  override def options: SearchOptions[T] = searchRDD.options
+  override def options: SearchOptions[S] = searchRDD.options
 
   /**
    * Builds a search rdd with that custom search options.
@@ -81,5 +80,5 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchOptions[T] = defaultOpts): SearchRDD[T] = new SearchRDDLucene[T](rdd, opts)
+  def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDLucene[S](rdd, opts)
 }

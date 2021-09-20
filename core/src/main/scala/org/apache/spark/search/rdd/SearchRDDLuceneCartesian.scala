@@ -30,23 +30,23 @@ import scala.reflect.{ClassTag, classTag}
  *
  * @author Pierrick HYMBERT
  */
-class SearchRDDLuceneCartesian[S: ClassTag, H: ClassTag](
-                                                          @transient var searchRDDLuceneIndexer: SearchRDDLuceneIndexer[H],
-                                                          @transient var other: RDD[S],
-                                                          queryBuilder: S => Query,
-                                                          readerOptions: ReaderOptions[H],
-                                                          topK: Int = Int.MaxValue,
-                                                          minScore: Double = 0)
-  extends RDD[(S, SearchRecord[H])](searchRDDLuceneIndexer.context, Nil)
+class SearchRDDLuceneCartesian[K: ClassTag, V: ClassTag, S: ClassTag](
+                                                                       @transient var searchRDDLuceneIndexer: SearchRDDLuceneIndexer[S],
+                                                                       @transient var other: RDD[(K, V)],
+                                                                       queryBuilder: V => Query,
+                                                                       readerOptions: ReaderOptions[S],
+                                                                       topK: Int = Int.MaxValue,
+                                                                       minScore: Double = 0)
+  extends RDD[(K, (V, SearchRecord[S]))](searchRDDLuceneIndexer.context, Nil)
     with Serializable {
 
   override val partitioner: Option[Partitioner] = searchRDDLuceneIndexer.partitioner
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[H].asInstanceOf[SearchRDDLuceneIndexer[H]]
+    firstParent[S].asInstanceOf[SearchRDDLuceneIndexer[S]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchIndexPartition)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(S, SearchRecord[H])] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(K, (V, SearchRecord[S]))] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
@@ -59,12 +59,12 @@ class SearchRDDLuceneCartesian[S: ClassTag, H: ClassTag](
     tryAndClose(reader(matchPartition.searchIndexPartition.index,
       matchPartition.searchIndexPartition.indexDir)) {
       spr =>
-        parent[S](1).iterator(matchPartition.otherPartition, context)
+        parent[(K, V)](1).iterator(matchPartition.otherPartition, context)
           .flatMap(searchFor => {
             try {
-              spr.search(queryBuilder(searchFor), topK, minScore)
+              spr.search(queryBuilder(searchFor._2), topK, minScore)
                 .map(searchRecordJavaToProduct)
-                .map(s => (searchFor, s))
+                .map(s => (searchFor._1, (searchFor._2, s)))
             } catch {
               case e: SearchException => throw new SearchException(s"error during matching $searchFor: $e", e)
             }
@@ -98,25 +98,25 @@ class SearchRDDLuceneCartesian[S: ClassTag, H: ClassTag](
     }
   )
 
-  private def reader(index: Int, indexDirectory: String): SearchPartitionReader[H] =
-    new SearchPartitionReader[H](index, indexDirectory, classTag[H].runtimeClass.asInstanceOf[Class[H]],
+  private def reader(index: Int, indexDirectory: String): SearchPartitionReader[S] =
+    new SearchPartitionReader[S](index, indexDirectory, classTag[S].runtimeClass.asInstanceOf[Class[S]],
       readerOptions)
 
   class MatchRDDPartition(val idx: Int,
-                          @transient private val searchRDDLuceneIndexer: SearchRDDLuceneIndexer[H],
-                          @transient private val other: RDD[S],
+                          @transient private val searchRDDLuceneIndexer: SearchRDDLuceneIndexer[S],
+                          @transient private val other: RDD[(K, V)],
                           val searchRDDIndex: Int,
                           val otherIndex: Int
                          ) extends Partition {
     override val index: Int = idx
 
-    var searchIndexPartition: SearchPartitionIndex[H] = searchRDDLuceneIndexer.partitions(searchRDDIndex).asInstanceOf[SearchPartitionIndex[H]]
+    var searchIndexPartition: SearchPartitionIndex[S] = searchRDDLuceneIndexer.partitions(searchRDDIndex).asInstanceOf[SearchPartitionIndex[S]]
     var otherPartition: Partition = other.partitions(otherIndex)
 
     @throws(classOf[IOException])
     private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
       // Update the reference to parent split at the time of task serialization
-      searchIndexPartition = searchRDDLuceneIndexer.partitions(searchRDDIndex).asInstanceOf[SearchPartitionIndex[H]]
+      searchIndexPartition = searchRDDLuceneIndexer.partitions(searchRDDIndex).asInstanceOf[SearchPartitionIndex[S]]
       otherPartition = other.partitions(otherIndex)
       oos.defaultWriteObject()
     }

@@ -79,13 +79,14 @@ object SearchRDDExamples {
 
     // Match software and computer reviewers
     println("Joined software and computer reviews by reviewer names:")
-    val matchesReviewers: RDD[DocAndHits[Review, Review]] = computersReviews.matches(softwareReviews.filter(_.reviewerName != null),
+    val matchesReviewers: RDD[DocAndHits[Review, Review]] = computersReviews.matches(softwareReviews
+      .filter(_.reviewerName != null).zipWithIndex.map(_.swap),
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
     matchesReviewers
       .filter(_.hits.nonEmpty)
       .sortBy(_.hits.length, ascending = false)
       .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
-                    m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+        m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .collect()
       .take(20)
       .foreach(println)

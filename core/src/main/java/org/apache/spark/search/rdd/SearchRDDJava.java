@@ -17,6 +17,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.lucene.search.Query;
 import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.search.DocAndHitsJava;
@@ -30,7 +31,7 @@ import java.io.Serializable;
 /**
  * Definition of search RDD for java.
  */
-public interface SearchRDDJava<T> {
+public interface SearchRDDJava<S> {
     /**
      * {@link org.apache.spark.search.rdd.SearchRDD#count()}
      */
@@ -44,17 +45,17 @@ public interface SearchRDDJava<T> {
     /**
      * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
      */
-    SearchRecordJava<T>[] searchList(String query, int topK);
+    SearchRecordJava<S>[] searchList(String query, int topK);
 
     /**
      * {@link org.apache.spark.search.rdd.SearchRDD#searchList(String, int, double)}
      */
-    SearchRecordJava<T>[] searchList(String query, int topK, double minScore);
+    SearchRecordJava<S>[] searchList(String query, int topK, double minScore);
 
     /**
      * {@link org.apache.spark.search.rdd.SearchRDD#search(String, int, double)}
      */
-    JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
+    JavaRDD<SearchRecordJava<S>> search(String query, int topK, double minScore);
 
     /**
      * Searches for this input RDD elements matches against these ones
@@ -65,11 +66,11 @@ public interface SearchRDDJava<T> {
      * @param queryBuilder builds the query string to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
-     * @param <S>          Doc type to match with
+     * @param <V>          Doc type to match with
      * @return  matches doc and related hits RDD
      */
-    <S> JavaRDD<DocAndHitsJava<S, T>> matches(JavaRDD<S> rdd,
-                                              QueryStringBuilder<S> queryBuilder,
+    <K,V> JavaRDD<DocAndHitsJava<V, S>> matches(JavaPairRDD<K, V> rdd,
+                                              QueryStringBuilder<V> queryBuilder,
                                               int topK,
                                               double minScore);
 
@@ -82,13 +83,13 @@ public interface SearchRDDJava<T> {
      * @param queryBuilder builds the lucene query to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
-     * @param <S>          Doc type to match with
+     * @param <V>          Doc type to match with
      * @return  matches doc and related hits RDD
      */
-    <S> JavaRDD<DocAndHitsJava<S, T>> matchesQuery(JavaRDD<S> rdd,
-                                                   QueryBuilder<S> queryBuilder,
-                                                   int topK,
-                                                   double minScore);
+    <K, V> JavaRDD<DocAndHitsJava<V, S>> matchesQuery(JavaPairRDD<K, V> rdd,
+                                                      QueryBuilder<V> queryBuilder,
+                                                      int topK,
+                                                      double minScore);
 
     /**
      * Saves the current indexed RDD onto hdfs
@@ -103,7 +104,7 @@ public interface SearchRDDJava<T> {
      *
      * @return A classical search RDD
      */
-    JavaRDD<T> javaRDD();
+    JavaRDD<S> javaRDD();
 
     /**
      * Builds a lucene query string to search for matching hits

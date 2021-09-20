@@ -66,12 +66,12 @@ public class SearchRDDJavaTest {
     }
 
     @Test
-    public void shouldSearchJoin() {
+    public void shouldSearchMatches() {
         JavaRDD<PersonJava> persons = sc.parallelize(PersonJava.PERSONS).repartition(1);
         JavaRDD<PersonJava> persons2 = sc.parallelize(PersonJava.PERSONS2).repartition(1);
 
         SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
-        JavaRDD<DocAndHitsJava<PersonJava, PersonJava>> matches = searchRDD.matches(persons2,
+        JavaRDD<DocAndHitsJava<PersonJava, PersonJava>> matches = searchRDD.matches(persons2.zipWithIndex().mapToPair(Tuple2::swap),
                 doc -> Stream.of(
                                 Optional.ofNullable(doc.getFirstName()).map(fn -> String.format("(firstName:%s~0.5)", fn)),
                                 Optional.ofNullable(doc.getLastName()).map(ln -> String.format("(lastName:%s~0.5)", ln))

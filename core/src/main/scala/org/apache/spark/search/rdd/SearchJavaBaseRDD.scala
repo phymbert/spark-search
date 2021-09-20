@@ -16,7 +16,7 @@
 package org.apache.spark.search.rdd
 
 import org.apache.spark.SparkContext
-import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.api.java.{JavaPairRDD, JavaRDD}
 import org.apache.spark.search._
 import org.apache.spark.search.rdd.SearchRDDJava.{QueryBuilder, QueryStringBuilder}
 
@@ -45,23 +45,25 @@ trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
   override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
     searchRDD.search(query, topK).map(searchRecordAsJava(_)).toJavaRDD()
 
-  override def matches[S](rdd: JavaRDD[S],
-                             queryBuilder: QueryStringBuilder[S],
-                             topK: Int,
-                             minScore: Double): JavaRDD[DocAndHitsJava[S, T]] = {
-    implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.matches(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
+  override def matches[K, V](rdd: JavaPairRDD[K, V],
+                          queryBuilder: QueryStringBuilder[V],
+                          topK: Int,
+                          minScore: Double): JavaRDD[DocAndHitsJava[V, T]] = {
+    implicit val kClassTag: ClassTag[K] = rdd.kClassTag
+    implicit val vClassTag: ClassTag[V] = rdd.vClassTag
+    searchRDD.matches(rdd.rdd, (s: V) => queryBuilder.build(s), topK, minScore)
       .map(matchAsJava(_))
   }
 
   override def save(path: String): Unit = searchRDD.save(path)
 
-  override def matchesQuery[S](rdd: JavaRDD[S],
-                                  queryBuilder: QueryBuilder[S],
+  override def matchesQuery[K, V](rdd: JavaPairRDD[K, V],
+                                  queryBuilder: QueryBuilder[V],
                                   topK: Int,
-                                  minScore: Double): JavaRDD[DocAndHitsJava[S, T]] = {
-    implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.matchesQuery(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
+                                  minScore: Double): JavaRDD[DocAndHitsJava[V, T]] = {
+    implicit val kClassTag: ClassTag[K] = rdd.kClassTag
+    implicit val vClassTag: ClassTag[V] = rdd.vClassTag
+    searchRDD.matchesQuery(rdd.rdd, (s: V) => queryBuilder.build(s), topK, minScore)
       .map(matchAsJava(_))
   }
 

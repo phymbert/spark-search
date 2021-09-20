@@ -104,7 +104,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(persons2).repartition(2).searchRDD()
     val matchingRDD = sc.parallelize(persons)
 
-    val matches = searchRDD.matches(matchingRDD, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
+    val matches = searchRDD.matches(matchingRDD.zipWithIndex().map(_.swap), (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
     assertResult(3)(matches.map(m => m.hits.length).count(_ == 2))
   }
@@ -121,14 +121,14 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   test("self matches with one query value should returns all document with one match") {
     val rdd = sc.parallelize(persons)
     val searchRDD = rdd
-      .matches(rdd, (_: Person) => "lastName:Marley", 1)
+      .matches(rdd.zipWithIndex().map(_.swap), (_: Person) => "lastName:Marley", 1)
       .filter(_.hits.count(_.source.lastName.equals("Marley")) == 1)
     assertResult(3)(searchRDD.count)
   }
 
   test("self matches with self query value should returns all document with self match") {
     val rdd = sc.parallelize(persons)
-    val searchRDD = rdd.matchesQuery(rdd,
+    val searchRDD = rdd.matchesQuery(rdd.zipWithIndex().map(_.swap),
       queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName, Occur.MUST)),
       topK = 1)
       .filter(m => m.hits.count(h => h.source.firstName.equals(m.doc.firstName)) == 1)
@@ -136,11 +136,22 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     assertResult(3)(searchRDD.count)
   }
 
+  test("search join should work") {
+    val opts = SearchOptions.builder[Person]().analyzer(classOf[TestPersonAnalyzer]).build()
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
+      .searchRDD(opts)
+      .searchJoinQuery(sc.parallelize(persons).zipWithIndex().map(_.swap),
+        queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName), opts),
+        topKByPartition = 2)
+      .groupBy(_._1)
+    assertResult(3)(searchRDD.count) // FIXME add good unit test
+  }
+
   test("search matches should work") {
     val opts = SearchOptions.builder[Person]().analyzer(classOf[TestPersonAnalyzer]).build()
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts)
-      .matchesQuery(sc.parallelize(persons),
+      .matchesQuery(sc.parallelize(persons).zipWithIndex().map(_.swap),
         queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName), opts),
         topK = 2)
       .filter(_.hits.length == 2)
