@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.12</artifactId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -39,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search_${scala.binary.version}</artifactId>
+            <artifactId>spark-search_2.12</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
