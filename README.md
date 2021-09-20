@@ -59,7 +59,7 @@ computersReviews.searchList("(reviewerName:Mikey~0.8) OR (reviewerName:Wiliam~0.
 // RDD full text joining - example here searches for persons
 // who did both computer and software reviews with fuzzy matching on reviewer name
 val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
-val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviewsRDD,
+val matchesReviewers: RDD[DocAndHits[Review, Review]] = computersReviews.matches(softwareReviewsRDD,
                             (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
                              topK = 10)
 matchesReviewersRDD
@@ -132,7 +132,7 @@ class SearchRDDJava {
   JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
 
   System.err.println("Top 10 reviews from same reviewer between computer and software:");
-  computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+  computerReviews.matches(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
                   r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
           .filter(matches -> matches.hits.length > 0)
           .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
@@ -198,6 +198,11 @@ The general use cases is to match company names against two data sets (7M vs 600
 (*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
+
+##### v0.2.0
+
+* SearchRDD#searchJoin renamed to SearchRDD#matches as it does automatically the reduction in addition of a simple join.
+* Fix matches was using only one core.
 
 ##### v0.1.9
 

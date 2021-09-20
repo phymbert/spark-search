@@ -24,7 +24,7 @@ import java.util.Objects;
  * @param <S> Type of the bean from which the query was built
  * @param <H> Result hits type
  */
-public class MatchJava<S, H> implements Serializable {
+public class DocAndHitsJava<S, H> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -37,10 +37,10 @@ public class MatchJava<S, H> implements Serializable {
      */
     public SearchRecordJava<H>[] hits;
 
-    public MatchJava() {
+    public DocAndHitsJava() {
     }
 
-    public MatchJava(S doc, SearchRecordJava<H>[] hits) {
+    public DocAndHitsJava(S doc, SearchRecordJava<H>[] hits) {
         this.doc = doc;
         this.hits = hits;
     }
@@ -65,7 +65,7 @@ public class MatchJava<S, H> implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        MatchJava<?, ?> match = (MatchJava<?, ?>) o;
+        DocAndHitsJava<?, ?> match = (DocAndHitsJava<?, ?>) o;
         return doc.equals(match.doc) &&
                 hits.equals(match.hits);
     }

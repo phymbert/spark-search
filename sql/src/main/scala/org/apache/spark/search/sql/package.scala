@@ -63,6 +63,6 @@ package object sql {
   /**
    * Allow match record rdd transformation to Row.
    */
-  implicit def matchingEncoder[T <: Product : TypeTag, S <: Product : TypeTag](implicit encT: Encoder[T], encS: Encoder[S]): Encoder[Match[T, S]] = Encoders.product[Match[T, S]]
+  implicit def matchingEncoder[T <: Product : TypeTag, S <: Product : TypeTag](implicit encT: Encoder[T], encS: Encoder[S]): Encoder[DocAndHits[T, S]] = Encoders.product[DocAndHits[T, S]]
 
 }

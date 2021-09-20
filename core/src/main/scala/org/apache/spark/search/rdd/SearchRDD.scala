@@ -113,40 +113,39 @@ trait SearchRDD[T] {
                   minScore: Double = 0): RDD[SearchRecord[T]]
 
   /**
-   * Searches and joins the input RDD matches against this one
-   * by building a custom lucene query string per doc
-   * and returns matching hits.
+   * Searches for this input RDD elements matches against these ones
+   * by building a lucene query string per doc
+   * and returns matching hits per doc.
    *
-   * @param rdd          to join with
-   * @param queryBuilder builds the query string to join with the searched document
+   * @param rdd          to match with
+   * @param queryBuilder builds the query string to match with the searched document
    * @param topK         topK to return
    * @param minScore     minimum score of matching documents
    * @tparam S Doc type to match with
-   * @return Searched matches documents RDD
+   * @return matches doc and related hits RDD
    */
-  def searchJoin[S: ClassTag](rdd: RDD[S],
-                              queryBuilder: S => String,
-                              topK: Int = Int.MaxValue,
-                              minScore: Double = 0): RDD[Match[S, T]] =
-    searchJoinQuery(rdd, queryStringBuilder(queryBuilder, options), topK, minScore)
-
+  def matches[S: ClassTag](rdd: RDD[S],
+                           queryBuilder: S => String,
+                           topK: Int = Int.MaxValue,
+                           minScore: Double = 0): RDD[DocAndHits[S, T]] =
+    matchesQuery(rdd, queryStringBuilder(queryBuilder, options), topK, minScore)
 
   /**
-   * Searches and joins the input RDD matches against this one
-   * by building a custom lucene query per doc
-   * and returns matching hits.
+   * Searches for this input RDD elements matches against these ones
+   * by building a lucene query per doc
+   * and returns matching hits per doc.
    *
-   * @param rdd          to join with
+   * @param rdd          to match with
    * @param queryBuilder builds the lucene query to join with the searched document
    * @param topK         topK to return
    * @param minScore     minimum score of matching documents
    * @tparam S Doc type to match with
-   * @return Searched matches documents RDD
+   * @return matches doc and related hits RDD
    */
-  def searchJoinQuery[S: ClassTag](rdd: RDD[S],
-                                   queryBuilder: S => Query,
-                                   topK: Int = Int.MaxValue,
-                                   minScore: Double = 0): RDD[Match[S, T]]
+  def matchesQuery[S: ClassTag](rdd: RDD[S],
+                                queryBuilder: S => Query,
+                                topK: Int = Int.MaxValue,
+                                minScore: Double = 0): RDD[DocAndHits[S, T]]
 
   /**
    * Alias for
@@ -200,6 +199,6 @@ object SearchRDD {
   def load[T: ClassTag](sc: SparkContext,
                         path: String,
                         options: SearchOptions[T] = defaultOpts[T]
-                                ): SearchRDD[T] =
+                       ): SearchRDD[T] =
     new SearchRDDLucene[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
 }

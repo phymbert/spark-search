@@ -48,19 +48,19 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
     searchRDD.searchQuery(query, topKByPartition, minScore)
 
 
-  override def searchJoin[S: ClassTag](rdd: RDD[S],
-                                       queryBuilder: S => String,
-                                       topK: Int = Int.MaxValue,
-                                       minScore: Double = 0
-                                      ): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, queryBuilder, topK, minScore)
+  override def matches[S: ClassTag](rdd: RDD[S],
+                                    queryBuilder: S => String,
+                                    topK: Int = Int.MaxValue,
+                                    minScore: Double = 0
+                                      ): RDD[DocAndHits[S, T]] =
+    searchRDD.matches(rdd, queryBuilder, topK, minScore)
 
-  override def searchJoinQuery[S: ClassTag](rdd: RDD[S],
-                                            queryBuilder: S => Query,
-                                            topK: Int = Int.MaxValue,
-                                            minScore: Double = 0
-                                           ): RDD[Match[S, T]] =
-    searchRDD.searchJoinQuery(rdd, queryBuilder, topK, minScore)
+  override def matchesQuery[S: ClassTag](rdd: RDD[S],
+                                    queryBuilder: S => Query,
+                                    topK: Int = Int.MaxValue,
+                                    minScore: Double = 0
+                                           ): RDD[DocAndHits[S, T]] =
+    searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
 
 
   override def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(options),

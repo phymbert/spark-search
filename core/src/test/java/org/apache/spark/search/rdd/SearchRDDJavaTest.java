@@ -19,18 +19,16 @@ import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.search.MatchJava;
+import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchRecordJava;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import scala.Tuple2;
-import scala.Tuple3;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,7 +71,7 @@ public class SearchRDDJavaTest {
         JavaRDD<PersonJava> persons2 = sc.parallelize(PersonJava.PERSONS2).repartition(1);
 
         SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
-        JavaRDD<MatchJava<PersonJava, PersonJava>> matches = searchRDD.searchJoin(persons2,
+        JavaRDD<DocAndHitsJava<PersonJava, PersonJava>> matches = searchRDD.matches(persons2,
                 doc -> Stream.of(
                                 Optional.ofNullable(doc.getFirstName()).map(fn -> String.format("(firstName:%s~0.5)", fn)),
                                 Optional.ofNullable(doc.getLastName()).map(ln -> String.format("(lastName:%s~0.5)", ln))

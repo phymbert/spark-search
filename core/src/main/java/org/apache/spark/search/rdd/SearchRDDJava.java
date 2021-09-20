@@ -19,7 +19,7 @@ import org.apache.lucene.search.Query;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.search.MatchJava;
+import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchException;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
@@ -57,38 +57,38 @@ public interface SearchRDDJava<T> {
     JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore);
 
     /**
-     * Searches and joins the input RDD matches against this one
-     * by building a custom lucene query string per doc
-     * and returns matching hits.
+     * Searches for this input RDD elements matches against these ones
+     * by building a lucene query string per doc
+     * and returns matching hits per doc.
      *
-     * @param rdd          to join with
+     * @param rdd          to match with
      * @param queryBuilder builds the query string to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
      * @param <S>          Doc type to match with
-     * @return Searched matches documents RDD
+     * @return  matches doc and related hits RDD
      */
-    <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
-                                            QueryStringBuilder<S> queryBuilder,
-                                            int topK,
-                                            double minScore);
+    <S> JavaRDD<DocAndHitsJava<S, T>> matches(JavaRDD<S> rdd,
+                                              QueryStringBuilder<S> queryBuilder,
+                                              int topK,
+                                              double minScore);
 
     /**
-     * Searches and joins the input RDD matches against this one
-     * by building a custom lucene query per doc
-     * and returns matching hits.
+     * Searches for this input RDD elements matches against these ones
+     * by building a lucene query per doc
+     * and returns matching hits per doc.
      *
-     * @param rdd          to join with
+     * @param rdd          to match with
      * @param queryBuilder builds the lucene query to join with the searched document
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
      * @param <S>          Doc type to match with
-     * @return Searched matches documents RDD
+     * @return  matches doc and related hits RDD
      */
-    <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
-                                                 QueryBuilder<S> queryBuilder,
-                                                 int topK,
-                                                 double minScore);
+    <S> JavaRDD<DocAndHitsJava<S, T>> matchesQuery(JavaRDD<S> rdd,
+                                                   QueryBuilder<S> queryBuilder,
+                                                   int topK,
+                                                   double minScore);
 
     /**
      * Saves the current indexed RDD onto hdfs

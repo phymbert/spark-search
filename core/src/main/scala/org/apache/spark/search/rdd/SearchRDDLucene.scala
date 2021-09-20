@@ -15,11 +15,11 @@
  */
 package org.apache.spark.search.rdd
 
+import java.io.{IOException, ObjectOutputStream}
+import java.util.Objects
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-
-import java.io.{File, IOException, ObjectOutputStream}
-import java.util.Objects
 import org.apache.lucene.search.Query
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
@@ -38,9 +38,9 @@ import scala.reflect.ClassTag
  * @author Pierrick HYMBERT
  */
 private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
-                                                   val indexerRDD: SearchRDDLuceneIndexer[T],
-                                                   val options: SearchOptions[T],
-                                                   val deps: Seq[Dependency[_]])
+                                         val indexerRDD: SearchRDDLuceneIndexer[T],
+                                         val options: SearchOptions[T],
+                                         val deps: Seq[Dependency[_]])
   extends RDD[T](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
     with SearchRDD[T] {
 
@@ -81,22 +81,34 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     ).sortBy(_.score, ascending = false)
   }
 
-  override def searchJoinQuery[S: ClassTag](other: RDD[S],
-                                            queryBuilder: S => Query,
-                                            topK: Int = Int.MaxValue,
-                                            minScore: Double = 0
-                                           ): RDD[Match[S, T]] = {
+  override def matchesQuery[S: ClassTag](other: RDD[S],
+                                         queryBuilder: S => Query,
+                                         topK: Int = Int.MaxValue,
+                                         minScore: Double = 0
+                                        ): RDD[DocAndHits[S, T]] = {
     val topKReducer = (matches: Array[SearchRecord[T]]) => matches
       .sortBy(_.score)(Ordering.Double.reverse)
       .take(topK)
 
     val otherZipped = other.zipWithIndex.map(_.swap)
+
+    val unwrapDoc = (t: (Long, S)) => queryBuilder(t._2)
+
+    val cartesianRDD: RDD[(Long, Array[SearchRecord[T]])] = new SearchRDDLuceneCartesian[(Long, S), T](
+      indexerRDD, otherZipped, unwrapDoc,
+      options.getReaderOptions, topK, minScore
+    ).map {
+      case ((id: Long, _), sr: SearchRecord[T]) => (id, Array(sr))
+    }
+
     otherZipped
-      .join(new MatchRDD[S, T](this, otherZipped, queryBuilder, topK, minScore))
-      .reduceByKey((d1, d2) => (d1._1, topKReducer(d1._2 ++ d2._2)))
+      .join(cartesianRDD)
+      .reduceByKey {
+        case ((s: S, matches: Array[SearchRecord[T]]), (_, matches2: Array[SearchRecord[T]])) => (s, topKReducer(matches ++ matches2))
+      }
       .map {
         case (_, (doc, matches)) =>
-          new Match[S, T](doc, matches)
+          new DocAndHits[S, T](doc, matches)
       }
   }
 
@@ -108,7 +120,7 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
                                     minScore: Double = 0,
                                     numPartitions: Int = getNumPartitions
                                    ): RDD[T] = {
-    searchJoinQuery[T](parent(1), queryBuilder, topK, minScore)
+    matchesQuery[T](parent(1), queryBuilder, topK, minScore)
       .map(m => {
         val matchHashes = m.hits.filter(_.source.hashCode != m.doc.hashCode).map(_.source.hashCode)
         val allHashes = (Seq(m.doc.hashCode) ++ matchHashes).sorted
@@ -173,10 +185,10 @@ private[search] class SearchRDDLucene[T: ClassTag](sc: SparkContext,
     reducer(ret.toIterator)
   }
 
-  def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[T] =
+  private def reader(indexDirectoryByPartition: Map[Int, String], index: Int): SearchPartitionReader[T] =
     reader(index, indexDirectoryByPartition(index))
 
-  def reader(index: Int, indexDirectory: String): SearchPartitionReader[T] =
+  private def reader(index: Int, indexDirectory: String): SearchPartitionReader[T] =
     new SearchPartitionReader[T](index, indexDirectory,
       elementClassTag.runtimeClass.asInstanceOf[Class[T]],
       options.getReaderOptions)

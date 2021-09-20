@@ -79,7 +79,7 @@ object SearchRDDExamples {
 
     // Match software and computer reviewers
     println("Joined software and computer reviews by reviewer names:")
-    val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviews.filter(_.reviewerName != null),
+    val matchesReviewers: RDD[DocAndHits[Review, Review]] = computersReviews.matches(softwareReviews.filter(_.reviewerName != null),
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
     matchesReviewers
       .filter(_.hits.nonEmpty)

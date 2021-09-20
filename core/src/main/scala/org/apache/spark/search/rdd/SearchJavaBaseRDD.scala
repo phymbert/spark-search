@@ -45,23 +45,23 @@ trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
   override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
     searchRDD.search(query, topK).map(searchRecordAsJava(_)).toJavaRDD()
 
-  override def searchJoin[S](rdd: JavaRDD[S],
+  override def matches[S](rdd: JavaRDD[S],
                              queryBuilder: QueryStringBuilder[S],
                              topK: Int,
-                             minScore: Double): JavaRDD[MatchJava[S, T]] = {
+                             minScore: Double): JavaRDD[DocAndHitsJava[S, T]] = {
     implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.searchJoin(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
+    searchRDD.matches(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
       .map(matchAsJava(_))
   }
 
   override def save(path: String): Unit = searchRDD.save(path)
 
-  override def searchJoinQuery[S](rdd: JavaRDD[S],
+  override def matchesQuery[S](rdd: JavaRDD[S],
                                   queryBuilder: QueryBuilder[S],
                                   topK: Int,
-                                  minScore: Double): JavaRDD[MatchJava[S, T]] = {
+                                  minScore: Double): JavaRDD[DocAndHitsJava[S, T]] = {
     implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.searchJoinQuery(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
+    searchRDD.matchesQuery(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
       .map(matchAsJava(_))
   }
 
@@ -70,9 +70,8 @@ trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
     new JavaRDD(searchAsRDD(searchRDD))
   }
 
-  private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
-    new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))
-  }
+  private def matchAsJava[S: ClassTag](s: DocAndHits[S, T]): DocAndHitsJava[S, T] =
+    new DocAndHitsJava[S, T](s.doc, s.hits.map(searchRecordAsJava))
 
   private def searchRecordAsJava(sr: SearchRecord[T]) =
     new SearchRecordJava[T](sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)

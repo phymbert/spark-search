@@ -15,8 +15,6 @@
  */
 package org.apache.spark
 
-import java.util.function.{Function => JFunction}
-
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.queryparser.classic.QueryParser
@@ -24,6 +22,8 @@ import org.apache.lucene.search.Query
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.search.reflect.DefaultQueryBuilder
 
+import java.util.function.{Function => JFunction}
+import scala.collection.Iterable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -39,9 +39,13 @@ package object search {
   case class SearchRecord[T](id: Long, partitionIndex: Long, score: Double, shardIndex: Long, source: T)
 
   /**
-   * Matched record.
+   * Matched record and related hits.
+   * As hits can be huge, it can seriously impact performances.
    */
-  case class Match[S, T](doc: S, hits: Array[SearchRecord[T]])
+  case class DocAndHits[S, T](doc: S, hits: Array[SearchRecord[T]])
+    extends Iterable[(S, SearchRecord[T])] {
+    override def iterator: Iterator[(S, SearchRecord[T])] = hits.map((doc, _)).iterator
+  }
 
   /**
    * Default search options.
@@ -95,7 +99,7 @@ package object search {
 
   def defaultQueryBuilder[T: ClassTag](opts: SearchOptions[_] = defaultOpts)(implicit cls: ClassTag[T]): T => Query =
     new QueryBuilderWithAnalyzer[T](new DefaultQueryBuilder[T](cls.runtimeClass.asInstanceOf[Class[_ <: T]]).asInstanceOf[(T, QueryBuilder) => Query],
-          opts.getReaderOptions.analyzer)
+      opts.getReaderOptions.analyzer)
 
   def queryBuilder[T](builder: (T, QueryBuilder) => Query, opts: SearchOptions[_] = defaultOpts): T => Query =
     new QueryBuilderWithAnalyzer[T](builder, opts.getReaderOptions.analyzer)

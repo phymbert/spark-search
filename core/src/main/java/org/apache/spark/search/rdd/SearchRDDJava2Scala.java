@@ -17,7 +17,7 @@ package org.apache.spark.search.rdd;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.search.MatchJava;
+import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
 import scala.reflect.ClassTag;
@@ -67,17 +67,17 @@ class SearchRDDJava2Scala<T> extends JavaRDD<T> implements SearchRDDJava<T> {
     }
 
     @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
-                                                   QueryStringBuilder<S> queryBuilder,
-                                                   int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
+    public <S> JavaRDD<DocAndHitsJava<S, T>> matches(JavaRDD<S> rdd,
+                                                     QueryStringBuilder<S> queryBuilder,
+                                                     int topK, double minScore) {
+        return searchRDDJava.matches(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
-                                                        QueryBuilder<S> queryBuilder,
-                                                        int topK, double minScore) {
-        return searchRDDJava.searchJoinQuery(rdd, queryBuilder, topK, minScore);
+    public <S> JavaRDD<DocAndHitsJava<S, T>> matchesQuery(JavaRDD<S> rdd,
+                                                          QueryBuilder<S> queryBuilder,
+                                                          int topK, double minScore) {
+        return searchRDDJava.matchesQuery(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
