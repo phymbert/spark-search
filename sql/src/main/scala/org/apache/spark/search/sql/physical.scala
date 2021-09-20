@@ -50,7 +50,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
       }
       case _ => throw new IllegalArgumentException
     }
-
+é
     searchRDD.matchesQuery(leftRDD.zipWithIndex().map(_.swap), qb, 1)
       .filter(_.hits.nonEmpty) // TODO move this filter at partition level
       .map(m => toRow(m.doc.asInstanceOf[UnsafeRow], m.hits.head.score))

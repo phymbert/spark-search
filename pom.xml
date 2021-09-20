@@ -323,6 +323,8 @@
             <properties>
                 <scala.version>2.11.12</scala.version>
                 <scala.binary.version>2.11</scala.binary.version>
+                <spark.version>2.4.8</spark.version>
+                <hadoop.version>2.10.1</hadoop.version>
             </properties>
         </profile>
         <profile>
