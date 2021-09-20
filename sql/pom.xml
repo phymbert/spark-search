@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search_${scala.binary.version}</artifactId>
+            <artifactId>spark-search_2.12</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
