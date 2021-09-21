@@ -18,9 +18,9 @@ package org.apache.spark.search.rdd;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
+import scala.Tuple2;
 import scala.reflect.ClassTag;
 
 class SearchRDDJava2Scala<S> extends JavaRDD<S> implements SearchRDDJava<S> {
@@ -68,16 +68,18 @@ class SearchRDDJava2Scala<S> extends JavaRDD<S> implements SearchRDDJava<S> {
     }
 
     @Override
-    public <K, V> JavaRDD<DocAndHitsJava<V, S>> matches(JavaPairRDD<K, V> rdd,
-                                                        QueryStringBuilder<V> queryBuilder,
-                                                        int topK, double minScore) {
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matches(JavaPairRDD<K, V> rdd,
+                                                                           QueryStringBuilder<V> queryBuilder,
+                                                                           int topK,
+                                                                           double minScore) {
         return searchRDDJava.matches(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
-    public <K, V> JavaRDD<DocAndHitsJava<V, S>> matchesQuery(JavaPairRDD<K, V> rdd,
-                                                             QueryBuilder<V> queryBuilder,
-                                                             int topK, double minScore) {
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matchesQuery(JavaPairRDD<K, V> rdd,
+                                                                                QueryBuilder<V> queryBuilder,
+                                                                                int topK,
+                                                                                double minScore) {
         return searchRDDJava.matchesQuery(rdd, queryBuilder, topK, minScore);
     }
 

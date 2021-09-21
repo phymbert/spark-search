@@ -20,10 +20,10 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchException;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
+import scala.Tuple2;
 import scala.reflect.ClassTag;
 
 import java.io.Serializable;
@@ -67,12 +67,12 @@ public interface SearchRDDJava<S> {
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
      * @param <V>          Doc type to match with
-     * @return  matches doc and related hits RDD
+     * @return matches doc and related hits RDD
      */
-    <K,V> JavaRDD<DocAndHitsJava<V, S>> matches(JavaPairRDD<K, V> rdd,
-                                              QueryStringBuilder<V> queryBuilder,
-                                              int topK,
-                                              double minScore);
+    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matches(JavaPairRDD<K, V> rdd,
+                                                                    QueryStringBuilder<V> queryBuilder,
+                                                                    int topK,
+                                                                    double minScore);
 
     /**
      * Searches for this input RDD elements matches against these ones
@@ -84,12 +84,12 @@ public interface SearchRDDJava<S> {
      * @param topK         topK to return
      * @param minScore     minimum score of matching documents
      * @param <V>          Doc type to match with
-     * @return  matches doc and related hits RDD
+     * @return matches doc and related hits RDD
      */
-    <K, V> JavaRDD<DocAndHitsJava<V, S>> matchesQuery(JavaPairRDD<K, V> rdd,
-                                                      QueryBuilder<V> queryBuilder,
-                                                      int topK,
-                                                      double minScore);
+    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matchesQuery(JavaPairRDD<K, V> rdd,
+                                                                         QueryBuilder<V> queryBuilder,
+                                                                         int topK,
+                                                                         double minScore);
 
     /**
      * Saves the current indexed RDD onto hdfs

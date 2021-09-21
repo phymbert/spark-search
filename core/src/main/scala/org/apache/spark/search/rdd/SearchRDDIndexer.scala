@@ -35,9 +35,9 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDLuceneIndexer[S: ClassTag](sc: SparkContext,
-                                                          val options: SearchOptions[S],
-                                                          val deps: Seq[Dependency[_]])
+private[search] class SearchRDDIndexer[S: ClassTag](sc: SparkContext,
+                                                    val options: SearchOptions[S],
+                                                    val deps: Seq[Dependency[_]])
   extends RDD[Array[Byte]](sc, deps) {
 
   def this(rdd: RDD[S], options: SearchOptions[S]) {
@@ -95,7 +95,7 @@ private[search] class SearchRDDLuceneIndexer[S: ClassTag](sc: SparkContext,
     }).collect
   }
 
-  override def unpersist(blocking: Boolean): SearchRDDLuceneIndexer.this.type = {
+  override def unpersist(blocking: Boolean): SearchRDDIndexer.this.type = {
     // TODO support non blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
     sparkContext.runJob(this, (context: TaskContext, _: Iterator[Array[Byte]]) => {
@@ -107,6 +107,6 @@ private[search] class SearchRDDLuceneIndexer[S: ClassTag](sc: SparkContext,
   }
 }
 
-private[rdd] object SearchRDDLuceneIndexer {
+private[rdd] object SearchRDDIndexer {
 
 }

@@ -17,9 +17,9 @@ package org.apache.spark.search.rdd;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.search.DocAndHitsJava;
 import org.apache.spark.search.SearchRecordJava;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ public class SearchRDDJavaTest {
         JavaRDD<PersonJava> persons2 = sc.parallelize(PersonJava.PERSONS2).repartition(1);
 
         SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
-        JavaRDD<DocAndHitsJava<PersonJava, PersonJava>> matches = searchRDD.matches(persons2.zipWithIndex().mapToPair(Tuple2::swap),
+        JavaPairRDD<Long, Tuple2<PersonJava, SearchRecordJava<PersonJava>>[]> matches = searchRDD.matches(persons2.zipWithIndex().mapToPair(Tuple2::swap),
                 doc -> Stream.of(
                                 Optional.ofNullable(doc.getFirstName()).map(fn -> String.format("(firstName:%s~0.5)", fn)),
                                 Optional.ofNullable(doc.getLastName()).map(ln -> String.format("(lastName:%s~0.5)", ln))
@@ -82,7 +82,7 @@ public class SearchRDDJavaTest {
 
         assertEquals(5, matches.count());
 
-        matches.foreach(m -> assertEquals(1, m.hits.length));
+        matches.foreach(m -> assertEquals(1, m._2.length));
     }
 
     @Test

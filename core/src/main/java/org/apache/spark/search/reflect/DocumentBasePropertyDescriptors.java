@@ -18,6 +18,7 @@ package org.apache.spark.search.reflect;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.FastHashMap;
+import org.apache.spark.search.rdd.IndexWithKey;
 import scala.Product;
 
 import java.beans.IntrospectionException;
@@ -83,10 +84,16 @@ class DocumentBasePropertyDescriptors implements Serializable {
         PropertyDescriptor[] propertyDescriptors;
         if (isScalaProduct(classTag)) {
             propertyDescriptors = getProductPropertyDescriptors((Class) classTag);
+        } else if (isIndexWithField(classTag)) {
+            propertyDescriptors = PropertyUtils.getPropertyDescriptors(classTag);
         } else {
             propertyDescriptors = PropertyUtils.getPropertyDescriptors(classTag);
         }
         return propertyDescriptors;
+    }
+
+    private <T> boolean isIndexWithField(Class<T> classTag) {
+        return IndexWithKey.class.isAssignableFrom(classTag);
     }
 
     protected <T> boolean isScalaProduct(Class<T> classTag) {

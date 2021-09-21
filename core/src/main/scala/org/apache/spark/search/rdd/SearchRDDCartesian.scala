@@ -30,23 +30,23 @@ import scala.reflect.{ClassTag, classTag}
  *
  * @author Pierrick HYMBERT
  */
-class SearchRDDLuceneCartesian[K: ClassTag, V: ClassTag, S: ClassTag](
-                                                                       @transient var searchRDDLuceneIndexer: SearchRDDLuceneIndexer[S],
-                                                                       @transient var other: RDD[(K, V)],
-                                                                       queryBuilder: V => Query,
-                                                                       readerOptions: ReaderOptions[S],
-                                                                       topK: Int = Int.MaxValue,
-                                                                       minScore: Double = 0)
-  extends RDD[(K, (V, SearchRecord[S]))](searchRDDLuceneIndexer.context, Nil)
+class SearchRDDCartesian[V: ClassTag, S: ClassTag](
+                                                    @transient var searchRDDLuceneIndexer: SearchRDDIndexer[S],
+                                                    @transient var other: RDD[V],
+                                                    queryBuilder: V => Query,
+                                                    readerOptions: ReaderOptions[S],
+                                                    topK: Int = Int.MaxValue,
+                                                    minScore: Double = 0)
+  extends RDD[(V, SearchRecord[S])](searchRDDLuceneIndexer.context, Nil)
     with Serializable {
 
   override val partitioner: Option[Partitioner] = searchRDDLuceneIndexer.partitioner
 
   override protected def getPreferredLocations(split: Partition): Seq[String] =
-    firstParent[S].asInstanceOf[SearchRDDLuceneIndexer[S]]
+    firstParent[S].asInstanceOf[SearchRDDIndexer[S]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchIndexPartition)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(K, (V, SearchRecord[S]))] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(V, SearchRecord[S])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
@@ -59,12 +59,12 @@ class SearchRDDLuceneCartesian[K: ClassTag, V: ClassTag, S: ClassTag](
     tryAndClose(reader(matchPartition.searchIndexPartition.index,
       matchPartition.searchIndexPartition.indexDir)) {
       spr =>
-        parent[(K, V)](1).iterator(matchPartition.otherPartition, context)
+        parent[V](1).iterator(matchPartition.otherPartition, context)
           .flatMap(searchFor => {
             try {
-              spr.search(queryBuilder(searchFor._2), topK, minScore)
+              spr.search(queryBuilder(searchFor), topK, minScore)
                 .map(searchRecordJavaToProduct)
-                .map(s => (searchFor._1, (searchFor._2, s)))
+                .map(s => (searchFor, s))
             } catch {
               case e: SearchException => throw new SearchException(s"error during matching $searchFor: $e", e)
             }
@@ -103,8 +103,8 @@ class SearchRDDLuceneCartesian[K: ClassTag, V: ClassTag, S: ClassTag](
       readerOptions)
 
   class MatchRDDPartition(val idx: Int,
-                          @transient private val searchRDDLuceneIndexer: SearchRDDLuceneIndexer[S],
-                          @transient private val other: RDD[(K, V)],
+                          @transient private val searchRDDLuceneIndexer: SearchRDDIndexer[S],
+                          @transient private val other: RDD[V],
                           val searchRDDIndex: Int,
                           val otherIndex: Int
                          ) extends Partition {

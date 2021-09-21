@@ -30,7 +30,7 @@ import scala.reflect.ClassTag
 private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
                                                           path: String,
                                                           override val options: SearchOptions[S])
-  extends SearchRDDLuceneIndexer[S](sc, options, Nil) {
+  extends SearchRDDIndexer[S](sc, options, Nil) {
 
   override protected def getPartitions: Array[Partition] = {
     val hadoopConf = new Configuration()

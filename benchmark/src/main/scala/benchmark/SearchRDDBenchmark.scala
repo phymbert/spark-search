@@ -38,11 +38,12 @@ object SearchRDDBenchmark extends BaseBenchmark("SearchRDD") {
       .builder[Company]
       .analyzer(classOf[StandardAnalyzer]).build
 
-    companies.searchRDD(opts)
-      .matchesQuery(secEdgarCompanies,
+    companies.searchRDD(opts).zipWithIndex.map(_.swap)
+      .searchJoinQuery(secEdgarCompanies,
         queryBuilder[SecEdgarCompanyInfo]((c: SecEdgarCompanyInfo, lqb: QueryBuilder) =>
           lqb.createPhraseQuery("name", c.companyName.slice(0, 64)), opts), 1, 0d)
-      .filter(_.hits.nonEmpty).map(m => (m.doc.companyName, m.hits.head.score, m.hits.head.source.name))
+      .map(_._2._2)
+      .map(m => (m.source._2.name, m.score, m.source._2.name))
 
   }
 }

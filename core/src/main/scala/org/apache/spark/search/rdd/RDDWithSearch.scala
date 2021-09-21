@@ -31,48 +31,36 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
                                               val opts: SearchOptions[S] = defaultOpts[S]
                                              ) extends SearchRDD[S] {
 
-  private lazy val searchRDD: SearchRDD[S] = searchRDD(opts)
+  private[rdd] lazy val _searchRDD: SearchRDD[S] = searchRDD(opts)
 
-  override def count(): Long = searchRDD.count()
+  override def count(): Long = _searchRDD.count()
 
-  override def count(query: StaticQueryProvider): Long = searchRDD.count(query)
+  override def count(query: StaticQueryProvider): Long = _searchRDD.count(query)
 
   override def searchListQuery(query: StaticQueryProvider,
                                topK: Int = Int.MaxValue,
                                minScore: Double = 0): Array[SearchRecord[S]] =
-    searchRDD.searchListQuery(query, topK, minScore)
+    _searchRDD.searchListQuery(query, topK, minScore)
 
   override def searchQuery(query: StaticQueryProvider,
                            topKByPartition: Int = Int.MaxValue,
                            minScore: Double = 0): RDD[SearchRecord[S]] =
-    searchRDD.searchQuery(query, topKByPartition, minScore)
+    _searchRDD.searchQuery(query, topKByPartition, minScore)
 
-  override def searchJoinQuery[K: ClassTag, V: ClassTag](rdd: RDD[(K, V)],
-                                                         queryBuilder: V => Query,
-                                                         topKByPartition: Int = Int.MaxValue,
-                                                         minScore: Double = 0
-                                                        ): RDD[(K, (V, SearchRecord[S]))] =
-    searchRDD.searchJoinQuery(rdd, queryBuilder, topKByPartition, minScore)
+  override def matchesQuery[K, V](rdd: RDD[(K, V)],
+                                  queryBuilder: V => Query,
+                                  topK: Int = 10,
+                                  minScore: Double = 0
+                                 )
+                                 (implicit kClassTag: ClassTag[K],
+                                  vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])] =
+    _searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
 
-  override def matchesQuery[K: ClassTag, V: ClassTag](rdd: RDD[(K, V)],
-                                                      queryBuilder: V => Query,
-                                                      topK: Int = 10,
-                                                      minScore: Double = 0
-                                                     ): RDD[DocAndHits[V, S]] =
-    searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
+  override def save(path: String): Unit = _searchRDD.save(path)
 
+  override def getNumPartitions: Int = _searchRDD.getNumPartitions
 
-  override def searchDropDuplicates(queryBuilder: S => Query = defaultQueryBuilder(options),
-                                    topK: Int = 10,
-                                    minScore: Double = 0,
-                                    numPartitions: Int = getNumPartitions): RDD[S] =
-    searchRDD.searchDropDuplicates(queryBuilder, topK, minScore, numPartitions)
-
-  override def save(path: String): Unit = searchRDD.save(path)
-
-  override def getNumPartitions: Int = searchRDD.getNumPartitions
-
-  override def options: SearchOptions[S] = searchRDD.options
+  override def options: SearchOptions[S] = _searchRDD.options
 
   /**
    * Builds a search rdd with that custom search options.

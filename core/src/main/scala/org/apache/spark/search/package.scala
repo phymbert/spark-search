@@ -43,15 +43,6 @@ package object search {
   }
 
   /**
-   * Matched record and related hits.
-   * As hits can be huge, it can seriously impact performances.
-   */
-  case class DocAndHits[V, S](doc: V, hits: Array[SearchRecord[S]])
-    extends Iterable[(V, SearchRecord[S])] {
-    override def iterator: Iterator[(V, SearchRecord[S])] = hits.map((doc, _)).iterator
-  }
-
-  /**
    * Default search options.
    */
   def defaultOpts[S]: SearchOptions[S] = SearchOptions.defaultOptions.asInstanceOf[SearchOptions[S]]
