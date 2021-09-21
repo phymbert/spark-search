@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.phymbert</groupId>
-            <artifactId>spark-search-sql_${scala.binary.version}</artifactId>
+            <artifactId>spark-search-sql_2.12</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
