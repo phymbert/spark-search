@@ -124,11 +124,10 @@ trait SearchRDD[S] {
    * @tparam W Doc type to match with
    * @return matches doc and related hit RDD
    */
-  def searchJoin[W](other: RDD[W],
+  def searchJoin[W: ClassTag](other: RDD[W],
                     queryBuilder: W => String,
                     topKByPartition: Int = Int.MaxValue,
-                    minScore: Double = 0)
-                   (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])] =
+                    minScore: Double = 0): RDD[(W, SearchRecord[S])] =
     searchJoinQuery(other, queryStringBuilder(queryBuilder, options), topKByPartition, minScore)
 
   /**
@@ -143,11 +142,10 @@ trait SearchRDD[S] {
    * @tparam W Doc type to match with
    * @return matches doc and related hit RDD
    */
-  def searchJoinQuery[W](other: RDD[W],
+  def searchJoinQuery[W: ClassTag](other: RDD[W],
                          queryBuilder: W => Query,
                          topKByPartition: Int = Int.MaxValue,
-                         minScore: Double = 0)
-                        (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])]
+                         minScore: Double = 0): RDD[(W, SearchRecord[S])]
 
   /**
    * Searches for this input RDD elements matches against these ones
@@ -196,12 +194,14 @@ trait SearchRDD[S] {
    * @param queryBuilder builds the lucene query to search for duplicate
    * @param minScore     minimum score of matching documents
    */
-  def searchDropDuplicates[C](queryBuilder: S => Query,
-                              minScore: Double = 0,
-                              createCombiner: S => C = identity(_: S).asInstanceOf[C],
-                              mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
-                              mergeCombiners: (C, C) => C = (c: C, _: C) => c
-                             )(implicit cls: ClassTag[S]): RDD[C]
+  def searchDropDuplicates[K: ClassTag, C: ClassTag](
+                                                      queryBuilder: S => Query = null,
+                                                      createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                                      minScore: Double = 0,
+                                                      createCombiner: S => C = identity(_: S).asInstanceOf[C],
+                                                      mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
+                                                      mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                    ): RDD[C]
 
   /**
    * Save the current indexed RDD onto hdfs

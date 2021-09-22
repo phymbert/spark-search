@@ -140,13 +140,12 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("search join should work") {
-    val opts = SearchOptions.builder[(Long, Person)]().analyzer(classOf[TestPersonAnalyzer]).build()
+    val opts = SearchOptions.builder[Person]().analyzer(classOf[TestPersonAnalyzer]).build()
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
-      .zipWithIndex().map(_.swap)
       .searchRDD(opts)
       .searchJoin(sc.parallelize(persons),
         (c: Person) => s"firstName:${c.firstName}",
-        topK = 2)
+        topKByPartition = 2)
     assertResult(12)(searchRDD.count) // FIXME add good unit test
   }
 
@@ -162,7 +161,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("Distinct with no minimum score") {
-    val searchRDD = sc.parallelize(personsDuplicated).zipWithIndex().map(_.swap)
+    val searchRDD = sc.parallelize(personsDuplicated)
       .repartition(1)
       .searchRDD()
     val deduplicated = searchRDD.distinct(1).collect
@@ -170,7 +169,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("Drop duplicates with min score") {
-    val searchRDD = sc.parallelize(personsDuplicated).repartition(1).zipWithIndex().map(_.swap)
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
 
     val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
@@ -178,10 +177,10 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("Drop duplicate with query builder and min score") {
-    val searchRDD = sc.parallelize(personsDuplicated).repartition(1).zipWithIndex().map(_.swap)
+    val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
 
     val deduplicated = searchRDD.searchDropDuplicates(
-      queryBuilder = queryStringBuilder(p => s"_2.firstName:${p._2.firstName}~0.5 AND _2.lastName:${p._2.lastName}~0.5"),
+      queryBuilder = queryStringBuilder(p => s"_2.firstName:${p.firstName}~0.5 AND _2.lastName:${p.lastName}~0.5"),
       minScore = 1
     ).collect
     assertResult(3)(deduplicated.length)

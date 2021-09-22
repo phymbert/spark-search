@@ -69,4 +69,12 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
    * @return Dependent RDD with configurable search features
    */
   def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDLucene[S](rdd, opts)
+
+  override def searchJoinQuery[W: ClassTag](other: RDD[W],
+                                  queryBuilder: W => Query,
+                                  topKByPartition: Int,
+                                  minScore: Double): RDD[(W, SearchRecord[S])] =
+    _searchRDD.searchJoinQuery(other, queryBuilder,topKByPartition, minScore)
+
+  override def searchDropDuplicates[K: ClassTag, C: ClassTag](queryBuilder: S => Query, createKey: S => K, minScore: Double, createCombiner: S => C, mergeValue: (C, S) => C, mergeCombiners: (C, C) => C): RDD[C] = ???
 }

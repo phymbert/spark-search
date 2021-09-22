@@ -92,7 +92,7 @@ package object search {
     @transient lazy val _analyzer: Analyzer = analyzerClass.newInstance()
   }
 
-  def defaultQueryBuilder[S: ClassTag](opts: SearchOptions[_] = defaultOpts)(implicit cls: ClassTag[S]): S => Query =
+  def defaultQueryBuilder[S](opts: SearchOptions[_] = defaultOpts)(implicit cls: ClassTag[S]): S => Query =
     new QueryBuilderWithAnalyzer[S](new DefaultQueryBuilder[S](cls.runtimeClass.asInstanceOf[Class[_ <: S]]).asInstanceOf[(S, QueryBuilder) => Query],
       opts.getReaderOptions.analyzer)
 

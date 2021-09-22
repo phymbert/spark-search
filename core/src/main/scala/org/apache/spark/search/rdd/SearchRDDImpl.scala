@@ -109,11 +109,10 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
       ).mapValues(_.toArray)
   }
 
-  override def searchJoinQuery[W](other: RDD[W],
+  override def searchJoinQuery[W: ClassTag](other: RDD[W],
                                   queryBuilder: W => Query,
                                   topKByPartition: Int = Int.MaxValue,
-                                  minScore: Double = 0)
-                                 (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])] = {
+                                  minScore: Double = 0): RDD[(W, SearchRecord[S])] = {
     new SearchRDDCartesian[W, S](
       indexerRDD,
       other, queryBuilder,
@@ -134,15 +133,19 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
    * @param queryBuilder builds the lucene query to search for duplicate
    * @param minScore     minimum score of matching documents
    */
-  def searchDropDuplicates[K, C](queryBuilder: S => Query = defaultQueryBuilder[S](options),
-                                 createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
-                                 minScore: Double = 0,
-                                 createCombiner: S => C = identity(_: S).asInstanceOf[C],
-                                 mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
-                                 mergeCombiners: (C, C) => C = (c: C, _: C) => c
-                                ): RDD[C] = {
+  override def searchDropDuplicates[K: ClassTag, C: ClassTag](
+                                                     queryBuilder: S => Query = null, // Default query builder
+                                                     createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                                     minScore: Double = 0,
+                                                     createCombiner: S => C = identity(_: S).asInstanceOf[C],
+                                                     mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
+                                                     mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                   ): RDD[C] = {
     val cleanedKey = sparkContext.clean(createKey)
-    val unwrapDoc = sparkContext.clean((ks: (K, S)) => queryBuilder(ks._2))
+    val unwrapDoc = sparkContext.clean((ks: (K, S)) => (queryBuilder match {
+      case null => defaultQueryBuilder[S](options)(elementClassTag)
+      case _ => queryBuilder
+    })(ks._2))
     val pairRDD = map(s => (cleanedKey(s), s))
 
     val cartesianRDD: RDD[((K, S), SearchRecord[S])] =
