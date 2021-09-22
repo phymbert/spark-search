@@ -143,7 +143,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val opts = SearchOptions.builder[Person]().analyzer(classOf[TestPersonAnalyzer]).build()
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts)
-      .searchJoin(sc.parallelize(persons),
+      .searchJoin(sc.parallelize(personsDuplicated),
         (c: Person) => s"firstName:${c.firstName}",
         topKByPartition = 2)
     assertResult(12)(searchRDD.count) // FIXME add good unit test
