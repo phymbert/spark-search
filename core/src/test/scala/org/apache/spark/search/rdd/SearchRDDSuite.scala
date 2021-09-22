@@ -181,7 +181,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1).zipWithIndex().map(_.swap)
 
     val deduplicated = searchRDD.searchDropDuplicates(
-      queryBuilder = queryStringBuilder(p => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
+      queryBuilder = queryStringBuilder(p => s"_2.firstName:${p._2.firstName}~0.5 AND _2.lastName:${p._2.lastName}~0.5"),
       minScore = 1
     ).collect
     assertResult(3)(deduplicated.length)

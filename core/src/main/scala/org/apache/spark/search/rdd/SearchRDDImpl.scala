@@ -109,6 +109,59 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
       ).mapValues(_.toArray)
   }
 
+  override def searchJoinQuery[W](other: RDD[W],
+                                  queryBuilder: W => Query,
+                                  topKByPartition: Int = Int.MaxValue,
+                                  minScore: Double = 0)
+                                 (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])] = {
+    new SearchRDDCartesian[W, S](
+      indexerRDD,
+      other, queryBuilder,
+      options.getReaderOptions, topKByPartition, minScore
+    )
+  }
+
+  /**
+   * Alias for
+   * [[org.apache.spark.search.rdd.SearchRDD#searchDropDuplicates(scala.Function1, int, double, int)}]]
+   */
+  def distinct(numPartitions: Int): RDD[S] =
+    searchDropDuplicates[Long, S]()
+
+  /**
+   * Drops duplicated records by applying lookup for matching hits of the query against this RDD.
+   *
+   * @param queryBuilder builds the lucene query to search for duplicate
+   * @param minScore     minimum score of matching documents
+   */
+  def searchDropDuplicates[K, C](queryBuilder: S => Query = defaultQueryBuilder[S](options),
+                                 createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                 minScore: Double = 0,
+                                 createCombiner: S => C = identity(_: S).asInstanceOf[C],
+                                 mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
+                                 mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                ): RDD[C] = {
+    val cleanedKey = sparkContext.clean(createKey)
+    val unwrapDoc = sparkContext.clean((ks: (K, S)) => queryBuilder(ks._2))
+    val pairRDD = map(s => (cleanedKey(s), s))
+
+    val cartesianRDD: RDD[((K, S), SearchRecord[S])] =
+      new SearchRDDCartesian[(K, S), S](
+        indexerRDD, pairRDD,
+        unwrapDoc,
+        options.getReaderOptions,
+        Integer.MAX_VALUE,
+        minScore)
+
+    val pairedRDD: RDD[(K, S)] = cartesianRDD.flatMap {
+      case ((k: K, s: S), sr: SearchRecord[S]) =>
+        Iterator((k, s), (cleanedKey(sr.source), sr.source))
+    }
+
+    pairedRDD.combineByKey(createCombiner, mergeValue, mergeCombiners)
+      .values
+  }
+
   override def save(pathString: String): Unit = {
     logInfo(s"Saving index with $getNumPartitions partitions to $pathString ...")
     // Be sure we are indexed

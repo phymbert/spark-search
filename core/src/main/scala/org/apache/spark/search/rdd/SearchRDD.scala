@@ -113,6 +113,43 @@ trait SearchRDD[S] {
                   minScore: Double = 0): RDD[SearchRecord[S]]
 
   /**
+   * Searches join for this input RDD elements matches against these ones
+   * by building a lucene query string per doc
+   * and returns matching hit as tuples.
+   *
+   * @param other           to match with
+   * @param queryBuilder    builds the query string to match with the searched document
+   * @param topKByPartition – topK to return by partition
+   * @param minScore        minimum score of matching documents
+   * @tparam W Doc type to match with
+   * @return matches doc and related hit RDD
+   */
+  def searchJoin[W](other: RDD[W],
+                    queryBuilder: W => String,
+                    topKByPartition: Int = Int.MaxValue,
+                    minScore: Double = 0)
+                   (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])] =
+    searchJoinQuery(other, queryStringBuilder(queryBuilder, options), topKByPartition, minScore)
+
+  /**
+   * Searches join for this input RDD elements matches against these ones
+   * by building a lucene query per doc
+   * and returns matching hit as tuples.
+   *
+   * @param other           to match with
+   * @param queryBuilder    builds the query string to match with the searched document
+   * @param topKByPartition – topK to return by partition
+   * @param minScore        minimum score of matching documents
+   * @tparam W Doc type to match with
+   * @return matches doc and related hit RDD
+   */
+  def searchJoinQuery[W](other: RDD[W],
+                         queryBuilder: W => Query,
+                         topKByPartition: Int = Int.MaxValue,
+                         minScore: Double = 0)
+                        (implicit wClassTag: ClassTag[W]): RDD[(W, SearchRecord[S])]
+
+  /**
    * Searches for this input RDD elements matches against these ones
    * by building a lucene query string per doc
    * and returns matching hits per doc.
@@ -152,6 +189,19 @@ trait SearchRDD[S] {
                          minScore: Double = 0)
                         (implicit kClassTag: ClassTag[K],
                          vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])]
+
+  /**
+   * Drops duplicated records by applying lookup for matching hits of the query against this RDD.
+   *
+   * @param queryBuilder builds the lucene query to search for duplicate
+   * @param minScore     minimum score of matching documents
+   */
+  def searchDropDuplicates[C](queryBuilder: S => Query,
+                              minScore: Double = 0,
+                              createCombiner: S => C = identity(_: S).asInstanceOf[C],
+                              mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
+                              mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                             )(implicit cls: ClassTag[S]): RDD[C]
 
   /**
    * Save the current indexed RDD onto hdfs
