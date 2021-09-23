@@ -210,7 +210,8 @@ trait SearchRDD[S] {
                                                       minScore: Double = 0,
                                                       createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
                                                       mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
-                                                      mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                      mergeCombiners: (C, C) => C = (c: C, _: C) => c,
+                                                      numPartitionInJoin: Int = getNumPartitions
                                                     )(implicit ord: Ordering[K]): RDD[C]
 
   /**

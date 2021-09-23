@@ -9,7 +9,7 @@
 [Spark](https://spark.apache.org/) Search brings advanced full text search features to your Dataframe, Dataset and RDD. Powered by [Apache Lucene](https://lucene.apache.org/).
 
 ## Context
-Let's image you have a billion records dataset you want to query on and match against another one using full text search...
+Let's assume you have a billion records dataset you want to query on and match against another one using full text search...
 You do not expect an external datasource or database system than Spark, and of course with the best performances.
 Spark Search fits your needs: it builds for all parent RDD partitions a one-2-one volatile Lucene index available
  during the lifecycle of your spark session across your executors local directories and RAM.

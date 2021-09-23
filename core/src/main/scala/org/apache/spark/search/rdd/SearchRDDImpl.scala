@@ -144,14 +144,15 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
                                                                minScore: Double = 0,
                                                                createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
                                                                mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
-                                                               mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                               mergeCombiners: (C, C) => C = (c: C, _: C) => c,
+                                                               numPartitionInJoin: Int = getNumPartitions
                                                              )(implicit ord: Ordering[K]): RDD[C] = {
     val cleanedKey = sparkContext.clean(createKey)
     val unwrapDoc = sparkContext.clean((ks: (K, S)) => (queryBuilder match {
       case null => defaultQueryBuilder[S](options)(elementClassTag)
       case _ => queryBuilder
     }) (ks._2))
-    val pairedRDD = map(s => (cleanedKey(s), s))
+    val pairedRDD = map(s => (cleanedKey(s), s)).repartition(numPartitionInJoin)
 
     val cartesianRDD: RDD[((K, S), Option[SearchRecord[S]])] =
       new SearchRDDCartesian[(K, S), S](

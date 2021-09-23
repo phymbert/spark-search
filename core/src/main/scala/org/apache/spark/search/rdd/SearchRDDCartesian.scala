@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.search.{ReaderOptions, SearchException, SearchRecord}
 import org.apache.spark.util.Utils
 
+import collection.JavaConverters._
 import scala.reflect.{ClassTag, classTag}
 
 /**
@@ -55,25 +56,28 @@ class SearchRDDCartesian[V: ClassTag, S: ClassTag](
     // Unzip if needed
     ZipUtils.unzipPartition(matchPartition.searchIndexPartition.indexDir, it)
 
+    val spr = reader(matchPartition.searchIndexPartition.index,
+      matchPartition.searchIndexPartition.indexDir)
+
+    context.addTaskCompletionListener[Unit]((_:TaskContext) => {
+      spr.close()
+    })
+
     // Match other partition against our one
-    tryAndClose(reader(matchPartition.searchIndexPartition.index,
-      matchPartition.searchIndexPartition.indexDir)) {
-      spr =>
-        parent[V](1).iterator(matchPartition.otherPartition, context)
-          .flatMap(searchFor => {
-            try {
-              var pairMatch: Array[(V, Option[SearchRecord[S]])] = spr.search(queryBuilder(searchFor), topK, minScore)
-                .map(searchRecordJavaToProduct)
-                .map(s => (searchFor, Some(s)))
-              if (pairMatch.isEmpty) {
-                pairMatch = Array((searchFor, None)) // FIXME left join always
-              }
-              pairMatch
-            } catch {
-              case e: SearchException => throw new SearchException(s"error during matching $searchFor: $e", e)
-            }
-          }).toList.toIterator // Force search to be computed within the reader resource
-    }
+    parent[V](1).iterator(matchPartition.otherPartition, context)
+      .flatMap(searchFor => {
+        try {
+          val searchResultIt = spr.iterator(queryBuilder(searchFor), topK, minScore)
+
+          val result = if (searchResultIt.size() == 0) Iterator((searchFor, None)) // FIXME left join always
+          else searchResultIt.asScala
+            .map(searchRecordJavaToProduct)
+            .map(s => (searchFor, Some(s)))
+          result
+        } catch {
+          case e: SearchException => throw new SearchException(s"error during matching $searchFor: $e", e)
+        }
+      })
   }
 
   override def clearDependencies(): Unit = {
