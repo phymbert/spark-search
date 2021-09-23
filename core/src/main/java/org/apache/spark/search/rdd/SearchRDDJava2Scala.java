@@ -68,7 +68,7 @@ class SearchRDDJava2Scala<S> extends JavaRDD<S> implements SearchRDDJava<S> {
     }
 
     @Override
-    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matches(JavaPairRDD<K, V> rdd,
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matches(JavaPairRDD<K, V> rdd,
                                                                            QueryStringBuilder<V> queryBuilder,
                                                                            int topK,
                                                                            double minScore) {
@@ -76,7 +76,7 @@ class SearchRDDJava2Scala<S> extends JavaRDD<S> implements SearchRDDJava<S> {
     }
 
     @Override
-    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matchesQuery(JavaPairRDD<K, V> rdd,
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matchesQuery(JavaPairRDD<K, V> rdd,
                                                                                 QueryBuilder<V> queryBuilder,
                                                                                 int topK,
                                                                                 double minScore) {

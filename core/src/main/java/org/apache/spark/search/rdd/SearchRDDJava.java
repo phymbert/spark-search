@@ -69,7 +69,7 @@ public interface SearchRDDJava<S> {
      * @param <V>          Doc type to match with
      * @return matches doc and related hits RDD
      */
-    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matches(JavaPairRDD<K, V> rdd,
+    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matches(JavaPairRDD<K, V> rdd,
                                                                     QueryStringBuilder<V> queryBuilder,
                                                                     int topK,
                                                                     double minScore);
@@ -86,7 +86,7 @@ public interface SearchRDDJava<S> {
      * @param <V>          Doc type to match with
      * @return matches doc and related hits RDD
      */
-    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>>[]> matchesQuery(JavaPairRDD<K, V> rdd,
+    <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matchesQuery(JavaPairRDD<K, V> rdd,
                                                                          QueryBuilder<V> queryBuilder,
                                                                          int topK,
                                                                          double minScore);

@@ -125,9 +125,9 @@ trait SearchRDD[S] {
    * @return matches doc and related hit RDD
    */
   def searchJoin[W: ClassTag](other: RDD[W],
-                    queryBuilder: W => String,
-                    topKByPartition: Int = Int.MaxValue,
-                    minScore: Double = 0): RDD[(W, SearchRecord[S])] =
+                              queryBuilder: W => String,
+                              topKByPartition: Int = Int.MaxValue,
+                              minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])] =
     searchJoinQuery(other, queryStringBuilder(queryBuilder, options), topKByPartition, minScore)
 
   /**
@@ -143,9 +143,9 @@ trait SearchRDD[S] {
    * @return matches doc and related hit RDD
    */
   def searchJoinQuery[W: ClassTag](other: RDD[W],
-                         queryBuilder: W => Query,
-                         topKByPartition: Int = Int.MaxValue,
-                         minScore: Double = 0): RDD[(W, SearchRecord[S])]
+                                   queryBuilder: W => Query,
+                                   topKByPartition: Int = Int.MaxValue,
+                                   minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])]
 
   /**
    * Searches for this input RDD elements matches against these ones
@@ -165,7 +165,7 @@ trait SearchRDD[S] {
                     topK: Int = Int.MaxValue,
                     minScore: Double = 0)
                    (implicit kClassTag: ClassTag[K],
-                    vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])] =
+                    vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))] =
     matchesQuery(rdd, queryStringBuilder(queryBuilder, options), topK, minScore)
 
   /**
@@ -186,7 +186,17 @@ trait SearchRDD[S] {
                          topK: Int = Int.MaxValue,
                          minScore: Double = 0)
                         (implicit kClassTag: ClassTag[K],
-                         vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])]
+                         vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))]
+
+  private[spark] def elementClassTag: ClassTag[S]
+
+  /**
+   * Alias for searchDropDuplicates
+   */
+  def distinct(numPartitions: Int): RDD[S] = {
+    implicit val classTagS: ClassTag[S] = elementClassTag
+    searchDropDuplicates[Long, S]()
+  }
 
   /**
    * Drops duplicated records by applying lookup for matching hits of the query against this RDD.
@@ -198,10 +208,10 @@ trait SearchRDD[S] {
                                                       queryBuilder: S => Query = null,
                                                       createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
                                                       minScore: Double = 0,
-                                                      createCombiner: S => C = identity(_: S).asInstanceOf[C],
-                                                      mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
+                                                      createCombiner: Seq[S] => C = (ss: Seq[S]) => ss.head.asInstanceOf[C],
+                                                      mergeValue: (C, Seq[S]) => C = (c: C, _: Seq[S]) => c,
                                                       mergeCombiners: (C, C) => C = (c: C, _: C) => c
-                                                    ): RDD[C]
+                                                    )(implicit ord: Ordering[K]): RDD[C]
 
   /**
    * Save the current indexed RDD onto hdfs

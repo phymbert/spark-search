@@ -71,7 +71,8 @@ public class SearchRDDJavaTest {
         JavaRDD<PersonJava> persons2 = sc.parallelize(PersonJava.PERSONS2).repartition(1);
 
         SearchRDDJava<PersonJava> searchRDD = SearchRDDJava.of(persons, PersonJava.class);
-        JavaPairRDD<Long, Tuple2<PersonJava, SearchRecordJava<PersonJava>>[]> matches = searchRDD.matches(persons2.zipWithIndex().mapToPair(Tuple2::swap),
+        JavaPairRDD<Long, Tuple2<PersonJava, SearchRecordJava<PersonJava>[]>> matches = searchRDD.matches(
+                persons2.zipWithIndex().mapToPair(Tuple2::swap),
                 doc -> Stream.of(
                                 Optional.ofNullable(doc.getFirstName()).map(fn -> String.format("(firstName:%s~0.5)", fn)),
                                 Optional.ofNullable(doc.getLastName()).map(ln -> String.format("(lastName:%s~0.5)", ln))
@@ -82,7 +83,7 @@ public class SearchRDDJavaTest {
 
         assertEquals(5, matches.count());
 
-        matches.foreach(m -> assertEquals(1, m._2.length));
+        matches.foreach(m -> assertEquals(1, m._2._2.length));
     }
 
     @Test

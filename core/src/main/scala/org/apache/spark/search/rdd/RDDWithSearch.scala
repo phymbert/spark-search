@@ -53,7 +53,7 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
                                   minScore: Double = 0
                                  )
                                  (implicit kClassTag: ClassTag[K],
-                                  vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])] =
+                                  vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))]=
     _searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
 
   override def save(path: String): Unit = _searchRDD.save(path)
@@ -71,10 +71,23 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
   def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDLucene[S](rdd, opts)
 
   override def searchJoinQuery[W: ClassTag](other: RDD[W],
-                                  queryBuilder: W => Query,
-                                  topKByPartition: Int,
-                                  minScore: Double): RDD[(W, SearchRecord[S])] =
-    _searchRDD.searchJoinQuery(other, queryBuilder,topKByPartition, minScore)
+                                            queryBuilder: W => Query,
+                                            topKByPartition: Int,
+                                            minScore: Double): RDD[(W, Option[SearchRecord[S]])] =
+    _searchRDD.searchJoinQuery(other, queryBuilder, topKByPartition, minScore)
 
-  override def searchDropDuplicates[K: ClassTag, C: ClassTag](queryBuilder: S => Query, createKey: S => K, minScore: Double, createCombiner: S => C, mergeValue: (C, S) => C, mergeCombiners: (C, C) => C): RDD[C] = ???
+  override def distinct(numPartitions: Int): RDD[S] =
+    _searchRDD.distinct(numPartitions)
+
+  override def searchDropDuplicates[K: ClassTag, C: ClassTag](queryBuilder: S => Query = null,
+                                                              createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                                              minScore: Double = 0,
+                                                              createCombiner: Seq[S] => C = (ss: Seq[S]) => ss.head.asInstanceOf[C],
+                                                              mergeValue: (C, Seq[S]) => C = (c: C, _: Seq[S]) => c,
+                                                              mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                             )
+                                                             (implicit ord: Ordering[K]): RDD[C] =
+    _searchRDD.searchDropDuplicates(queryBuilder, createKey, minScore, createCombiner, mergeValue, mergeCombiners)
+
+  private[spark] override def elementClassTag: ClassTag[S] = _searchRDD.elementClassTag
 }

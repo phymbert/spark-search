@@ -37,7 +37,7 @@ class SearchRDDCartesian[V: ClassTag, S: ClassTag](
                                                     readerOptions: ReaderOptions[S],
                                                     topK: Int = Int.MaxValue,
                                                     minScore: Double = 0)
-  extends RDD[(V, SearchRecord[S])](searchRDDLuceneIndexer.context, Nil)
+  extends RDD[(V, Option[SearchRecord[S]])](searchRDDLuceneIndexer.context, Nil)
     with Serializable {
 
   override val partitioner: Option[Partitioner] = searchRDDLuceneIndexer.partitioner
@@ -46,7 +46,7 @@ class SearchRDDCartesian[V: ClassTag, S: ClassTag](
     firstParent[S].asInstanceOf[SearchRDDIndexer[S]]
       .getPreferredLocations(split.asInstanceOf[MatchRDDPartition].searchIndexPartition)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(V, SearchRecord[S])] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(V, Option[SearchRecord[S]])] = {
     val matchPartition = split.asInstanceOf[MatchRDDPartition]
 
     // Be sure partition is indexed in our worker
@@ -62,9 +62,13 @@ class SearchRDDCartesian[V: ClassTag, S: ClassTag](
         parent[V](1).iterator(matchPartition.otherPartition, context)
           .flatMap(searchFor => {
             try {
-              spr.search(queryBuilder(searchFor), topK, minScore)
+              var pairMatch: Array[(V, Option[SearchRecord[S]])] = spr.search(queryBuilder(searchFor), topK, minScore)
                 .map(searchRecordJavaToProduct)
-                .map(s => (searchFor, s))
+                .map(s => (searchFor, Some(s)))
+              if (pairMatch.isEmpty) {
+                pairMatch = Array((searchFor, None)) // FIXME left join always
+              }
+              pairMatch
             } catch {
               case e: SearchException => throw new SearchException(s"error during matching $searchFor: $e", e)
             }

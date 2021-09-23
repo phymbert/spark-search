@@ -87,32 +87,37 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
                                   minScore: Double = 0
                                  )
                                  (implicit kClassTag: ClassTag[K],
-                                  vClassTag: ClassTag[V]): RDD[(K, Array[(V, SearchRecord[S])])] = {
+                                  vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))] = {
     val unwrapDoc = sparkContext.clean((kv: (K, V)) => queryBuilder(kv._2))
 
-    val cartesianRDD: RDD[((K, V), SearchRecord[S])] =
+    val cartesianRDD: RDD[((K, V), Option[SearchRecord[S]])] =
       new SearchRDDCartesian[(K, V), S](
         indexerRDD, other, unwrapDoc,
         options.getReaderOptions, topK, minScore
       )
 
-    val pairedRDD = cartesianRDD.map {
-      case ((k: K, v: V), sr: SearchRecord[S]) => (k, (v, sr))
+    val pairedRDD: RDD[(K, (V, Option[SearchRecord[S]]))] = cartesianRDD.map {
+      case ((k: K, v: V), Some(sr)) => (k, (v, Some(sr)))
+      case ((k: K, v: V), None) => (k, (v, None))
     }
 
     // TopK monoid
-    val ord: Ordering[(V, SearchRecord[S])] = Ordering.by(_._2.score)
-    pairedRDD
-      .aggregateByKey(new BoundedPriorityQueue[(V, SearchRecord[S])](topK)(ord.reverse))(
+    implicit val ord: Ordering[(V, Option[SearchRecord[S]])] = Ordering.by(_._2.map(_.score))
+    val topKByKey = pairedRDD
+      .aggregateByKey(new BoundedPriorityQueue[(V, Option[SearchRecord[S]])](topK)(ord))(
         seqOp = (topK, searchRecord) => topK += searchRecord,
         combOp = (topK1, topK2) => topK1 ++= topK2
-      ).mapValues(_.toArray)
+      )
+
+    val matchesByKey = topKByKey
+      .mapValues(matches => (matches.head._1, matches.filter(_._2.isDefined).map(_._2.get).toArray.reverse))
+    matchesByKey
   }
 
   override def searchJoinQuery[W: ClassTag](other: RDD[W],
-                                  queryBuilder: W => Query,
-                                  topKByPartition: Int = Int.MaxValue,
-                                  minScore: Double = 0): RDD[(W, SearchRecord[S])] = {
+                                            queryBuilder: W => Query,
+                                            topKByPartition: Int = Int.MaxValue,
+                                            minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])] = {
     new SearchRDDCartesian[W, S](
       indexerRDD,
       other, queryBuilder,
@@ -124,7 +129,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
    * Alias for
    * [[org.apache.spark.search.rdd.SearchRDD#searchDropDuplicates(scala.Function1, int, double, int)}]]
    */
-  def distinct(numPartitions: Int): RDD[S] =
+  override def distinct(numPartitions: Int): RDD[S] =
     searchDropDuplicates[Long, S]()
 
   /**
@@ -134,21 +139,21 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
    * @param minScore     minimum score of matching documents
    */
   override def searchDropDuplicates[K: ClassTag, C: ClassTag](
-                                                     queryBuilder: S => Query = null, // Default query builder
-                                                     createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
-                                                     minScore: Double = 0,
-                                                     createCombiner: S => C = identity(_: S).asInstanceOf[C],
-                                                     mergeValue: (C, S) => C = (_: C, s: S) => s.asInstanceOf[C],
-                                                     mergeCombiners: (C, C) => C = (c: C, _: C) => c
-                                                   ): RDD[C] = {
+                                                               queryBuilder: S => Query = null, // Default query builder
+                                                               createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                                               minScore: Double = 0,
+                                                               createCombiner: Seq[S] => C = (ss: Seq[S]) => ss.head.asInstanceOf[C],
+                                                               mergeValue: (C, Seq[S]) => C = (c: C, _: Seq[S]) => c,
+                                                               mergeCombiners: (C, C) => C = (c: C, _: C) => c
+                                                             )(implicit ord: Ordering[K]): RDD[C] = {
     val cleanedKey = sparkContext.clean(createKey)
     val unwrapDoc = sparkContext.clean((ks: (K, S)) => (queryBuilder match {
       case null => defaultQueryBuilder[S](options)(elementClassTag)
       case _ => queryBuilder
-    })(ks._2))
+    }) (ks._2))
     val pairRDD = map(s => (cleanedKey(s), s))
 
-    val cartesianRDD: RDD[((K, S), SearchRecord[S])] =
+    val cartesianRDD: RDD[((K, S), Option[SearchRecord[S]])] =
       new SearchRDDCartesian[(K, S), S](
         indexerRDD, pairRDD,
         unwrapDoc,
@@ -156,12 +161,34 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
         Integer.MAX_VALUE,
         minScore)
 
-    val pairedRDD: RDD[(K, S)] = cartesianRDD.flatMap {
-      case ((k: K, s: S), sr: SearchRecord[S]) =>
-        Iterator((k, s), (cleanedKey(sr.source), sr.source))
+    val pairedRDD: RDD[(K, (S, Option[SearchRecord[S]]))] = cartesianRDD.map {
+      case ((k: K, s: S), Some(sr)) => (k, (s, Some(sr)))
+      case ((k: K, s: S), None) => (k, (s, None))
     }
 
-    pairedRDD.combineByKey(createCombiner, mergeValue, mergeCombiners)
+    val agg: RDD[(K, List[(S, Option[SearchRecord[S]])])] =
+      pairedRDD.aggregateByKey(List[(S, Option[SearchRecord[S]])]())(
+        seqOp = (matches, searchRecord) => {
+          matches ++ List(searchRecord)
+        },
+        combOp = (matches1, matches2) => {
+          matches1 ++ matches2
+        }
+      )
+
+    val keysAndDocs: RDD[(Seq[K], Seq[S])] = agg.map {
+      case (key: K, matches: List[(S, Option[SearchRecord[S]])]) =>
+        val doc: S = matches.head._1 // assumed left join
+        val otherMatches = matches
+          .filter(_._2.isDefined)
+          .map(m => (createKey(m._2.get.source), m._2.get.source))
+          // Remove self matching if exists (depending on score filter)
+          .filter((ks) => ks._1 != key)
+        val keys = (Seq(key) ++ otherMatches.map(_._1)).sorted
+        (keys, Seq(doc) ++ otherMatches.map(_._2))
+    }
+
+    keysAndDocs.combineByKey(createCombiner, mergeValue, mergeCombiners)
       .values
   }
 
@@ -182,6 +209,8 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
 
     logInfo(s"Index with $getNumPartitions partitions saved to $path")
   }
+
+  private[spark] override def elementClassTag: ClassTag[S] = super.elementClassTag
 
   override val partitioner: Option[Partitioner] = indexerRDD.partitioner
 

@@ -108,7 +108,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val personsKeyed: RDD[(Long, Person)] = matchingRDD.zipWithIndex().map(_.swap)
     val matches = searchRDD.matches(personsKeyed, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
-    assertResult(3)(matches.map(m => m._2.length).count(_ == 2))
+    assertResult(3)(matches.map(m => m._2._2.length).count(_ == 2))
   }
 
   test("Persisting RDD to local dirs is forbidden") {
@@ -120,12 +120,13 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     searchRDD.cache
   }
 
-  test("self matches with one query value should returns all document with one match") {
+  test("self matches with one query value should returns all documents with one match") {
     val rdd = sc.parallelize(persons)
-    val searchRDD = rdd
+    val result = rdd
       .matches(rdd.zipWithIndex().map(_.swap), (_: Person) => "lastName:Marley", 1)
-      .filter(_._2.map(_._2).count(_.source.lastName.equals("Marley")) == 1)
-    assertResult(3)(searchRDD.count)
+    val resultFiltered = result
+      .filter(_._2._2.count(_.source.lastName.equals("Marley")) == 1)
+    assertResult(3)(resultFiltered.count)
   }
 
   test("self matches with self query value should returns all document with self match") {
@@ -134,7 +135,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName, Occur.MUST)),
       topK = 1)
       .map(_._2)
-      .filter(m => m.count(h => h._2.source.firstName.equals(h._1.firstName)) == 1)
+      .filter(m => m._2.count(h => h.source.firstName.equals(h.source.firstName)) == 1)
       .cache
     assertResult(3)(searchRDD.count)
   }
@@ -156,7 +157,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
       .matchesQuery(sc.parallelize(persons).zipWithIndex().map(_.swap),
         queryBuilder((c: Person, lqb: QueryBuilder) => lqb.createBooleanQuery("firstName", c.firstName), opts),
         topK = 2)
-      .filter(_._2.length == 2)
+      .filter(_._2._2.length == 2)
     assertResult(3)(searchRDD.count)
   }
 
@@ -172,15 +173,15 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
 
-    val deduplicated = searchRDD.searchDropDuplicates(minScore = 8).collect
+    val deduplicated = searchRDD.searchDropDuplicates[Long, Person](minScore = 8).collect
     assertResult(3)(deduplicated.length)
   }
 
   test("Drop duplicate with query builder and min score") {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
 
-    val deduplicated = searchRDD.searchDropDuplicates(
-      queryBuilder = queryStringBuilder(p => s"_2.firstName:${p.firstName}~0.5 AND _2.lastName:${p.lastName}~0.5"),
+    val deduplicated = searchRDD.searchDropDuplicates[Long, Person](
+      queryBuilder = queryStringBuilder(p => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5"),
       minScore = 1
     ).collect
     assertResult(3)(deduplicated.length)
