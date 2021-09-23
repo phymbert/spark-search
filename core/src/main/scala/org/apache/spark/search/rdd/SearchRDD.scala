@@ -208,8 +208,8 @@ trait SearchRDD[S] {
                                                       queryBuilder: S => Query = null,
                                                       createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
                                                       minScore: Double = 0,
-                                                      createCombiner: Seq[S] => C = (ss: Seq[S]) => ss.head.asInstanceOf[C],
-                                                      mergeValue: (C, Seq[S]) => C = (c: C, _: Seq[S]) => c,
+                                                      createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
+                                                      mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
                                                       mergeCombiners: (C, C) => C = (c: C, _: C) => c
                                                     )(implicit ord: Ordering[K]): RDD[C]
 
