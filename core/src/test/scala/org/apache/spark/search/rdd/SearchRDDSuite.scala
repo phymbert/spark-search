@@ -163,7 +163,7 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val searchRDD = sc.parallelize(personsDuplicated).repartition(1)
       .searchRDD(opts = SearchOptions.builder().analyzer(classOf[TestPersonAnalyzer]).build())
 
-    val deduplicated = searchRDD.searchDropDuplicates[Long, Person](minScore = 11).collect
+    val deduplicated = searchRDD.searchDropDuplicates[Long, Person](minScore = 8).collect
     assertResult(3)(deduplicated.length)
   }
 
