@@ -96,7 +96,7 @@ object SearchRDDExamples {
     println("Dropping duplicated reviewers:")
     val distinctReviewers: RDD[String] = computersReviews
       .filter(_.reviewerName != null)
-      .searchDropDuplicates[Int, Review](
+      .searchDropDuplicates[Long, Review](
       queryBuilder = queryStringBuilder[Review](sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
     distinctReviewers.collect().sorted.take(20).foreach(println)
