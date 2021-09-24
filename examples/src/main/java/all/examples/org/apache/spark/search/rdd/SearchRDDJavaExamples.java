@@ -86,13 +86,13 @@ public class SearchRDDJavaExamples {
         computerReviews.matches(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty())
                                 .mapToPair(sr -> new Tuple2<String, Review>(sr.asin, sr)),
                         r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
-                //.filter(matches -> matches.hits.length > 0) FIXME
-                .map(Tuple2::_2)
+                .values()
+                .filter(matches -> matches._2.length > 0)
                 .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
-                        sameReviewerMatches[0]._1.reviewerName,
-                        sameReviewerMatches[0]._1.asin,
-                        Arrays.stream(sameReviewerMatches).map(Tuple2::_2).map(h -> h.source.asin).collect(toList()),
-                        Arrays.stream(sameReviewerMatches).map(Tuple2::_2).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+                        sameReviewerMatches._1.reviewerName,
+                        sameReviewerMatches._1.asin,
+                        Arrays.stream(sameReviewerMatches._2).map(h -> h.source.asin).collect(toList()),
+                        Arrays.stream(sameReviewerMatches._2).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
                 .take(10)
                 .forEach(matches -> System.err.println(matches));
