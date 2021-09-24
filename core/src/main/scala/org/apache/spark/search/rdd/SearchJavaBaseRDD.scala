@@ -52,7 +52,7 @@ trait SearchRDDJavaWrapper[S] extends SearchRDDJava[S] {
     implicit val kClassTag: ClassTag[K] = rdd.kClassTag
     implicit val vClassTag: ClassTag[V] = rdd.vClassTag
     new JavaPairRDD(
-      searchRDD.matches(rdd.rdd, v => queryBuilder.build(v), topK, minScore)
+      searchRDD.matches[K, V](rdd.rdd, v => queryBuilder.build(v), topK, minScore)
         .mapValues(m => (m._1, m._2.map(searchRecordAsJava(_)))))
   }
 
@@ -65,7 +65,7 @@ trait SearchRDDJavaWrapper[S] extends SearchRDDJava[S] {
     implicit val kClassTag: ClassTag[K] = rdd.kClassTag
     implicit val vClassTag: ClassTag[V] = rdd.vClassTag
     new JavaPairRDD(
-      searchRDD.matchesQuery(rdd.rdd, v => queryBuilder.build(v), topK, minScore)
+      searchRDD.matchesQuery[K, V](rdd.rdd, v => queryBuilder.build(v), topK, minScore)
         .mapValues(m => (m._1, m._2.map(searchRecordAsJava(_)))))
   }
 
