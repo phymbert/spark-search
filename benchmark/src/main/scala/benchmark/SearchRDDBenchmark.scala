@@ -38,12 +38,10 @@ object SearchRDDBenchmark extends BaseBenchmark("SearchRDD") {
       .builder[Company]
       .analyzer(classOf[StandardAnalyzer]).build
 
-    companies.searchRDD(opts).zipWithIndex.map(_.swap)
+    companies.searchRDD(opts)
       .searchJoinQuery(secEdgarCompanies,
         queryBuilder[SecEdgarCompanyInfo]((c: SecEdgarCompanyInfo, lqb: QueryBuilder) =>
           lqb.createPhraseQuery("name", c.companyName.slice(0, 64)), opts), 1, 0d)
-      .map(_._2._2)
-      .map(m => (m.source._2.name, m.score, m.source._2.name))
-
+      .map(m => (m._1.companyName, m._2.map(_.score), m._2.map(_.source.name)))
   }
 }
