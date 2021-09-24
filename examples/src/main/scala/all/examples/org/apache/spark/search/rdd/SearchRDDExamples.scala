@@ -80,7 +80,7 @@ object SearchRDDExamples {
     // Match software and computer reviewers
     println("Joined software and computer reviews by reviewer names:")
     val matchesReviewers: RDD[(Review, Array[SearchRecord[Review]])] = computersReviews.matches[String, Review](
-      softwareReviews.map(sr => (sr.asin, sr)),
+      softwareReviews.filter(_.reviewerName != null).map(sr => (sr.asin, sr)),
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
       .values
     matchesReviewers
