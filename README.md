@@ -59,20 +59,21 @@ computersReviews.searchList("(reviewerName:Mikey~0.8) OR (reviewerName:Wiliam~0.
 // RDD full text joining - example here searches for persons
 // who did both computer and software reviews with fuzzy matching on reviewer name
 val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
-val matchesReviewers: RDD[DocAndHits[Review, Review]] = computersReviews.matches(
-                             softwareReviewsRDD.filter(_.reviewerName != null).zipWithIndex.map(_.swap),
+val matchesReviewers: RDD[(Review, Array[SearchRecord[Review]])] = computersReviews.matches(
+                             softwareReviewsRDD.filter(_.reviewerName != null).map(sr => (sr.asin, sr)),
                             (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
                              topK = 10)
+                            .values
 matchesReviewersRDD
-  .filter(_.hits.nonEmpty)
-  .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
-      m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+  .filter(_._2.nonEmpty)
+  .map(m => (s"Reviewer ${m._1.reviewerName} reviews computer ${m._1.asin} but also on software:",
+          m._2.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
   .collect()
   .foreach(println)
 
 // Drop duplicates
 println("Dropping duplicated reviewers:")
-val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
+val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates[Int, Review](
  queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
 ).map(sr => sr.reviewerName)
 distinctReviewers.collect().foreach(println)
@@ -134,14 +135,15 @@ class SearchRDDJava {
 
   System.err.println("Top 10 reviews from same reviewer between computer and software:");
   computerReviews.matches(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty())
-                         .zipWithIndex().mapToPair(Tuple2::swap),
+                          .mapToPair(sr -> new Tuple2<String, Review>(sr.asin, sr)),
                   r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
-          .filter(matches -> matches.hits.length > 0)
+          .values()
+          .filter(matches -> matches._2.length > 0)
           .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
-                  sameReviewerMatches.doc.reviewerName,
-                  sameReviewerMatches.doc.asin,
-                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
-                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+                  sameReviewerMatches._1.reviewerName,
+                  sameReviewerMatches._1.asin,
+                  Arrays.stream(sameReviewerMatches._2).map(h -> h.source.asin).collect(toList()),
+                  Arrays.stream(sameReviewerMatches._2).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
           ))
           .collect()
           .foreach(matches -> System.err.println(matches));
