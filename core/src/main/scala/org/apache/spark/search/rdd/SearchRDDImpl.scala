@@ -26,6 +26,7 @@ import org.apache.spark.search._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.{BoundedPriorityQueue, Utils}
 
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.reflect.ClassTag
 
 
@@ -60,7 +61,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
     runSearchJob[Long, Long](spr => spr.count(query()), _.sum)
 
   override def searchListQuery(query: StaticQueryProvider,
-                               topK: Int = Int.MaxValue,
+                               topK: Int = defaultTopK,
                                minScore: Double = 0
                               ): Array[SearchRecord[S]] =
     runSearchJob[Array[SearchRecord[S]], Array[SearchRecord[S]]](
@@ -69,7 +70,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
 
   override def searchQuery(query: StaticQueryProvider,
 
-                           topKByPartition: Int = Int.MaxValue,
+                           topKByPartition: Int = defaultTopK,
                            minScore: Double = 0
                           ): RDD[SearchRecord[S]] = {
     val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
@@ -116,7 +117,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
 
   override def searchJoinQuery[W: ClassTag](other: RDD[W],
                                             queryBuilder: W => Query,
-                                            topKByPartition: Int = Int.MaxValue,
+                                            topKByPartition: Int = defaultTopK,
                                             minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])] = {
     new SearchRDDCartesian[W, S](
       indexerRDD,
@@ -145,7 +146,8 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
                                                                createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
                                                                mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
                                                                mergeCombiners: (C, C) => C = (c: C, _: C) => c,
-                                                               numPartitionInJoin: Int = getNumPartitions
+                                                               numPartitionInJoin: Int = getNumPartitions,
+                                                               topKToDeduplicate: Int = defaultTopK
                                                              )(implicit ord: Ordering[K]): RDD[C] = {
     val cleanedKey = sparkContext.clean(createKey)
     val unwrapDoc = sparkContext.clean((ks: (K, S)) => (queryBuilder match {
@@ -159,7 +161,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
         indexerRDD, pairedRDD,
         unwrapDoc,
         options.getReaderOptions,
-        Integer.MAX_VALUE,
+        topKToDeduplicate,
         minScore)
 
     val pairedWithSearchedRDD: RDD[(K, (S, Option[SearchRecord[S]]))] = cartesianRDD.map {
@@ -270,22 +272,20 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
     // Unzip if needed
     ZipUtils.unzipPartition(indexDirectory, it)
 
-    tryAndClose(reader(partition.index, indexDirectory)) {
-      r => r.allDocs().map(searchRecordJavaToProduct).map(_.source)
-    }.iterator
+    val spr = reader(partition.searchIndexPartition.index,
+      partition.searchIndexPartition.indexDir)
+
+    context.addTaskCompletionListener[Unit](ctx => {
+      spr.close()
+    })
+
+    spr.docs().asScala.map(searchRecordJavaToProduct).map(_.source)
   }
 
   override protected def getPartitions: Array[Partition] = {
     // One-2-One partition
     firstParent.partitions.map(p =>
       new SearchPartition(p.index, indexerRDD)).toArray
-  }
-
-  override def persist(newLevel: StorageLevel): SearchRDDLucene.this.type = {
-    if (newLevel != StorageLevel.MEMORY_ONLY && newLevel != StorageLevel.NONE) {
-      throw new SearchException("persisting SearchRDD is not supported, save(String) to restore it later on")
-    }
-    super.persist(newLevel)
   }
 
   override def clearDependencies(): Unit = {

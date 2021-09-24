@@ -59,7 +59,7 @@ class SearchRDDCartesian[V: ClassTag, S: ClassTag](
     val spr = reader(matchPartition.searchIndexPartition.index,
       matchPartition.searchIndexPartition.indexDir)
 
-    context.addTaskCompletionListener[Unit]((_:TaskContext) => {
+    context.addTaskCompletionListener[Unit](ctx => {
       spr.close()
     })
 

@@ -38,12 +38,12 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
   override def count(query: StaticQueryProvider): Long = _searchRDD.count(query)
 
   override def searchListQuery(query: StaticQueryProvider,
-                               topK: Int = Int.MaxValue,
+                               topK: Int = defaultTopK,
                                minScore: Double = 0): Array[SearchRecord[S]] =
     _searchRDD.searchListQuery(query, topK, minScore)
 
   override def searchQuery(query: StaticQueryProvider,
-                           topKByPartition: Int = Int.MaxValue,
+                           topKByPartition: Int = defaultTopK,
                            minScore: Double = 0): RDD[SearchRecord[S]] =
     _searchRDD.searchQuery(query, topKByPartition, minScore)
 
@@ -85,7 +85,8 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
                                                               createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
                                                               mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
                                                               mergeCombiners: (C, C) => C = (c: C, _: C) => c,
-                                                              numPartitionInJoin: Int = getNumPartitions
+                                                              numPartitionInJoin: Int = getNumPartitions,
+                                                              topKToDeduplicate: Int = defaultTopK
                                                              )
                                                              (implicit ord: Ordering[K]): RDD[C] =
     _searchRDD.searchDropDuplicates(queryBuilder, createKey, minScore, createCombiner, mergeValue, mergeCombiners)

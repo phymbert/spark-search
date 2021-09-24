@@ -22,10 +22,9 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.search.BooleanClause.Occur
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.RangePartitioner
-import org.apache.spark.api.java.StorageLevels
 import org.apache.spark.rdd.RDD
+import org.apache.spark.search._
 import org.apache.spark.search.rdd.TestData._
-import org.apache.spark.search.{SearchException, _}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.must.Matchers.{convertToAnyMustWrapper, sorted}
 
@@ -109,15 +108,6 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
     val matches = searchRDD.matches(personsKeyed, (p: Person) => s"firstName:${p.firstName}~0.5 AND lastName:${p.lastName}~0.5", 2).collect
     assertResult(3)(matches.length)
     assertResult(3)(matches.map(m => m._2._2.length).count(_ == 2))
-  }
-
-  test("Persisting RDD to local dirs is forbidden") {
-    val searchRDD = sc.parallelize(Seq(Person("Georges", "Brassens", 99)))
-      .searchRDD().asInstanceOf[RDD[Person]]
-    assertThrows[SearchException] {
-      searchRDD.persist(StorageLevels.MEMORY_AND_DISK)
-    }
-    searchRDD.cache
   }
 
   test("self matches with one query value should returns all documents with one match") {

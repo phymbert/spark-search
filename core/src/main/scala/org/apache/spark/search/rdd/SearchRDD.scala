@@ -34,6 +34,11 @@ import scala.reflect.ClassTag
  */
 trait SearchRDD[S] {
   /**
+   * Default top K.
+   */
+  val defaultTopK = 1000000
+
+  /**
    * Return the number of indexed elements in the RDD.
    */
   def count(): Long
@@ -66,7 +71,7 @@ trait SearchRDD[S] {
    *       all the data is loaded into the driver's memory.
    */
   def searchList(query: String,
-                 topK: Int = Int.MaxValue,
+                 topK: Int = defaultTopK,
                  minScore: Double = 0): Array[SearchRecord[S]]
   = searchListQuery(parseQueryString(query, options), topK, minScore)
 
@@ -81,7 +86,7 @@ trait SearchRDD[S] {
    *       all the data is loaded into the driver's memory.
    */
   def searchListQuery(query: StaticQueryProvider,
-                      topK: Int = Int.MaxValue,
+                      topK: Int = defaultTopK,
                       minScore: Double = 0): Array[SearchRecord[S]]
 
   /**
@@ -95,7 +100,7 @@ trait SearchRDD[S] {
    * @return topK per partition hits RDD sorted by score in descendent order
    */
   def search(query: String,
-             topKByPartition: Int = Int.MaxValue,
+             topKByPartition: Int = defaultTopK,
              minScore: Double = 0): RDD[SearchRecord[S]] =
     searchQuery(parseQueryString(query, options), topKByPartition, minScore)
 
@@ -109,7 +114,7 @@ trait SearchRDD[S] {
    * @return topK per partition hits RDD sorted by score in descendent order
    */
   def searchQuery(query: StaticQueryProvider,
-                  topKByPartition: Int = Int.MaxValue,
+                  topKByPartition: Int = defaultTopK,
                   minScore: Double = 0): RDD[SearchRecord[S]]
 
   /**
@@ -126,7 +131,7 @@ trait SearchRDD[S] {
    */
   def searchJoin[W: ClassTag](other: RDD[W],
                               queryBuilder: W => String,
-                              topKByPartition: Int = Int.MaxValue,
+                              topKByPartition: Int = defaultTopK,
                               minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])] =
     searchJoinQuery(other, queryStringBuilder(queryBuilder, options), topKByPartition, minScore)
 
@@ -144,7 +149,7 @@ trait SearchRDD[S] {
    */
   def searchJoinQuery[W: ClassTag](other: RDD[W],
                                    queryBuilder: W => Query,
-                                   topKByPartition: Int = Int.MaxValue,
+                                   topKByPartition: Int = defaultTopK,
                                    minScore: Double = 0): RDD[(W, Option[SearchRecord[S]])]
 
   /**
@@ -162,7 +167,7 @@ trait SearchRDD[S] {
    */
   def matches[K, V](rdd: RDD[(K, V)],
                     queryBuilder: V => String,
-                    topK: Int = Int.MaxValue,
+                    topK: Int = defaultTopK,
                     minScore: Double = 0)
                    (implicit kClassTag: ClassTag[K],
                     vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))] =
@@ -183,7 +188,7 @@ trait SearchRDD[S] {
    */
   def matchesQuery[K, V](rdd: RDD[(K, V)],
                          queryBuilder: V => Query,
-                         topK: Int = Int.MaxValue,
+                         topK: Int = defaultTopK,
                          minScore: Double = 0)
                         (implicit kClassTag: ClassTag[K],
                          vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))]
@@ -211,7 +216,8 @@ trait SearchRDD[S] {
                                                       createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
                                                       mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
                                                       mergeCombiners: (C, C) => C = (c: C, _: C) => c,
-                                                      numPartitionInJoin: Int = getNumPartitions
+                                                      numPartitionInJoin: Int = getNumPartitions,
+                                                      topKToDeduplicate: Int = defaultTopK
                                                     )(implicit ord: Ordering[K]): RDD[C]
 
   /**
