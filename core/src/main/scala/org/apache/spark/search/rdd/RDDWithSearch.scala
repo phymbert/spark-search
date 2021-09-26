@@ -27,53 +27,40 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
-                                              val opts: SearchOptions[T] = defaultOpts[T]
-                                             ) extends SearchRDD[T] {
+private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
+                                              val opts: SearchOptions[S] = defaultOpts[S]
+                                             ) extends SearchRDD[S] {
 
-  private lazy val searchRDD: SearchRDD[T] = searchRDD(opts)
+  private[rdd] lazy val _searchRDD: SearchRDD[S] = searchRDD(opts)
 
-  override def count(): Long = searchRDD.count()
+  override def count(): Long = _searchRDD.count()
 
-  override def count(query: StaticQueryProvider): Long = searchRDD.count(query)
+  override def count(query: StaticQueryProvider): Long = _searchRDD.count(query)
 
   override def searchListQuery(query: StaticQueryProvider,
-                               topK: Int = Int.MaxValue,
-                               minScore: Double = 0): Array[SearchRecord[T]] =
-    searchRDD.searchListQuery(query, topK, minScore)
+                               topK: Int = defaultTopK,
+                               minScore: Double = 0): Array[SearchRecord[S]] =
+    _searchRDD.searchListQuery(query, topK, minScore)
 
   override def searchQuery(query: StaticQueryProvider,
-                           topKByPartition: Int = Int.MaxValue,
-                           minScore: Double = 0): RDD[SearchRecord[T]] =
-    searchRDD.searchQuery(query, topKByPartition, minScore)
+                           topKByPartition: Int = defaultTopK,
+                           minScore: Double = 0): RDD[SearchRecord[S]] =
+    _searchRDD.searchQuery(query, topKByPartition, minScore)
 
+  override def matchesQuery[K, V](rdd: RDD[(K, V)],
+                                  queryBuilder: V => Query,
+                                  topK: Int = 10,
+                                  minScore: Double = 0
+                                 )
+                                 (implicit kClassTag: ClassTag[K],
+                                  vClassTag: ClassTag[V]): RDD[(K, (V, Array[SearchRecord[S]]))]=
+    _searchRDD.matchesQuery(rdd, queryBuilder, topK, minScore)
 
-  override def searchJoin[S: ClassTag](rdd: RDD[S],
-                                       queryBuilder: S => String,
-                                       topK: Int = Int.MaxValue,
-                                       minScore: Double = 0
-                                      ): RDD[Match[S, T]] =
-    searchRDD.searchJoin(rdd, queryBuilder, topK, minScore)
+  override def save(path: String): Unit = _searchRDD.save(path)
 
-  override def searchJoinQuery[S: ClassTag](rdd: RDD[S],
-                                            queryBuilder: S => Query,
-                                            topK: Int = Int.MaxValue,
-                                            minScore: Double = 0
-                                           ): RDD[Match[S, T]] =
-    searchRDD.searchJoinQuery(rdd, queryBuilder, topK, minScore)
+  override def getNumPartitions: Int = _searchRDD.getNumPartitions
 
-
-  override def searchDropDuplicates(queryBuilder: T => Query = defaultQueryBuilder(options),
-                                    topK: Int = Int.MaxValue,
-                                    minScore: Double = 0,
-                                    numPartitions: Int = getNumPartitions): RDD[T] =
-    searchRDD.searchDropDuplicates(queryBuilder, topK, minScore, numPartitions)
-
-  override def save(path: String): Unit = searchRDD.save(path)
-
-  override def getNumPartitions: Int = searchRDD.getNumPartitions
-
-  override def options: SearchOptions[T] = searchRDD.options
+  override def options: SearchOptions[S] = _searchRDD.options
 
   /**
    * Builds a search rdd with that custom search options.
@@ -81,5 +68,28 @@ private[rdd] class RDDWithSearch[T: ClassTag](val rdd: RDD[T],
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchOptions[T] = defaultOpts): SearchRDD[T] = new SearchRDDLucene[T](rdd, opts)
+  def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDLucene[S](rdd, opts)
+
+  override def searchJoinQuery[W: ClassTag](other: RDD[W],
+                                            queryBuilder: W => Query,
+                                            topKByPartition: Int,
+                                            minScore: Double): RDD[(W, Option[SearchRecord[S]])] =
+    _searchRDD.searchJoinQuery(other, queryBuilder, topKByPartition, minScore)
+
+  override def distinct(numPartitions: Int): RDD[S] =
+    _searchRDD.distinct(numPartitions)
+
+  override def searchDropDuplicates[K: ClassTag, C: ClassTag](queryBuilder: S => Query = null,
+                                                              createKey: S => K = (s: S) => s.hashCode.toLong.asInstanceOf[K],
+                                                              minScore: Double = 0,
+                                                              createCombiner: Seq[SearchRecord[S]] => C = (ss: Seq[SearchRecord[S]]) => ss.head.source.asInstanceOf[C],
+                                                              mergeValue: (C, Seq[SearchRecord[S]]) => C = (c: C, _: Seq[SearchRecord[S]]) => c,
+                                                              mergeCombiners: (C, C) => C = (c: C, _: C) => c,
+                                                              numPartitionInJoin: Int = getNumPartitions,
+                                                              topKToDeduplicate: Int = defaultTopK
+                                                             )
+                                                             (implicit ord: Ordering[K]): RDD[C] =
+    _searchRDD.searchDropDuplicates(queryBuilder, createKey, minScore, createCombiner, mergeValue, mergeCombiners)
+
+  private[spark] override def elementClassTag: ClassTag[S] = _searchRDD.elementClassTag
 }

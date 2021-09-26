@@ -37,25 +37,25 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Pierrick HYMBERT
  */
-class SearchPartitionReader<T> implements AutoCloseable {
+class SearchPartitionReader<S> implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchPartitionReader.class);
 
     private final int index;
 
-    private final ReaderOptions<T> options;
+    private final ReaderOptions<S> options;
     private final IndexSearcher indexSearcher;
     private final String indexDirectory;
     private final AtomicLong queryCount = new AtomicLong();
     private final AtomicLong queryTime = new AtomicLong();
-    private final DocumentConverter<T> documentConverter;
+    private final DocumentConverter<S> documentConverter;
     private final DirectoryReader directory;
-    private final Class<T> classTag;
+    private final Class<S> classTag;
 
     SearchPartitionReader(int index,
                           String indexDirectory,
-                          Class<T> classTag,
-                          ReaderOptions<T> options)
+                          Class<S> classTag,
+                          ReaderOptions<S> options)
             throws IOException {
         this.index = index;
         this.indexDirectory = indexDirectory;
@@ -68,19 +68,19 @@ class SearchPartitionReader<T> implements AutoCloseable {
         this.indexSearcher = new IndexSearcher(directory);
     }
 
-    Long count() {
-        return monitorQuery(() -> (long) indexSearcher.count(new MatchAllDocsQuery()));
+    int count() {
+        return monitorQuery(() -> indexSearcher.getIndexReader().numDocs());
     }
 
-    SearchRecordJava<T>[] allDocs() {
-        return search(new MatchAllDocsQuery(), Integer.MAX_VALUE, 0);
+    SearchRecordIterator<S> docs() {
+        return iterator(new MatchAllDocsQuery(), Integer.MAX_VALUE, 0);
     }
 
-    Long count(Query query) {
-        return monitorQuery(() -> (long) indexSearcher.count(query));
+    int count(Query query) {
+        return monitorQuery(() -> indexSearcher.count(query));
     }
 
-    SearchRecordJava<T>[] search(Query query, int topK, double minScore) {
+    SearchRecordJava<S>[] search(Query query, int topK, double minScore) {
         return monitorQuery(() -> {
             TopDocs docs = indexSearcher.search(query, topK);
             return Arrays.stream(docs.scoreDocs)
@@ -90,7 +90,17 @@ class SearchPartitionReader<T> implements AutoCloseable {
         });
     }
 
-    private SearchRecordJava<T> convertDoc(ScoreDoc scoreDoc) {
+    SearchRecordIterator<S> iterator(Query query, int topK, double minScore) {
+        return monitorQuery(() -> {
+            TopDocs docs = indexSearcher.search(query, topK);
+            ScoreDoc[] scoredDocs = Arrays.stream(docs.scoreDocs)
+                    .filter(d -> d.score > minScore)
+                    .toArray(ScoreDoc[]::new);
+            return new SearchRecordIterator<>(this::convertDoc, scoredDocs);
+        });
+    }
+
+    private SearchRecordJava<S> convertDoc(ScoreDoc scoreDoc) {
         try {
             return documentConverter.convert(index, scoreDoc, classTag, indexSearcher.doc(scoreDoc.doc));
         } catch (Exception e) {

@@ -83,14 +83,16 @@ public class SearchRDDJavaExamples {
         JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
 
         System.err.println("Top 10 reviews from same reviewer between computer and software:");
-        computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+        computerReviews.matches(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty())
+                                .mapToPair(sr -> new Tuple2<String, Review>(sr.asin, sr)),
                         r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
-                .filter(matches -> matches.hits.length > 0)
+                .values()
+                .filter(matches -> matches._2.length > 0)
                 .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
-                        sameReviewerMatches.doc.reviewerName,
-                        sameReviewerMatches.doc.asin,
-                        Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
-                        Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+                        sameReviewerMatches._1.reviewerName,
+                        sameReviewerMatches._1.asin,
+                        Arrays.stream(sameReviewerMatches._2).map(h -> h.source.asin).collect(toList()),
+                        Arrays.stream(sameReviewerMatches._2).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
                 ))
                 .take(10)
                 .forEach(matches -> System.err.println(matches));

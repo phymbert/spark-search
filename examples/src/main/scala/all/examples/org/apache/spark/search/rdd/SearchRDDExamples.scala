@@ -79,21 +79,25 @@ object SearchRDDExamples {
 
     // Match software and computer reviewers
     println("Joined software and computer reviews by reviewer names:")
-    val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviews.filter(_.reviewerName != null),
+    val matchesReviewers: RDD[(Review, Array[SearchRecord[Review]])] = computersReviews.matches[String, Review](
+      softwareReviews.filter(_.reviewerName != null).map(sr => (sr.asin, sr)),
       (sr: Review) => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4", 10)
+      .values
     matchesReviewers
-      .filter(_.hits.nonEmpty)
-      .sortBy(_.hits.length, ascending = false)
-      .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
-                    m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+      .filter(_._2.nonEmpty)
+      .sortBy(_._2.length, ascending = false)
+      .map(m => (s"Reviewer ${m._1.reviewerName} reviews computer ${m._1.asin} but also on software:",
+        m._2.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
       .collect()
       .take(20)
       .foreach(println)
 
     // Drop duplicates
     println("Dropping duplicated reviewers:")
-    val distinctReviewers: RDD[String] = computersReviews.filter(_.reviewerName != null).searchDropDuplicates(
-      queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
+    val distinctReviewers: RDD[String] = computersReviews
+      .filter(_.reviewerName != null)
+      .searchDropDuplicates[Long, Review](
+      queryBuilder = queryStringBuilder[Review](sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
     ).map(sr => sr.reviewerName)
     distinctReviewers.collect().sorted.take(20).foreach(println)
 

@@ -15,19 +15,20 @@
  */
 package org.apache.spark.search.rdd;
 
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.search.MatchJava;
 import org.apache.spark.search.SearchOptions;
 import org.apache.spark.search.SearchRecordJava;
+import scala.Tuple2;
 import scala.reflect.ClassTag;
 
-class SearchRDDJava2Scala<T> extends JavaRDD<T> implements SearchRDDJava<T> {
+class SearchRDDJava2Scala<S> extends JavaRDD<S> implements SearchRDDJava<S> {
     private static final long serialVersionUID = 1L;
 
-    private final SearchRDDJava<T> searchRDDJava;
+    private final SearchRDDJava<S> searchRDDJava;
 
-    SearchRDDJava2Scala(JavaRDD<T> rdd, Class<T> clazz, SearchOptions<T> options) {
+    SearchRDDJava2Scala(JavaRDD<S> rdd, Class<S> clazz, SearchOptions<S> options) {
         super(rdd.rdd(), scala.reflect.ClassTag$.MODULE$.apply(clazz));
         try {
             // Yes, what a mess: JavaFirst was maybe not a good choice
@@ -52,32 +53,34 @@ class SearchRDDJava2Scala<T> extends JavaRDD<T> implements SearchRDDJava<T> {
     }
 
     @Override
-    public SearchRecordJava<T>[] searchList(String query, int topK) {
+    public SearchRecordJava<S>[] searchList(String query, int topK) {
         return searchRDDJava.searchList(query, topK);
     }
 
     @Override
-    public SearchRecordJava<T>[] searchList(String query, int topK, double minScore) {
+    public SearchRecordJava<S>[] searchList(String query, int topK, double minScore) {
         return searchRDDJava.searchList(query, topK, minScore);
     }
 
     @Override
-    public JavaRDD<SearchRecordJava<T>> search(String query, int topK, double minScore) {
+    public JavaRDD<SearchRecordJava<S>> search(String query, int topK, double minScore) {
         return searchRDDJava.search(query, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoin(JavaRDD<S> rdd,
-                                                   QueryStringBuilder<S> queryBuilder,
-                                                   int topK, double minScore) {
-        return searchRDDJava.searchJoin(rdd, queryBuilder, topK, minScore);
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matches(JavaPairRDD<K, V> rdd,
+                                                                           QueryStringBuilder<V> queryBuilder,
+                                                                           int topK,
+                                                                           double minScore) {
+        return searchRDDJava.matches(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
-    public <S> JavaRDD<MatchJava<S, T>> searchJoinQuery(JavaRDD<S> rdd,
-                                                        QueryBuilder<S> queryBuilder,
-                                                        int topK, double minScore) {
-        return searchRDDJava.searchJoinQuery(rdd, queryBuilder, topK, minScore);
+    public <K, V> JavaPairRDD<K, Tuple2<V, SearchRecordJava<S>[]>> matchesQuery(JavaPairRDD<K, V> rdd,
+                                                                                QueryBuilder<V> queryBuilder,
+                                                                                int topK,
+                                                                                double minScore) {
+        return searchRDDJava.matchesQuery(rdd, queryBuilder, topK, minScore);
     }
 
     @Override
@@ -86,12 +89,12 @@ class SearchRDDJava2Scala<T> extends JavaRDD<T> implements SearchRDDJava<T> {
     }
 
     @Override
-    public JavaRDD<T> javaRDD() {
+    public JavaRDD<S> javaRDD() {
         return searchRDDJava.javaRDD();
     }
 
     @Override
-    public RDD<T> rdd() {
+    public RDD<S> rdd() {
         return javaRDD().rdd();
     }
 }

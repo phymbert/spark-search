@@ -16,7 +16,7 @@
 package org.apache.spark.search.rdd
 
 import org.apache.spark.SparkContext
-import org.apache.spark.api.java.JavaRDD
+import org.apache.spark.api.java.{JavaPairRDD, JavaRDD}
 import org.apache.spark.search._
 import org.apache.spark.search.rdd.SearchRDDJava.{QueryBuilder, QueryStringBuilder}
 
@@ -25,57 +25,57 @@ import scala.reflect.ClassTag
 /**
  * Java friendly version of [[SearchRDD]].
  */
-trait SearchRDDJavaWrapper[T] extends SearchRDDJava[T] {
+trait SearchRDDJavaWrapper[S] extends SearchRDDJava[S] {
 
-  val searchRDD: SearchRDD[T]
+  val searchRDD: SearchRDD[S]
 
-  val classTag: ClassTag[T]
+  val classTag: ClassTag[S]
 
   override def count(): Long = searchRDD.count()
 
   override def count(query: String): Long =
     searchRDD.count(parseQueryString(query))
 
-  override def searchList(query: String, topK: Int): Array[SearchRecordJava[T]] =
+  override def searchList(query: String, topK: Int): Array[SearchRecordJava[S]] =
     searchRDD.searchListQuery(parseQueryString(query), topK).map(searchRecordAsJava(_))
 
-  override def searchList(query: String, topK: Int, minScore: Double): Array[SearchRecordJava[T]] =
+  override def searchList(query: String, topK: Int, minScore: Double): Array[SearchRecordJava[S]] =
     searchRDD.searchListQuery(parseQueryString(query), topK, minScore).map(searchRecordAsJava)
 
-  override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[T]] =
+  override def search(query: String, topK: Int, minScore: Double): JavaRDD[SearchRecordJava[S]] =
     searchRDD.search(query, topK).map(searchRecordAsJava(_)).toJavaRDD()
 
-  override def searchJoin[S](rdd: JavaRDD[S],
-                             queryBuilder: QueryStringBuilder[S],
+  override def matches[K, V](rdd: JavaPairRDD[K, V],
+                             queryBuilder: QueryStringBuilder[V],
                              topK: Int,
-                             minScore: Double): JavaRDD[MatchJava[S, T]] = {
-    implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.searchJoin(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
-      .map(matchAsJava(_))
+                             minScore: Double): JavaPairRDD[K, (V, Array[SearchRecordJava[S]])] = {
+    implicit val kClassTag: ClassTag[K] = rdd.kClassTag
+    implicit val vClassTag: ClassTag[V] = rdd.vClassTag
+    new JavaPairRDD(
+      searchRDD.matches[K, V](rdd.rdd, v => queryBuilder.build(v), topK, minScore)
+        .mapValues(m => (m._1, m._2.map(searchRecordAsJava(_)))))
   }
 
   override def save(path: String): Unit = searchRDD.save(path)
 
-  override def searchJoinQuery[S](rdd: JavaRDD[S],
-                                  queryBuilder: QueryBuilder[S],
+  override def matchesQuery[K, V](rdd: JavaPairRDD[K, V],
+                                  queryBuilder: QueryBuilder[V],
                                   topK: Int,
-                                  minScore: Double): JavaRDD[MatchJava[S, T]] = {
-    implicit val classTag: ClassTag[S] = rdd.classTag
-    searchRDD.searchJoinQuery(rdd.rdd, (s: S) => queryBuilder.build(s), topK, minScore)
-      .map(matchAsJava(_))
+                                  minScore: Double): JavaPairRDD[K, (V, Array[SearchRecordJava[S]])] = {
+    implicit val kClassTag: ClassTag[K] = rdd.kClassTag
+    implicit val vClassTag: ClassTag[V] = rdd.vClassTag
+    new JavaPairRDD(
+      searchRDD.matchesQuery[K, V](rdd.rdd, v => queryBuilder.build(v), topK, minScore)
+        .mapValues(m => (m._1, m._2.map(searchRecordAsJava(_)))))
   }
 
-  override def javaRDD(): JavaRDD[T] = {
-    implicit val classTag: ClassTag[T] = this.classTag
+  override def javaRDD(): JavaRDD[S] = {
+    implicit val classTag: ClassTag[S] = this.classTag
     new JavaRDD(searchAsRDD(searchRDD))
   }
 
-  private def matchAsJava[S: ClassTag](s: Match[S, T]): MatchJava[S, T] = {
-    new MatchJava[S, T](s.doc, s.hits.map(searchRecordAsJava))
-  }
-
-  private def searchRecordAsJava(sr: SearchRecord[T]) =
-    new SearchRecordJava[T](sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
+  private def searchRecordAsJava(sr: SearchRecord[S]) =
+    new SearchRecordJava[S](sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
 }
 
 class SearchJavaBaseRDD[T: ClassTag](rdd: JavaRDD[T], opts: SearchOptions[T])

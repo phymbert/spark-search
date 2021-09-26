@@ -24,6 +24,7 @@ import org.apache.lucene.search.Query
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.search.reflect.DefaultQueryBuilder
 
+import scala.collection.Iterable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -36,31 +37,29 @@ package object search {
   /**
    * Search record.
    */
-  case class SearchRecord[T](id: Long, partitionIndex: Long, score: Double, shardIndex: Long, source: T)
-
-  /**
-   * Matched record.
-   */
-  case class Match[S, T](doc: S, hits: Array[SearchRecord[T]])
+  case class SearchRecord[S](id: Long, partitionIndex: Long, score: Double, shardIndex: Long, source: S)
+    extends Ordering[SearchRecord[S]] {
+    override def compare(sr1: SearchRecord[S], sr2: SearchRecord[S]): Int = sr2.score.compare(sr1.score) // Reverse
+  }
 
   /**
    * Default search options.
    */
-  def defaultOpts[T]: SearchOptions[T] = SearchOptions.defaultOptions.asInstanceOf[SearchOptions[T]]
+  def defaultOpts[S]: SearchOptions[S] = SearchOptions.defaultOptions.asInstanceOf[SearchOptions[S]]
 
   /**
    * Abstract class to ease building lucene queries using query string lucene syntax with spark search RDD.
    *
    * @param queryStringBuilder Generate lucene query string for this input element
-   * @tparam T Type of input class
+   * @tparam S Type of input class
    */
-  class QueryStringBuilderWithAnalyzer[T](val queryStringBuilder: T => String,
+  class QueryStringBuilderWithAnalyzer[S](val queryStringBuilder: S => String,
                                           val defaultFieldName: String = ReaderOptions.DEFAULT_FIELD_NAME,
                                           override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
-    extends CanBuildQueryWithAnalyzer[T](analyzerClass) {
+    extends CanBuildQueryWithAnalyzer[S](analyzerClass) {
 
-    override def apply(t: T): Query =
-      new QueryParser(defaultFieldName, _analyzer).parse(queryStringBuilder.apply(t))
+    override def apply(s: S): Query =
+      new QueryParser(defaultFieldName, _analyzer).parse(queryStringBuilder.apply(s))
   }
 
   /**
@@ -68,16 +67,16 @@ package object search {
    * and query builder creation in a distributed world.
    *
    * @param queryBuilder Generate lucene query for this input element
-   * @tparam T Type of input class
+   * @tparam S Type of input class
    */
-  class QueryBuilderWithAnalyzer[T](queryBuilder: (T, QueryBuilder) => Query,
+  class QueryBuilderWithAnalyzer[S](queryBuilder: (S, QueryBuilder) => Query,
                                     override val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer]
                                    )
-    extends CanBuildQueryWithAnalyzer[T](analyzerClass) {
+    extends CanBuildQueryWithAnalyzer[S](analyzerClass) {
 
     @transient private lazy val _luceneQueryBuilder: QueryBuilder = new QueryBuilder(_analyzer)
 
-    override def apply(t: T): Query = queryBuilder.apply(t, _luceneQueryBuilder)
+    override def apply(s: S): Query = queryBuilder.apply(s, _luceneQueryBuilder)
   }
 
   /**
@@ -85,39 +84,39 @@ package object search {
    * and analyzer creation in a distributed world.
    *
    * @param analyzerClass Type of the analyzer to use with the query
-   * @tparam T Type of input class
+   * @tparam S Type of input class
    */
-  abstract class CanBuildQueryWithAnalyzer[T](val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
-    extends (T => Query) with Serializable {
+  abstract class CanBuildQueryWithAnalyzer[S](val analyzerClass: Class[_ <: Analyzer] = classOf[StandardAnalyzer])
+    extends (S => Query) with Serializable {
 
     @transient lazy val _analyzer: Analyzer = analyzerClass.newInstance()
   }
 
-  def defaultQueryBuilder[T: ClassTag](opts: SearchOptions[_] = defaultOpts)(implicit cls: ClassTag[T]): T => Query =
-    new QueryBuilderWithAnalyzer[T](new DefaultQueryBuilder[T](cls.runtimeClass.asInstanceOf[Class[_ <: T]]).asInstanceOf[(T, QueryBuilder) => Query],
-          opts.getReaderOptions.analyzer)
+  def defaultQueryBuilder[S](opts: SearchOptions[_] = defaultOpts)(implicit cls: ClassTag[S]): S => Query =
+    new QueryBuilderWithAnalyzer[S](new DefaultQueryBuilder[S](cls.runtimeClass.asInstanceOf[Class[_ <: S]]).asInstanceOf[(S, QueryBuilder) => Query],
+      opts.getReaderOptions.analyzer)
 
-  def queryBuilder[T](builder: (T, QueryBuilder) => Query, opts: SearchOptions[_] = defaultOpts): T => Query =
-    new QueryBuilderWithAnalyzer[T](builder, opts.getReaderOptions.analyzer)
+  def queryBuilder[S](builder: (S, QueryBuilder) => Query, opts: SearchOptions[_] = defaultOpts): S => Query =
+    new QueryBuilderWithAnalyzer[S](builder, opts.getReaderOptions.analyzer)
 
-  def queryStringBuilder[T](builder: T => String, opts: SearchOptions[_] = defaultOpts): T => Query =
-    new QueryStringBuilderWithAnalyzer[T](builder, opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer)
+  def queryStringBuilder[S](builder: S => String, opts: SearchOptions[_] = defaultOpts): S => Query =
+    new QueryStringBuilderWithAnalyzer[S](builder, opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer)
 
-  implicit def indexOptions[T](optionsBuilderFunc: Function[IndexationOptions.Builder[T], IndexationOptions.Builder[T]]): JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] =
-    new JFunction[IndexationOptions.Builder[T], IndexationOptions.Builder[T]] {
-      override def apply(opts: IndexationOptions.Builder[T]): IndexationOptions.Builder[T] = {
+  implicit def indexOptions[S](optionsBuilderFunc: Function[IndexationOptions.Builder[S], IndexationOptions.Builder[S]]): JFunction[IndexationOptions.Builder[S], IndexationOptions.Builder[S]] =
+    new JFunction[IndexationOptions.Builder[S], IndexationOptions.Builder[S]] {
+      override def apply(opts: IndexationOptions.Builder[S]): IndexationOptions.Builder[S] = {
         optionsBuilderFunc.apply(opts)
       }
     }
 
-  implicit def readerOptions[T](optionsBuilderFunc: Function[ReaderOptions.Builder[T], ReaderOptions.Builder[T]]): JFunction[ReaderOptions.Builder[T], ReaderOptions.Builder[T]] =
-    new JFunction[ReaderOptions.Builder[T], ReaderOptions.Builder[T]] {
-      override def apply(opts: ReaderOptions.Builder[T]): ReaderOptions.Builder[T] = {
+  implicit def readerOptions[S](optionsBuilderFunc: Function[ReaderOptions.Builder[S], ReaderOptions.Builder[S]]): JFunction[ReaderOptions.Builder[S], ReaderOptions.Builder[S]] =
+    new JFunction[ReaderOptions.Builder[S], ReaderOptions.Builder[S]] {
+      override def apply(opts: ReaderOptions.Builder[S]): ReaderOptions.Builder[S] = {
         optionsBuilderFunc.apply(opts)
       }
     }
 
-  private[search] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
+  private[search] def searchRecordJavaToProduct[S](sr: SearchRecordJava[S]) = {
     SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
   }
 }

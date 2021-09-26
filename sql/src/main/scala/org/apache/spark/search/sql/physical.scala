@@ -51,9 +51,11 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
       case _ => throw new IllegalArgumentException
     }
 
-    searchRDD.searchJoinQuery(leftRDD, qb, 1)
-      .filter(_.hits.nonEmpty) // TODO move this filter at partition level
-      .map(m => toRow(m.doc.asInstanceOf[UnsafeRow], m.hits.head.score))
+    searchRDD.matchesQuery(leftRDD.zipWithIndex().map(_.swap), qb, 1)
+      .filter(_._2._2.nonEmpty) // TODO move this filter at partition level
+      .values.map(m =>
+        toRow(m._1.asInstanceOf[UnsafeRow],
+          m._2.head.score))
   }
 
   private def toRow(doc: UnsafeRow, score: Double): InternalRow = {

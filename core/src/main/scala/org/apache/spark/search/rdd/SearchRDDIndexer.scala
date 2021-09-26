@@ -35,26 +35,26 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
-                                                          val options: SearchOptions[T],
-                                                          val deps: Seq[Dependency[_]])
+private[search] class SearchRDDIndexer[S: ClassTag](sc: SparkContext,
+                                                    val options: SearchOptions[S],
+                                                    val deps: Seq[Dependency[_]])
   extends RDD[Array[Byte]](sc, deps) {
 
-  def this(rdd: RDD[T], options: SearchOptions[T]) {
+  def this(rdd: RDD[S], options: SearchOptions[S]) {
     this(rdd.context, options, Seq(new OneToOneDependency(rdd)))
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
-    val searchRDDPartition = split.asInstanceOf[SearchPartitionIndex[T]]
+    val searchRDDPartition = split.asInstanceOf[SearchPartitionIndex[S]]
 
     val elements = firstParent.iterator(searchRDDPartition.parent, context).asJava
-      .asInstanceOf[util.Iterator[T]]
+      .asInstanceOf[util.Iterator[S]]
     searchRDDPartition.index(elements, options.getIndexationOptions)
 
     streamPartitionIndexZip(context, searchRDDPartition)
   }
 
-  protected def streamPartitionIndexZip(context: TaskContext, searchRDDPartition: SearchPartitionIndex[T]): Iterator[Array[Byte]] = {
+  protected def streamPartitionIndexZip(context: TaskContext, searchRDDPartition: SearchPartitionIndex[S]): Iterator[Array[Byte]] = {
     val localIndexDirPath = new File(searchRDDPartition.indexDir)
     val targetPath = new File(localIndexDirPath.getParent, s"${localIndexDirPath.getName}.zip")
     zipPartition(localIndexDirPath.toPath, new FileOutputStream(targetPath))
@@ -66,7 +66,7 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
     val parentPartitions = firstParent.partitions
     // One-2-One partition
     parentPartitions.map(p =>
-      new SearchPartitionIndex[T](p.index, rootDir,
+      new SearchPartitionIndex[S](p.index, rootDir,
         getPreferredLocation(context, p.index, parentPartitions.length, super.getPreferredLocations(p)),
         p)).toArray
   }
@@ -75,10 +75,10 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
     s"${options.getIndexationOptions.getRootIndexDirectory}${File.separator}${sc.applicationId}-sparksearch-rdd$id"
 
   override protected[rdd] def getPreferredLocations(split: Partition): Seq[String] =
-    split.asInstanceOf[SearchPartitionIndex[T]].preferredLocations
+    split.asInstanceOf[SearchPartitionIndex[S]].preferredLocations
 
   lazy val _indexDirectoryByPartition: Map[Int, String] =
-    partitions.map(_.asInstanceOf[SearchPartitionIndex[T]]).map(t => (t.index, t.indexDir)).toMap
+    partitions.map(_.asInstanceOf[SearchPartitionIndex[S]]).map(t => (t.index, t.indexDir)).toMap
 
   def save(pathString: String): Unit = {
     val indexDirectoryByPartition = _indexDirectoryByPartition
@@ -95,7 +95,7 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
     }).collect
   }
 
-  override def unpersist(blocking: Boolean): SearchRDDLuceneIndexer.this.type = {
+  override def unpersist(blocking: Boolean): SearchRDDIndexer.this.type = {
     // TODO support non blocking
     val indexDirectoryByPartition = _indexDirectoryByPartition
     sparkContext.runJob(this, (context: TaskContext, _: Iterator[Array[Byte]]) => {
@@ -107,6 +107,6 @@ private[search] class SearchRDDLuceneIndexer[T: ClassTag](sc: SparkContext,
   }
 }
 
-private[rdd] object SearchRDDLuceneIndexer {
+private[rdd] object SearchRDDIndexer {
 
 }

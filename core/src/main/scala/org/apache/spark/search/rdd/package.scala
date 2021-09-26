@@ -17,8 +17,8 @@ package org.apache.spark.search
 
 import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.Query
-import org.apache.spark.{ExecutorAllocationClient, SparkContext}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{ExecutorAllocationClient, SparkContext}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -29,9 +29,11 @@ import scala.util.{Failure, Success, Try}
  */
 package object rdd {
 
-  implicit def rddWithSearch[T: ClassTag](rdd: RDD[T]): RDDWithSearch[T] = new RDDWithSearch[T](rdd)
+  implicit def rddWithSearch[S: ClassTag](rdd: RDD[S]): RDDWithSearch[S] =
+    new RDDWithSearch[S](rdd)
 
-  implicit def searchAsRDD[T: ClassTag](searchRDD: SearchRDD[T]): RDD[T] = searchRDD.asInstanceOf[RDD[T]]
+  implicit def searchAsRDD[S: ClassTag](searchRDD: SearchRDD[S]): RDD[S] =
+    searchRDD.asInstanceOf[RDD[S]]
 
   /**
    * Provide a static query to pass to SearchRDD serializable.
@@ -40,13 +42,13 @@ package object rdd {
    */
   type StaticQueryProvider = () => Query
 
-  def parseQueryString[T](queryString: String, opts: SearchOptions[_] = defaultOpts): StaticQueryProvider =
+  def parseQueryString[S](queryString: String, opts: SearchOptions[_] = defaultOpts): StaticQueryProvider =
   // Query parser is not thread safe
     () => new QueryParser(opts.getReaderOptions.getDefaultFieldName, opts.getReaderOptions.analyzer.newInstance())
       .parse(queryString)
 
 
-  private[rdd] def searchRecordJavaToProduct[T](sr: SearchRecordJava[T]) = {
+  private[rdd] def searchRecordJavaToProduct[S](sr: SearchRecordJava[S]) = {
     SearchRecord(sr.id, sr.partitionIndex, sr.score, sr.shardIndex, sr.source)
   }
 

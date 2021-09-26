@@ -9,7 +9,7 @@
 [Spark](https://spark.apache.org/) Search brings advanced full text search features to your Dataframe, Dataset and RDD. Powered by [Apache Lucene](https://lucene.apache.org/).
 
 ## Context
-Let's image you have a billion records dataset you want to query on and match against another one using full text search...
+Let's assume you have a billion records dataset you want to query on and match against another one using full text search...
 You do not expect an external datasource or database system than Spark, and of course with the best performances.
 Spark Search fits your needs: it builds for all parent RDD partitions a one-2-one volatile Lucene index available
  during the lifecycle of your spark session across your executors local directories and RAM.
@@ -59,19 +59,21 @@ computersReviews.searchList("(reviewerName:Mikey~0.8) OR (reviewerName:Wiliam~0.
 // RDD full text joining - example here searches for persons
 // who did both computer and software reviews with fuzzy matching on reviewer name
 val softwareReviews: RDD[Review] = loadReviews("**/*/reviews_Software_10.json.gz")
-val matchesReviewers: RDD[Match[Review, Review]] = computersReviews.searchJoin(softwareReviewsRDD,
+val matchesReviewers: RDD[(Review, Array[SearchRecord[Review]])] = computersReviews.matches(
+                             softwareReviewsRDD.filter(_.reviewerName != null).map(sr => (sr.asin, sr)),
                             (sr: Review) => "reviewerName:\"" + sr.reviewerName + "\"~0.4",
                              topK = 10)
+                            .values
 matchesReviewersRDD
-  .filter(_.hits.nonEmpty)
-  .map(m => (s"Reviewer ${m.doc.reviewerName} reviews computer ${m.doc.asin} but also on software:",
-      m.hits.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
+  .filter(_._2.nonEmpty)
+  .map(m => (s"Reviewer ${m._1.reviewerName} reviews computer ${m._1.asin} but also on software:",
+          m._2.map(h => s"${h.source.reviewerName}=${h.score}=${h.source.asin}").toList))
   .collect()
   .foreach(println)
 
 // Drop duplicates
 println("Dropping duplicated reviewers:")
-val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates(
+val distinctReviewers: RDD[String] = computersReviews.searchDropDuplicates[Int, Review](
  queryBuilder = queryStringBuilder(sr => "reviewerName:\"" + sr.reviewerName.replace('"', ' ') + "\"~0.4")
 ).map(sr => sr.reviewerName)
 distinctReviewers.collect().foreach(println)
@@ -132,14 +134,16 @@ class SearchRDDJava {
   JavaRDD<Review> softwareReviews = loadReviewRDD(spark, "http://snap.stanford.edu/data/amazon/productGraph/categoryFiles/reviews_Software_10.json.gz");
 
   System.err.println("Top 10 reviews from same reviewer between computer and software:");
-  computerReviews.searchJoin(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty()),
+  computerReviews.matches(softwareReviews.filter(r -> r.reviewerName != null && !r.reviewerName.isEmpty())
+                          .mapToPair(sr -> new Tuple2<String, Review>(sr.asin, sr)),
                   r -> String.format("reviewerName:\"%s\"~0.4", r.reviewerName.replaceAll("[\"]", " ")), 10, 0)
-          .filter(matches -> matches.hits.length > 0)
+          .values()
+          .filter(matches -> matches._2.length > 0)
           .map(sameReviewerMatches -> String.format("Reviewer:%s reviews computer %s and software %s (score on names matching are %s)",
-                  sameReviewerMatches.doc.reviewerName,
-                  sameReviewerMatches.doc.asin,
-                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.asin).collect(toList()),
-                  Arrays.stream(sameReviewerMatches.hits).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
+                  sameReviewerMatches._1.reviewerName,
+                  sameReviewerMatches._1.asin,
+                  Arrays.stream(sameReviewerMatches._2).map(h -> h.source.asin).collect(toList()),
+                  Arrays.stream(sameReviewerMatches._2).map(h -> h.source.reviewerName + ":" + h.score).collect(toList())
           ))
           .collect()
           .foreach(matches -> System.err.println(matches));
@@ -198,6 +202,12 @@ The general use cases is to match company names against two data sets (7M vs 600
 (*) Results of elasticsearch hadoop benchmark must be carefully reviewed, contribution welcomed
 
 ## Release notes
+
+##### v0.2.0
+
+* SearchRDD#searchJoin renamed to SearchRDD#matches as it does automatically the reduction in addition of a simple join.
+* Fix matches was using only one core & improve join and dropDuplicate performances drastically
+* Scala 2.12 by default
 
 ##### v0.1.9
 

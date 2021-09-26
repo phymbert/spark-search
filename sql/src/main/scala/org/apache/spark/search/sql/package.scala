@@ -18,7 +18,6 @@ package org.apache.spark.search
 import org.apache.lucene.search.Query
 import org.apache.spark.search
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.types.DoubleType
 
@@ -48,7 +47,7 @@ package object sql {
   /**
    * Default query builder.
    */
-  def defaultQueryBuilder[T: ClassTag](implicit enc: Encoder[T]): T => Query = search.defaultQueryBuilder[T]()
+  def defaultQueryBuilder[S: ClassTag](implicit enc: Encoder[S]): S => Query = search.defaultQueryBuilder[S]()
 
   /**
    * Add search feature to column.
@@ -58,11 +57,5 @@ package object sql {
   /**
    * Allow search record rdd transformation to Row.
    */
-  implicit def searchRecordEncoder[T <: Product : TypeTag](implicit enc: Encoder[T]): Encoder[SearchRecord[T]] = Encoders.product[SearchRecord[T]]
-
-  /**
-   * Allow match record rdd transformation to Row.
-   */
-  implicit def matchingEncoder[T <: Product : TypeTag, S <: Product : TypeTag](implicit encT: Encoder[T], encS: Encoder[S]): Encoder[Match[T, S]] = Encoders.product[Match[T, S]]
-
+  implicit def searchRecordEncoder[S <: Product : TypeTag](implicit enc: Encoder[S]): Encoder[SearchRecord[S]] = Encoders.product[SearchRecord[S]]
 }
