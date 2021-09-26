@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
-import org.apache.spark.search.sql.TestData._
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.functions.lit
+import org.apache.spark.sql.search.TestData._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SearchDatasetSuite extends AnyFlatSpec with LocalSparkSession {
@@ -28,8 +28,8 @@ class SearchDatasetSuite extends AnyFlatSpec with LocalSparkSession {
     val appleCompany = companies1
       .joinWith(companies2,
         companies1("name").matches(companies2("name")) &&
-          companies1("address").matches(companies2("address")))
-      .where(score() > lit(8d))
+          companies1("address").matches(companies2("address")), "left")
+    //  .where(score() > lit(8d))
 
     assertResult(Company("Apple, Inc")) {
       appleCompany.collect()

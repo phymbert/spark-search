@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
 import java.io.{File, Reader}
 import java.util.function.Consumer

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
 import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
 import org.apache.spark.sql.SparkSession
@@ -44,8 +44,8 @@ trait LocalSparkSession extends BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def beforeEach() {
     _spark = SparkSession.builder()
-      .master("local[*]")
-      .appName("Spark Search Test")
+      .master("local[2]")
+      .appName("Spark SQL Search Test")
       .getOrCreate()
   }
 }

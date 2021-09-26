@@ -13,38 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
-import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.search.rdd.{SearchRDDImpl, SearchRDDIndexer}
-import org.apache.spark.search.{IndexationOptions, ReaderOptions, SearchOptions, _}
+import org.apache.spark.search.{IndexationOptions, ReaderOptions, SearchOptions}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, GenerateUnsafeRowJoiner}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, JoinedRow, Literal, Predicate, UnsafeRow}
-import org.apache.spark.sql.catalyst.plans.{JoinType, LeftOuter}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, JoinedRow, Predicate, UnsafeRow}
+import org.apache.spark.sql.catalyst.plans.{InnerLike, JoinType, LeftOuter}
+import org.apache.spark.sql.catalyst.plans.logical.JoinHint
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.joins.{BaseJoinExec, UnsafeCartesianRDD}
-import org.apache.spark.sql.types.{DataTypes, StringType, StructField, StructType}
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.sql.types.DoubleType
 
 
-case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: Expression)
+case class SearchJoinExec(left: SparkPlan,
+                          right: SparkPlan,
+                          joinType: JoinType,
+                          condition: Option[Expression],
+                          hint: JoinHint)
   extends BaseJoinExec with CodegenSupport {
-  override def joinType: JoinType = LeftOuter // FIXME always sql left join for now
 
   override def leftKeys: Seq[Expression] = Seq()
 
-  override def output: Seq[Attribute] = left.output ++ right.output.map(_.withNullability(true)) // FIXME output always sql left join for now
-
-  override def condition: Option[Expression] = Some(searchExpression)
+  override def output: Seq[Attribute] = left.output ++
+    right.output.map(_.withNullability(true)) ++ // FIXME output always sql left join for now
+    Seq(AttributeReference(SCORE, DoubleType, nullable = false)())
 
   override def rightKeys: Seq[Expression] = Seq()
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = left.execute() :: right.execute() :: Nil
 
+  override def outputPartitioning: Partitioning = joinType match {
+    case LeftOuter =>
+      PartitioningCollection(Seq(left.outputPartitioning, right.outputPartitioning))
+    case _ => throw new UnsupportedOperationException()
+  }
+
   override protected def doProduce(ctx: CodegenContext): String = {
-    "throw new UnsuportedOperationException();"
+    // Inline mutable state since not many join operations in a task
+    val leftInput = ctx.addMutableState("scala.collection.Iterator", "leftInput",
+      v => s"$v = inputs[0];", forceInline = true)
+    val rightInput = ctx.addMutableState("scala.collection.Iterator", "rightInput",
+      v => s"$v = inputs[1];", forceInline = true)
+    val leftRow = ctx.addMutableState("InternalRow", "leftRow", forceInline = true)
+    val rightRow = ctx.addMutableState("InternalRow", "rightRow", forceInline = true)
+    val reader = ctx.addMutableState("org.apache.spark.search.rdd.SearchPartitionReader", "reader", forceInline = true)
+
+    s"""
+       |
+       | // Unzip if needed
+       | org.apache.spark.search.rdd.ZipUtils.unzipPartition("/tmp/test", $rightInput);
+       | $reader = new org.apache.spark.search.rdd.SearchPartitionReader(0,
+       |                          "/tmp/test",
+       |                          InternalRow.class,
+       |                          org.apache.spark.search.ReaderOptions.DEFAULT);
+       | $reader.close();
+       |
+       |""".stripMargin
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
@@ -58,7 +86,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
       right.output.size,
       0, //FIXME
       0)
-      //FIXME)
+    //FIXME)
     pair.mapPartitionsWithIndexInternal { (index, iter) =>
       val joiner = GenerateUnsafeRowJoiner.create(left.schema, right.schema)
       val boundCondition = Predicate.create(condition.get, left.output ++ right.output)
@@ -72,30 +100,13 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
   }
 }
 
-case class SearchRDDExec(child: SparkPlan, searchExpression: Expression)
+case class SearchIndexExec(child: SparkPlan)
   extends UnaryExecNode {
 
   override protected def doExecute(): RDD[InternalRow] = {
-    val inputRDDs = child match {
-      case wsce: WholeStageCodegenExec => wsce.child.asInstanceOf[CodegenSupport].inputRDDs()
-      case cs: CodegenSupport => cs.inputRDDs()
-      case _ => throw new UnsupportedOperationException("no input rdd supported")
-    }
+    val rdd = child.execute()
 
-    if (inputRDDs.length != 1) {
-      throw new UnsupportedOperationException("one input RDD expected")
-    }
-
-    val rdd = inputRDDs.head
-
-    val schema = StructType(Seq(searchExpression match { // FIXME support AND / OR
-      case MatchesExpression(left, _) => left match {
-        case a: AttributeReference =>
-          StructField(a.name, DataTypes.StringType)
-        case _ => throw new UnsupportedOperationException
-      }
-      case _ => throw new IllegalArgumentException
-    }))
+    val schema = child.schema
 
     val opts = SearchOptions.builder[InternalRow]()
       .read((readOptsBuilder: ReaderOptions.Builder[InternalRow]) => readOptsBuilder.documentConverter(new DocumentRowConverter(schema)))
@@ -103,7 +114,12 @@ case class SearchRDDExec(child: SparkPlan, searchExpression: Expression)
       .build()
 
     new SearchRDDIndexer[InternalRow](rdd, opts)
+      .map(a => {
+        val row = new UnsafeRow(1)
+        row.pointTo(a, 1)
+        row
+      })
   }
 
-  override def output: Seq[Attribute] = Seq()
+  override def output: Seq[Attribute] = child.output
 }

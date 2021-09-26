@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search
+package org.apache.spark.sql
 
 import org.apache.lucene.search.Query
 import org.apache.spark.search
+import org.apache.spark.search.SearchRecord
 import org.apache.spark.sql._
+import org.apache.spark.search._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.types.DoubleType
 
@@ -30,7 +32,7 @@ import scala.reflect.runtime.universe.TypeTag
  *
  * @author Pierrick HYMBERT
  */
-package object sql {
+package object search {
 
   /**
    * Score column name.
@@ -43,11 +45,6 @@ package object sql {
    * Score of the hit in the search request.
    */
   def score(): Column = new Column(ScoreExpression())
-
-  /**
-   * Default query builder.
-   */
-  def defaultQueryBuilder[S: ClassTag](implicit enc: Encoder[S]): S => Query = search.defaultQueryBuilder[S]()
 
   /**
    * Add search feature to column.

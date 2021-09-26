@@ -35,9 +35,9 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDIndexer[S: ClassTag](sc: SparkContext,
-                                                    val options: SearchOptions[S],
-                                                    val deps: Seq[Dependency[_]])
+private[spark] class SearchRDDIndexer[S: ClassTag](sc: SparkContext,
+                                                   val options: SearchOptions[S],
+                                                   val deps: Seq[Dependency[_]])
   extends RDD[Array[Byte]](sc, deps) {
 
   def this(rdd: RDD[S], options: SearchOptions[S]) {

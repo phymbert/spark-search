@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
-import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{SparkPlan, SparkStrategy}
 
@@ -26,13 +25,11 @@ import org.apache.spark.sql.execution.{SparkPlan, SparkStrategy}
  */
 object SearchStrategy extends SparkStrategy {
 
-  override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    plan match {
-      case SearchJoin(left, right, searchExpression) => SearchJoinExec(planLater(left), planLater(right), searchExpression):: Nil
-      case p: SearchIndexPlan =>
-        SearchRDDExec(planLater(p.child), p.searchExpression) :: Nil
-      case _ => Seq.empty
-    }
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    case SearchIndexPlan(child) =>
+      SearchIndexExec(planLater(child)) :: Nil
+    case SearchJoin(left, right, joinType, condition, hint) =>
+      SearchJoinExec(planLater(left), planLater(right), joinType, condition, hint) :: Nil
+    case _ => Seq.empty
   }
-
 }

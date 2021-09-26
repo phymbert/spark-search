@@ -37,10 +37,10 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDImpl[S: ClassTag](sc: SparkContext,
-                                                 val indexerRDD: SearchRDDIndexer[S],
-                                                 val options: SearchOptions[S],
-                                                 val deps: Seq[Dependency[_]])
+private[spark] class SearchRDDImpl[S: ClassTag](sc: SparkContext,
+                                                val indexerRDD: SearchRDDIndexer[S],
+                                                val options: SearchOptions[S],
+                                                val deps: Seq[Dependency[_]])
   extends RDD[S](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
     with SearchRDD[S] {
 
