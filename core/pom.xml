@@ -5,7 +5,7 @@
         <relativePath>../pom.xml</relativePath>
         <groupId>io.github.phymbert</groupId>
         <artifactId>spark-search-parent_2.12</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>spark-search_2.12</artifactId>
