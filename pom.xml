@@ -3,7 +3,7 @@
 
     <groupId>io.github.phymbert</groupId>
     <artifactId>spark-search-parent_2.12</artifactId>
-    <version>0.1.10-SNAPSHOT</version>
+    <version>0.2.0</version>
 
     <packaging>pom</packaging>
     <name>Spark Project Search Parent</name>
@@ -33,7 +33,7 @@
         <connection>scm:git:git@github.com:phymbert/spark-search.git</connection>
         <developerConnection>scm:git:git@github.com:phymbert/spark-search.git</developerConnection>
         <url>scm:git:git@github.com:phymbert/spark-search.git</url>
-        <tag>HEAD</tag>
+        <tag>v0.2.0</tag>
     </scm>
     <inceptionYear>2020</inceptionYear>
 
