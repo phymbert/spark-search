@@ -206,8 +206,8 @@ The general use cases is to match company names against two data sets (7M vs 600
 ##### v0.2.0
 
 * SearchRDD#searchJoin renamed to SearchRDD#matches as it does automatically the reduction in addition of a simple join.
-* searchJoin and matches only take to pair rdd.
-* Fix matches was using only one core.
+* Fix matches was using only one core & improve join and dropDuplicate performances drastically
+* Scala 2.12 by default
 
 ##### v0.1.9
 
