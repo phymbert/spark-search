@@ -16,16 +16,20 @@
 package org.apache.spark.search.sql
 
 import org.apache.spark.search.sql.TestData._
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.functions.lit
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SearchDatasetSuite extends AnyFlatSpec with LocalSparkSession {
 
-  ignore should "be searchable" in {
-    val spark = _spark
-    import spark.sqlContext.implicits._
-
-    val appleCompany = companies1DS(spark)
-      .where($"name".matches("apple") && score() > 1d)
+  it should "be allow join by search" in {
+    val companies1: Dataset[Company] = companies1DS(_spark)
+    val companies2: Dataset[Company] = companies2DS(_spark)
+    val appleCompany = companies1
+      .joinWith(companies2,
+        companies1("name").matches(companies2("name")) &&
+          companies1("address").matches(companies2("address")))
+      .where(score() > lit(8d))
 
     assertResult(Company("Apple, Inc")) {
       appleCompany.collect()

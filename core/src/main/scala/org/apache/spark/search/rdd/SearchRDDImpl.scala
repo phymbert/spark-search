@@ -37,10 +37,10 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
-                                                   val indexerRDD: SearchRDDIndexer[S],
-                                                   val options: SearchOptions[S],
-                                                   val deps: Seq[Dependency[_]])
+private[search] class SearchRDDImpl[S: ClassTag](sc: SparkContext,
+                                                 val indexerRDD: SearchRDDIndexer[S],
+                                                 val options: SearchOptions[S],
+                                                 val deps: Seq[Dependency[_]])
   extends RDD[S](sc, Seq(new OneToOneDependency(indexerRDD)) ++ deps)
     with SearchRDD[S] {
 
@@ -222,7 +222,7 @@ private[search] class SearchRDDLucene[S: ClassTag](sc: SparkContext,
       .getPreferredLocations(split.asInstanceOf[SearchPartition[S]].searchIndexPartition)
 
   override def repartition(numPartitions: Int)(implicit ord: Ordering[S]): RDD[S]
-  = new SearchRDDLucene[S](firstParent.firstParent.repartition(numPartitions), options)
+  = new SearchRDDImpl[S](firstParent.firstParent.repartition(numPartitions), options)
 
   def _partitionReaderSearchList(r: SearchPartitionReader[S],
                                  query: Query, topK: Int, minScore: Double): Array[SearchRecord[S]] =

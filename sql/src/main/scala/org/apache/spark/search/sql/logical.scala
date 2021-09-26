@@ -25,7 +25,7 @@ trait SearchLogicalPlan
 case class SearchJoin(left: LogicalPlan, right: SearchIndexPlan, searchExpression: Expression)
   extends BinaryNode
     with SearchLogicalPlan {
-  override def output: Seq[Attribute] = left.output ++ right.output
+  override def output: Seq[Attribute] = left.output ++ right.output.map(_.withNullability(true))
 }
 
 
