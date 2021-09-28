@@ -17,7 +17,7 @@ package org.apache.spark.search.sql
 
 import org.apache.lucene.util.QueryBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.search.rdd.SearchRDDLucene
+import org.apache.spark.search.rdd.SearchRDDImpl
 import org.apache.spark.search.{IndexationOptions, ReaderOptions, SearchOptions, _}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, Literal, UnsafeRow}
@@ -31,7 +31,7 @@ case class SearchJoinExec(left: SparkPlan, right: SparkPlan, searchExpression: E
 
   override protected def doExecute(): RDD[InternalRow] = {
     val leftRDD = left.execute()
-    val searchRDD = right.execute().asInstanceOf[SearchRDDLucene[InternalRow]]
+    val searchRDD = right.execute().asInstanceOf[SearchRDDImpl[InternalRow]]
     val opts = searchRDD.options
 
     val qb = searchExpression match { // FIXME support AND / OR
@@ -100,7 +100,7 @@ case class SearchRDDExec(child: SparkPlan, searchExpression: Expression)
       .index((indexOptsBuilder: IndexationOptions.Builder[InternalRow]) => indexOptsBuilder.documentUpdater(new DocumentRowUpdater(schema)))
       .build()
 
-    new SearchRDDLucene[InternalRow](rdd, opts)
+    new SearchRDDImpl[InternalRow](rdd, opts)
   }
 
   override def output: Seq[Attribute] = Seq()

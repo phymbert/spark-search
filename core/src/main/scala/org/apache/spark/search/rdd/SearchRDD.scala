@@ -27,7 +27,7 @@ import scala.reflect.ClassTag
  * A search RDD Spark Search brings
  * advanced full text search features to your RDD.
  *
- * {@link org.apache.spark.search.rdd.SearchRDDLucene}
+ * {@link org.apache.spark.search.rdd.SearchRDDImpl}
  *
  * @tparam S Doc type to index
  * @author Pierrick HYMBERT
@@ -253,5 +253,5 @@ object SearchRDD {
                         path: String,
                         options: SearchOptions[T] = defaultOpts[T]
                        ): SearchRDD[T] =
-    new SearchRDDLucene[T](sc, new SearchIndexReloadedRDD[T](sc, path, options), options, Nil)
+    new SearchRDDImpl[T](sc, new SearchRDDReloaded[T](sc, path, options), options, Nil)
 }
