@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Pierrick HYMBERT
  */
-class SearchPartitionReader<S> implements AutoCloseable {
+public final class SearchPartitionReader<S> implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchPartitionReader.class);
 

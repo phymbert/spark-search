@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.search.sql
+package org.apache.spark.sql.search
 
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.functions.lit

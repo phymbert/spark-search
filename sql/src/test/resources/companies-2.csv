@@ -1,6 +1,6 @@
-name
-Google limited
-IBM,LTD
-Microsoft-Corp
-Apple-Corp
-Amazon, INC
+name,address
+"Google limited","Mountain View"
+"IBM,LTD", Madison Avenue New York"
+"Microsoft-Corp","Redmond United States"
+"Apple-Corp","Cupertino, California, 95014-0642 United States"
+"Amazon, INC","Seattle"
