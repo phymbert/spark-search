@@ -75,10 +75,14 @@ private[search] class SearchRDDImpl[S: ClassTag](sc: SparkContext,
                           ): RDD[SearchRecord[S]] = {
     val indexDirectoryByPartition = indexerRDD._indexDirectoryByPartition
     indexerRDD.mapPartitionsWithIndex(
-      (index, _) =>
+      (index, it) =>{
+        // Unzip if needed
+        ZipUtils.unzipPartition(indexDirectoryByPartition(index), it)
+
         tryAndClose(reader(indexDirectoryByPartition, index)) {
           spr => _partitionReaderSearchList(spr, query(), topKByPartition, minScore)
         }.iterator
+      }
     ).sortBy(_.score, ascending = false)
   }
 
