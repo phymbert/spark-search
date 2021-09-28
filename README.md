@@ -17,7 +17,7 @@ Strongly typed, Spark Search supports Java and Scala RDD and plans to support Py
 Have a look and feel free to contribute!
 
 ## How it works
-[![How it works](doc/spark-search.png)](https://github.com/phymbert/spark-search/src/main/scala/all/examples/org/apache/spark/search/rdd/SearchRDDExamples.scala)
+[![How it works](doc/spark-search.png)](https://github.com/phymbert/spark-search/core/src/main/scala/org/apache/spark/search/rdd/SearchRDDImpl.scala)
 
 ## Getting started
 
