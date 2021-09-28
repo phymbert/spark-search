@@ -16,6 +16,9 @@ Spark Search fits your needs: it builds for all parent RDD partitions a one-2-on
 Strongly typed, Spark Search supports Java and Scala RDD and plans to support Python, Spark SQL and Dataset.
 Have a look and feel free to contribute!
 
+## How it works
+[![How it works](doc/spark-search.png)](https://github.com/phymbert/spark-search/blob/main/core/src/main/scala/org/apache/spark/search/rdd/SearchRDDImpl.scala)
+
 ## Getting started
 
 ### RDD API
