@@ -186,19 +186,16 @@ class SearchRDDSuite extends AnyFunSuite with LocalSparkContext {
   }
 
   test("Save and restore index from/to hdfs") {
-    FileUtils.deleteDirectory(new File("target/test-save"))
+    val path = "target/test-save"
+    FileUtils.deleteDirectory(new File(path))
 
-    val searchRDD = sc.parallelize(persons).searchRDD()
+    val searchRDD = sc.parallelize(persons).repartition(3).searchRDD()
     assertResult(3)(searchRDD.count())
 
-    searchRDD.save("target/test-save")
+    searchRDD.save(path)
 
-    val restoredSearchRDD = SearchRDD.load[Person](sc, "target/test-save")
-    assertResult(3)(restoredSearchRDD.count())
-
-    assertResult(Array("Bartoll", "Marley", "Michael"))(restoredSearchRDD
-      .map(_.lastName)
-      .collect().sorted)
-
+    assertResult(3) {
+      FileUtils.listFiles(new File(path), Array("zip"), false).size()
+    }
   }
 }

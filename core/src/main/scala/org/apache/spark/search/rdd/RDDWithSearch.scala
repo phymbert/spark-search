@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
 
 /**
  * Add search features to [[org.apache.spark.rdd.RDD]]
- * using [[org.apache.spark.search.rdd.SearchRDDLucene]].
+ * using [[org.apache.spark.search.rdd.SearchRDDImpl]].
  *
  * @author Pierrick HYMBERT
  */
@@ -68,7 +68,7 @@ private[rdd] class RDDWithSearch[S: ClassTag](val rdd: RDD[S],
    * @param opts Search options
    * @return Dependent RDD with configurable search features
    */
-  def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDLucene[S](rdd, opts)
+  def searchRDD(opts: SearchOptions[S] = defaultOpts): SearchRDD[S] = new SearchRDDImpl[S](rdd, opts)
 
   override def searchJoinQuery[W: ClassTag](other: RDD[W],
                                             queryBuilder: W => Query,

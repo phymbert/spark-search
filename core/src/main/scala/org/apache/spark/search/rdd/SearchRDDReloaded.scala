@@ -30,14 +30,13 @@ import scala.reflect.ClassTag
  *
  * @author Pierrick HYMBERT
  */
-private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
-                                                          path: String,
-                                                          override val options: SearchOptions[S])
+private[search] class SearchRDDReloaded[S: ClassTag](sc: SparkContext,
+                                                     path: String,
+                                                     override val options: SearchOptions[S])
   extends SearchRDDIndexer[S](sc, options, Nil) {
 
   override protected def getPartitions: Array[Partition] = {
-    val hadoopConf = new Configuration()
-    val hdfs = FileSystem.get(hadoopConf)
+    val hdfs = FileSystem.get(new Configuration())
     val partitionsZipped = hdfs.listStatus(new Path(path), new PathFilter {
       override def accept(path: Path): Boolean = path.getName.endsWith(".zip")
     }).zipWithIndex
@@ -51,8 +50,8 @@ private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
     val hdfs = FileSystem.get(new Configuration())
     val path = new Path(part.zipPath)
     val is: InputStream = if (options.getIndexationOptions.isReloadIndexWithHdfsCopyToLocal) {
-      val tmpPath = new Path(s"${part.indexDir}.tmp")
-      val tmpFile = new File(tmpPath.getName)
+      val tmpFile = new File(s"${part.indexDir}.tmp")
+      val tmpPath = new Path(tmpFile.getAbsolutePath)
       context.addTaskCompletionListener[Unit](_ => FileUtils.delete(tmpFile))
       hdfs.copyToLocalFile(path, tmpPath)
       new FileInputStream(tmpFile)
@@ -60,7 +59,7 @@ private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
       hdfs.open(path)
     }
     ZipUtils.unzipPartition(part.indexDir, is)
-    streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[S]])
+    streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[S]]) // FIXME here we zip again what we just unzip
   }
 }
 

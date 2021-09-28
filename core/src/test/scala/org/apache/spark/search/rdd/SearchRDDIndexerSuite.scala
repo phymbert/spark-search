@@ -22,12 +22,12 @@ import org.apache.spark.search.rdd.TestData._
 import org.scalatest.flatspec.AnyFlatSpec
 import ZipUtils._
 
-class SearchIndexRDDSuite extends AnyFlatSpec with LocalSparkContext {
+class SearchRDDIndexerSuite extends AnyFlatSpec with LocalSparkContext {
 
   it should "creates zip index and stream to the next rdd" in {
     val searchIndexedRDD = sc.parallelize(persons)
       .searchRDD()
-      .asInstanceOf[SearchRDDLucene[Person]]
+      .asInstanceOf[SearchRDDImpl[Person]]
       .indexerRDD
     searchIndexedRDD.count()
     val indexDirectoryByPartition = searchIndexedRDD._indexDirectoryByPartition
