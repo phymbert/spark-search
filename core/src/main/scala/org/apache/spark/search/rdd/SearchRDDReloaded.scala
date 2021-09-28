@@ -15,6 +15,9 @@
  */
 package org.apache.spark.search.rdd
 
+import java.io.{File, FileInputStream, InputStream}
+
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path, PathFilter}
 import org.apache.spark.search.SearchOptions
@@ -45,9 +48,18 @@ private[search] class SearchIndexReloadedRDD[S: ClassTag](sc: SparkContext,
 
   override def compute(split: Partition, context: TaskContext): Iterator[Array[Byte]] = {
     val part = split.asInstanceOf[SearchIndexReloadedPartition]
-    val hadoopConf = new Configuration()
-    val hdfs = FileSystem.get(hadoopConf)
-    ZipUtils.unzipPartition(part.indexDir, hdfs.open(new Path(part.zipPath)))
+    val hdfs = FileSystem.get(new Configuration())
+    val path = new Path(part.zipPath)
+    val is: InputStream = if (options.getIndexationOptions.isReloadIndexWithHdfsCopyToLocal) {
+      val tmpPath = new Path(s"${part.indexDir}.tmp")
+      val tmpFile = new File(tmpPath.getName)
+      context.addTaskCompletionListener[Unit](_ => FileUtils.delete(tmpFile))
+      hdfs.copyToLocalFile(path, tmpPath)
+      new FileInputStream(tmpFile)
+    } else {
+      hdfs.open(path)
+    }
+    ZipUtils.unzipPartition(part.indexDir, is)
     streamPartitionIndexZip(context, part.asInstanceOf[SearchPartitionIndex[S]])
   }
 }

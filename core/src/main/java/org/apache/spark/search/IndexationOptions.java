@@ -109,6 +109,8 @@ public final class IndexationOptions<T> implements Serializable {
     });
     private IndexDirectoryCleanupHandler indexDirectoryCleanupHandler = DEFAULT_SHUTDOWN_HOOK_HANDLER;
 
+    private boolean reloadIndexWithHdfsCopyToLocal = true;
+
     private static final IndexationOptions DEFAULT = builder().build();
 
     // Hidden, use builder or default.
@@ -173,6 +175,10 @@ public final class IndexationOptions<T> implements Serializable {
 
     public boolean isCacheSearchIndexRDD() {
         return cacheSearchIndexRDD;
+    }
+
+    public boolean isReloadIndexWithHdfsCopyToLocal() {
+        return reloadIndexWithHdfsCopyToLocal;
     }
 
     /**
@@ -320,6 +326,17 @@ public final class IndexationOptions<T> implements Serializable {
          */
         public Builder<T> cacheSearchIndexRDD(boolean cacheSearchIndexRDD) {
             options.cacheSearchIndexRDD = cacheSearchIndexRDD;
+            return this;
+        }
+
+        /**
+         * Force copy from hdfs to local before reloading indices.
+         *
+         * @param reloadIndexWithHdfsCopyToLocal true to force copy indices from hdfs to local before opening it.
+         * @return builder
+         */
+        public Builder<T> reloadIndexWithHdfsCopyToLocal(boolean reloadIndexWithHdfsCopyToLocal) {
+            options.reloadIndexWithHdfsCopyToLocal = reloadIndexWithHdfsCopyToLocal;
             return this;
         }
 
