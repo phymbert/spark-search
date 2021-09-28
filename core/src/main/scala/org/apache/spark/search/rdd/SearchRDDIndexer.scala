@@ -57,6 +57,7 @@ private[search] class SearchRDDIndexer[S: ClassTag](sc: SparkContext,
   protected def streamPartitionIndexZip(context: TaskContext, searchRDDPartition: SearchPartitionIndex[S]): Iterator[Array[Byte]] = {
     val localIndexDirPath = new File(searchRDDPartition.indexDir)
     val targetPath = new File(localIndexDirPath.getParent, s"${localIndexDirPath.getName}.zip")
+    context.addTaskCompletionListener[Unit](_ => FileUtils.delete(targetPath))
     zipPartition(localIndexDirPath.toPath, new FileOutputStream(targetPath))
 
     new InterruptibleIterator[Array[Byte]](context, new FileInputStreamIterator(targetPath))
