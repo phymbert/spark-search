@@ -25,7 +25,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - uses: actions/checkout@v2
       - name: Set up JDK 8
-        uses: actions/setup-java@v2.3.0
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: 8
@@ -57,7 +57,7 @@ jobs:
         run: |
           docker-compose -f integration/docker-compose.yml up -d
       - name: Set up JDK 8
-        uses: actions/setup-java@v2.3.0
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: 8
@@ -93,7 +93,7 @@ jobs:
         run: |
           docker-compose -f integration/docker-compose-yarn.yml up -d --build
       - name: Set up JDK 8
-        uses: actions/setup-java@v2.3.0
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: 8
