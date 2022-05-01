@@ -37,7 +37,7 @@ jobs:
           mvn $MAVEN_CLI_OPTS -P CI,scala-${{ matrix.scala }} -Dspark.version=${{ matrix.spark }} -Dhadoop.version=${{ matrix.hadoop }} clean verify site
           rm -rf ~/.m2/repository/io/github/phymbert
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2.0.3
+        uses: codecov/codecov-action@v3.1.0
         if: '!matrix.skip'
         with:
           flags: unit-tests-spark_${{ matrix.spark }}_${{ matrix.scala }}
