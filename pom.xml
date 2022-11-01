@@ -50,7 +50,7 @@
         <commons-lang3.version>3.10</commons-lang3.version>
         <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
         <maven.surefire.version>2.22.2</maven.surefire.version>
-        <scala.version>2.12.14</scala.version>
+        <scala.version>2.13.10</scala.version>
         <scala.binary.version>2.12</scala.binary.version>
     </properties>
 
