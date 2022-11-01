@@ -111,7 +111,7 @@ try:
             'pysparksearch.jars': ['*.jar']
         },
         license='http://www.apache.org/licenses/LICENSE-2.0',
-        install_requires=['pyspark==2.4.8'],
+        install_requires=['pyspark==3.3.1'],
         setup_requires=['pypandoc'],
         classifiers=[
             'Development Status :: 0.2.0 - Development/UnStable',
